@@ -1,0 +1,80 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    font-family: "Inter", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Scrollbar customizada */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-card;
+  }
+
+  .btn-primary {
+    @apply bg-brand-600 hover:bg-brand-700 text-white font-semibold px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply border border-brand-600 text-brand-600 hover:bg-brand-50 font-semibold px-4 py-2 rounded-lg transition-colors;
+  }
+
+  .btn-ghost {
+    @apply text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 font-medium px-3 py-2 rounded-lg transition-colors;
+  }
+
+  .btn-danger {
+    @apply bg-red-500 hover:bg-red-600 text-white font-semibold px-4 py-2 rounded-lg transition-colors;
+  }
+
+  .input-field {
+    @apply w-full border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2.5 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent placeholder-gray-400 dark:placeholder-gray-600 transition-shadow;
+  }
+
+  .label {
+    @apply block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1;
+  }
+
+  .text-income {
+    @apply text-green-600 dark:text-green-400;
+  }
+
+  .text-expense {
+    @apply text-red-500 dark:text-red-400;
+  }
+
+  .badge-income {
+    @apply bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-400;
+  }
+
+  .badge-expense {
+    @apply bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400;
+  }
+
+  .badge-transfer {
+    @apply bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400;
+  }
+}

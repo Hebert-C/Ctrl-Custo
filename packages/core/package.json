@@ -1,0 +1,29 @@
+{
+  "name": "@ctrl-custo/core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./src/index.ts",
+      "types": "./src/index.ts"
+    }
+  },
+  "main": "./src/index.ts",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --ext .ts"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.41.0",
+    "sql.js": "^1.12.0"
+  },
+  "devDependencies": {
+    "@types/sql.js": "^1.4.9",
+    "drizzle-kit": "^0.30.0",
+    "vitest": "^3.0.0",
+    "typescript": "^5.4.0"
+  }
+}
