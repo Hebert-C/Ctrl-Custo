@@ -28,7 +28,9 @@ export function persistDatabase(_db: CoreDatabase): void {
 // Singleton: inicializa uma vez e reutiliza em toda a app
 export async function getDatabase(): Promise<CoreDatabase> {
   if (instance) return instance;
-  instance = await createDatabase();
+  instance = await createDatabase({
+    locateFile: (file: string) => `/${file}`,
+  });
   return instance;
 }
 

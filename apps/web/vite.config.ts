@@ -17,8 +17,7 @@ export default defineConfig({
     extensions: [".web.tsx", ".web.ts", ".web.js", ".tsx", ".ts", ".js"],
   },
   optimizeDeps: {
-    // sql.js usa WASM — precisa de tratamento especial
-    exclude: ["sql.js"],
+    include: ["sql.js"],
   },
   server: {
     headers: {

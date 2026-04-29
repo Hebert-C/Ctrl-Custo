@@ -5,9 +5,13 @@ import * as schema from "./schema";
 // Tipo inferido do Drizzle com sql.js — usado por todos os services
 export type CoreDatabase = Awaited<ReturnType<typeof createDatabase>>;
 
+interface DatabaseConfig {
+  locateFile?: (file: string) => string;
+}
+
 // Cria e inicializa o banco SQLite em WASM (funciona em Node.js e browser)
-export async function createDatabase() {
-  const SQL = await initSqlJs();
+export async function createDatabase(config: DatabaseConfig = {}) {
+  const SQL = await initSqlJs(config);
   const client = new SQL.Database();
 
   // WAL não existe no sql.js (WASM), mas foreign keys precisam ser habilitadas
