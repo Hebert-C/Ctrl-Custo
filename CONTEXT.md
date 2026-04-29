@@ -11,11 +11,32 @@
 
 ## Última tarefa concluída
 
-> Pendências resolvidas: git configurado na raiz, packages/config criado, ESLint + Prettier + Husky configurados, bugs de typecheck corrigidos, push feito para GitHub
+> Fix do erro ESM/CJS do sql.js no browser: movido para `optimizeDeps.include`, WASM copiado para `apps/web/public/`, `createDatabase` aceita `locateFile` opcional, `getDatabase` passa `locateFile: (file) => '/' + file`. App web rodando sem erros de importação.
 
-## Próximo passo
+## Próximo passo — Fase 4: apps/mobile
 
-> Iniciar Fase 4 — apps/mobile com Expo SDK 52 + Expo Router
+> Testes web concluídos (usuário validou o fluxo: Configurações → Contas/Categorias → Transações → Dashboard).
+> Iniciar **Fase 4 — apps/mobile** com Expo SDK 52 + Expo Router.
+
+### Checklist Fase 4
+
+- [ ] Criar `apps/mobile` com `create-expo-app` (template blank TypeScript)
+- [ ] Configurar Expo Router (tab bar: Dashboard, Transações, Cartões, Metas, Configurações)
+- [ ] Instalar e configurar expo-sqlite + Drizzle ORM (substituir sql.js — Expo tem SQLite nativo)
+- [ ] Adaptar `packages/core` para suportar expo-sqlite via adapter (ou criar `packages/core-mobile`)
+- [ ] Reutilizar componentes de `packages/ui` (já usam React Native primitivos)
+- [ ] Bottom sheet para entrada rápida de transação
+- [ ] Tema claro/escuro via `useThemeStore` (mesmo store do web)
+- [ ] Modo oculto (esconder valores)
+- [ ] Biometria + PIN (expo-local-authentication)
+
+### Ordem de implementação sugerida
+
+1. Estrutura base (expo + router + tsconfig)
+2. Banco de dados (expo-sqlite + drizzle adapter)
+3. Stores Zustand (reutilizar lógica do web, trocar `CoreDatabase` pelo adapter mobile)
+4. Telas principais (Dashboard, Transações, Configurações)
+5. Funcionalidades extras (biometria, modo oculto)
 
 ## Decisões técnicas tomadas
 
@@ -86,7 +107,8 @@
 
 ## Problemas conhecidos / pendências
 
-- 5 warnings de `react-hooks/exhaustive-deps` em páginas do web (padrão intencional — stores Zustand são referências estáveis)
+- 6 warnings de `react-hooks/exhaustive-deps` em páginas do web (padrão intencional — stores Zustand são referências estáveis)
+- Banco em memória: resets ao recarregar a página (persistência via localStorage não implementada)
 - `apps/mobile` vazio — Fase 4 não iniciada
 - Não há testes e2e (Playwright — Fase 5)
 - CI/CD (GitHub Actions) não configurado (Fase 5)
