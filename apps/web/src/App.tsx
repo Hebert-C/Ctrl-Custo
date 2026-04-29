@@ -5,6 +5,7 @@ import { Transactions } from "./pages/Transactions";
 import { Cards } from "./pages/Cards";
 import { Goals } from "./pages/Goals";
 import { Reports } from "./pages/Reports";
+import { Settings } from "./pages/Settings";
 
 export function App() {
   return (
@@ -16,6 +17,7 @@ export function App() {
         <Route path="/cards" element={<Cards />} />
         <Route path="/goals" element={<Goals />} />
         <Route path="/reports" element={<Reports />} />
+        <Route path="/settings" element={<Settings />} />
       </Routes>
     </BrowserRouter>
   );
