@@ -6,36 +6,60 @@
 - [x] Fase 1 — packages/core (lógica + banco + testes)
 - [x] Fase 2 — packages/ui (design system)
 - [x] Fase 3 — apps/web (versão desktop)
-- [x] Fase 4 — apps/mobile (versão celular) ← flows de criação implementados
-- [ ] Fase 5 — Backend API com segurança (apps/api)
-- [ ] Fase 6 — Migração do banco para PostgreSQL
-- [ ] Fase 7 — Web app consome API (remove sql.js)
-- [ ] Fase 8 — Mobile app consome API (remove expo-sqlite)
-- [ ] Fase 9 — Oracle Cloud: infra, deploy e hardening
-- [ ] Fase 10 — CI/CD (GitHub Actions + EAS Build)
-- [ ] Fase 11 — Desktop Windows (Tauri — executável .exe)
+- [x] Fase 0 — Monorepo & estrutura ← branch: `main`
+- [x] Fase 1 — packages/core ← branch: `main`
+- [x] Fase 2 — packages/ui ← branch: `main`
+- [x] Fase 3 — apps/web ← branch: `main`
+- [x] Fase 4 — apps/mobile ← branch: `feature/mobile`
+- [x] Fase 5 — Backend API com segurança (apps/api) ← branch: `feature/phase-5-api`
+- [ ] Fase 6 — Migração do banco para PostgreSQL ← branch: `feature/phase-6-pg-migration`
+- [ ] Fase 7 — Web app consome API (remove sql.js) ← branch: `feature/phase-7-web-api`
+- [ ] Fase 8 — Mobile app consome API (remove expo-sqlite) ← branch: `feature/phase-8-mobile-api`
+- [ ] Fase 9 — Oracle Cloud: infra, deploy e hardening ← branch: `feature/phase-9-cloud-deploy`
+- [ ] Fase 10 — CI/CD (GitHub Actions + EAS Build) ← branch: `feature/phase-10-cicd`
+- [ ] Fase 11 — Desktop Windows (Tauri — executável .exe) ← branch: `feature/phase-11-tauri`
+
+## Convenção de branches
+
+Cada fase é desenvolvida em uma branch dedicada e mergeada via PR ao `main`:
+
+| Branch                         | Fase                                   |
+| ------------------------------ | -------------------------------------- |
+| `main`                         | Fases 0–3 (legado, antes da convenção) |
+| `feature/mobile`               | Fase 4                                 |
+| `feature/phase-5-api`          | Fase 5 ✅                              |
+| `feature/phase-6-pg-migration` | Fase 6                                 |
+| `feature/phase-7-web-api`      | Fase 7                                 |
+| `feature/phase-8-mobile-api`   | Fase 8                                 |
+| `feature/phase-9-cloud-deploy` | Fase 9                                 |
+| `feature/phase-10-cicd`        | Fase 10                                |
+| `feature/phase-11-tauri`       | Fase 11                                |
+
+**Fluxo ao iniciar cada fase:**
+
+1. Criar branch: `git checkout main && git checkout -b feature/phase-N-nome`
+2. Implementar conforme checklist
+3. Commitar: `git add ... && git commit -m "feat(...): ..."`
+4. Atualizar CONTEXT.md: marcar fase como `[x]`, atualizar "Última tarefa concluída" e "Próximo passo"
+5. Commitar CONTEXT.md na mesma branch
+
+---
 
 ## Última tarefa concluída
 
-> Fase 4 — flows de criação de entidades no mobile implementados.
+> **Fase 5** — Backend API (`apps/api`) implementado. Branch: `feature/phase-5-api`.
 >
-> Criados 4 formulários bottom sheet (`src/components/`):
+> Criado `apps/api` completo com:
 >
-> - `AccountForm.tsx` — nova conta/banco (nome, tipo, banco, saldo inicial, ícone, cor)
-> - `CategoryForm.tsx` — nova categoria (nome, tipo, ícone, cor)
-> - `CardForm.tsx` — novo cartão (nome, bandeira, dígitos, limite, dias, conta, cor)
-> - `GoalForm.tsx` — nova meta (nome, valor alvo, prazo, ícone, cor, notas)
->
-> Telas atualizadas:
->
-> - `cards.tsx` — FAB "+" abre CardForm
-> - `goals.tsx` — FAB "+" abre GoalForm
-> - `settings.tsx` — botões "Nova conta" e "Nova categoria" nos cabeçalhos das seções
->
-> Todos os formulários seguem o padrão do `TransactionForm` existente. TypeCheck passa sem erros.
->
-> Correção de bundling Metro também aplicada: `.npmrc` com `node-linker=hoisted` criado na raiz,
-> dependências reinstaladas, assets de ícone/splash presentes em `apps/mobile/assets/`.
+> - **Stack:** Hono + Drizzle (PostgreSQL) + JWT (access 15min + refresh 7 dias) + Argon2id
+> - **Schema PG:** tabela `users` + todas as entidades com `userId` (isolamento por usuário)
+> - **Auth:** register, login (rate limit + lockout após 10 falhas), refresh, logout
+> - **Segurança:** security headers, CORS restrito, limite 1 MB de body, `userId` sempre do JWT
+> - **Rotas:** CRUD completo para accounts, categories, cards, transactions, goals
+> - **Transações:** atualização de saldo em DB transaction com rollback automático
+> - **Metas:** depósito com auto-complete ao atingir alvo
+> - **Reports:** `GET /reports/summary?month=YYYY-MM`
+> - **Config:** `.env.example` documentado, `drizzle.config.ts`, `pnpm dev:api` no root
 
 ## Decisão arquitetural — sincronização entre dispositivos
 
@@ -48,90 +72,31 @@ dispositivos. A solução é um servidor HTTP com PostgreSQL centralizado.
 
 ---
 
-## Próximo passo — Fase 5: Backend API (`apps/api`)
+## Próximo passo — Fase 6: Migração do banco para PostgreSQL
 
-### Contexto para iniciar a Fase 5
+### Contexto para iniciar a Fase 6
 
-Criar `apps/api` no monorepo: servidor HTTP Node.js com Hono, conectado a PostgreSQL via
-Drizzle, com autenticação JWT e todas as medidas de segurança definidas abaixo.
+Branch: `feature/phase-6-pg-migration` (criar a partir de `main`)
 
-**Stack decidida:**
+A Fase 5 criou o schema PostgreSQL em `apps/api/src/db/schema.ts`. A Fase 6 adapta
+`packages/core` para que seus services e tipos funcionem com PostgreSQL (além de manter
+compatibilidade SQLite para os testes Vitest existentes).
 
-- Runtime: Node.js 20
-- Framework HTTP: Hono (leve, suporte nativo a middleware)
-- ORM: Drizzle (já usado no projeto, adicionar dialect PostgreSQL)
-- Autenticação: JWT (access token 15min + refresh token 7 dias via httpOnly cookie)
-- Hash de senha: Argon2id
-- Validação de input: Zod via `@hono/zod-validator`
+Arquivos relevantes:
 
-### Checklist Fase 5
+- `packages/core/src/db/schema.ts` — schema SQLite atual (a adaptar)
+- `packages/core/src/db/index.ts` — `createDatabase` com sql.js (a tornar opcional)
+- `packages/core/src/index.ts` — barrel de exports
+- `apps/api/src/db/schema.ts` — schema PG já criado na Fase 5 (referência)
 
-#### Estrutura do app
+### Prompt de início de sessão (Fase 6)
 
-- [ ] Criar `apps/api/package.json` e `apps/api/tsconfig.json`
-- [ ] Configurar entrada `apps/api/src/index.ts` com Hono
-- [ ] Adicionar `apps/api` ao pipeline do Turborepo
-
-#### Segurança — Transporte
-
-- [ ] Middleware de security headers (`hono/secure-headers`):
-  - `Strict-Transport-Security` (HSTS, max-age 1 ano)
-  - `X-Content-Type-Options: nosniff`
-  - `X-Frame-Options: DENY`
-  - `Content-Security-Policy`
-- [ ] CORS restrito aos domínios do app (não `*`)
-- [ ] Limite de tamanho de body (ex: 1 MB)
-
-#### Segurança — Autenticação
-
-- [ ] `POST /auth/register` — email + senha (hash Argon2id, salt automático)
-- [ ] `POST /auth/login` — valida senha, emite access token (JWT 15min) + refresh token (httpOnly cookie, 7 dias)
-- [ ] `POST /auth/refresh` — renova access token via refresh token
-- [ ] `POST /auth/logout` — invalida refresh token
-- [ ] Rate limiting nos endpoints de auth (máx. 10 tentativas por IP em 15min)
-- [ ] Bloqueio de conta após 10 falhas consecutivas (cooldown de 30min)
-
-#### Segurança — Autorização
-
-- [ ] Middleware `requireAuth` que valida JWT e injeta `userId` no contexto
-- [ ] Todo endpoint de dados aplica `WHERE userId = ?` — usuário só acessa seus próprios dados
-- [ ] `userId` sempre vem do JWT, nunca do body da requisição
-
-#### Endpoints REST
-
-- [ ] `GET/POST /transactions`, `PUT/DELETE /transactions/:id`
-- [ ] `GET/POST /accounts`, `PUT/DELETE /accounts/:id`
-- [ ] `GET/POST /categories`, `PUT/DELETE /categories/:id`
-- [ ] `GET/POST /cards`, `PUT/DELETE /cards/:id`
-- [ ] `GET/POST /goals`, `PUT/DELETE /goals/:id`
-- [ ] `POST /goals/:id/deposit` — aporte em meta
-- [ ] `GET /reports/summary` — resumo mensal
-
-#### Validação de input
-
-- [ ] Schema Zod para cada endpoint (rejeita campos extras, valida tipos e ranges)
-- [ ] Valores monetários: sempre inteiros (centavos), nunca floats
-- [ ] IDs: validar formato UUID antes de consultar o banco
-
-#### Logs e auditoria
-
-- [ ] Logar eventos de auth (login, logout, falha) com IP + timestamp
-- [ ] **Nunca logar valores financeiros** nos logs
-- [ ] Rotação de logs configurada (7 dias de retenção)
-
-#### Configuração
-
-- [ ] `.env.example` com todas as variáveis necessárias (sem valores reais)
-- [ ] `.env` no `.gitignore` (nunca comitar)
-- [ ] Variáveis: `DATABASE_URL`, `JWT_SECRET`, `JWT_REFRESH_SECRET`, `PORT`, `ALLOWED_ORIGINS`
-
-### Prompt de início de sessão (Fase 5)
-
-> "Vamos iniciar a Fase 5 do Ctrl-Custo. O objetivo é criar `apps/api` no monorepo: servidor
-> Hono + Drizzle (PostgreSQL) + JWT + Argon2id. Sem suporte offline — web e mobile consumirão
-> a API diretamente. Implemente com todas as medidas de segurança do checklist do CONTEXT.md
-> (security headers, CORS restrito, rate limiting, bloqueio de conta, userId sempre do JWT).
-> Comece pela estrutura base do app e o módulo de autenticação."
+> "Vamos iniciar a Fase 6 do Ctrl-Custo. Branch: `feature/phase-6-pg-migration`.
+> O objetivo é adaptar `packages/core` para suportar PostgreSQL. A Fase 5 já criou o schema
+> PG em `apps/api/src/db/schema.ts`. Agora precisamos: (1) criar um schema PG em
+> `packages/core/src/db/schema.pg.ts`, (2) tornar `createDatabase` agnóstico ao driver,
+> (3) garantir que os 31 testes Vitest continuem passando com SQLite. Siga o checklist do
+> CONTEXT.md."
 
 ---
 
