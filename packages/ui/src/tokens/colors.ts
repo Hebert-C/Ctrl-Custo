@@ -140,7 +140,7 @@ export const darkColors = {
 } as const;
 
 export type ColorToken = keyof typeof lightColors;
-export type Colors = typeof lightColors;
+export type Colors = { [K in keyof typeof lightColors]: string };
 
 // Cores para categorias de transações (usadas em badges e gráficos)
 export const categoryColors = [
