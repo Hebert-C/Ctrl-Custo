@@ -36,8 +36,8 @@ web-build/
 .env.local
 .env.*.local
 
-# Drizzle migrations (geradas, não comitar)
-apps/api/drizzle/
+# Drizzle — journal de meta gerado automaticamente (não commitar)
+apps/api/drizzle/meta/
 
 # Logs
 logs

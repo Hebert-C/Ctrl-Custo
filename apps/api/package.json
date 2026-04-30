@@ -10,7 +10,7 @@
     "lint": "eslint src --ext .ts",
     "db:push": "drizzle-kit push",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "tsx src/db/migrate.ts"
   },
   "dependencies": {
     "@hono/node-server": "^1.13.0",
