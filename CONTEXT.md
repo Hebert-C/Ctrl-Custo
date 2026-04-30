@@ -6,67 +6,32 @@
 - [x] Fase 1 — packages/core (lógica + banco + testes)
 - [x] Fase 2 — packages/ui (design system)
 - [x] Fase 3 — apps/web (versão desktop)
-- [x] Fase 4 — apps/mobile (versão celular) ← estrutura completa criada
+- [x] Fase 4 — apps/mobile (versão celular) ← flows de criação implementados
 - [ ] Fase 5 — CI/CD e deploy
 
 ## Última tarefa concluída
 
-> Fase 4 implementada: estrutura completa do `apps/mobile` com Expo SDK 54 + Expo Router v5.
-> `packages/core` teve `CoreDatabase` generalizado para `BaseSQLiteDatabase<'sync', any, typeof schema>`,
-> compatível com sql.js (testes/web) e expo-sqlite (mobile). Todos os 31 testes seguem passando.
+> Fase 4 — flows de criação de entidades no mobile implementados.
 >
-> **Pendência bloqueante:** erro de bundling no Metro (veja seção abaixo). A correção está diagnosticada
-> mas ainda não aplicada — nenhum arquivo de configuração foi alterado.
+> Criados 4 formulários bottom sheet (`src/components/`):
+>
+> - `AccountForm.tsx` — nova conta/banco (nome, tipo, banco, saldo inicial, ícone, cor)
+> - `CategoryForm.tsx` — nova categoria (nome, tipo, ícone, cor)
+> - `CardForm.tsx` — novo cartão (nome, bandeira, dígitos, limite, dias, conta, cor)
+> - `GoalForm.tsx` — nova meta (nome, valor alvo, prazo, ícone, cor, notas)
+>
+> Telas atualizadas:
+>
+> - `cards.tsx` — FAB "+" abre CardForm
+> - `goals.tsx` — FAB "+" abre GoalForm
+> - `settings.tsx` — botões "Nova conta" e "Nova categoria" nos cabeçalhos das seções
+>
+> Todos os formulários seguem o padrão do `TransactionForm` existente. TypeCheck passa sem erros.
+>
+> Correção de bundling Metro também aplicada: `.npmrc` com `node-linker=hoisted` criado na raiz,
+> dependências reinstaladas, assets de ícone/splash presentes em `apps/mobile/assets/`.
 
-## Próximo passo — Fase 4: corrigir bundling e testar
-
-### Erro de bundling (BLOQUEANTE)
-
-**Erro:**
-
-```
-Android Bundling failed
-ERROR Error: ...VirtualViewExperimentalNativeComponent.js:
-Unable to determine event arguments for "onModeChange"
-at throwIfArgumentPropsAreNull (@react-native/codegen/...)
-```
-
-**Causa raiz diagnosticada:**
-O pnpm com `autoInstallPeers: true` instalou `react-native@0.85.2` como peer implícito em
-`apps/web` (via `react-native-svg`) e `packages/core` (via `drizzle-orm` → `expo-sqlite`).
-Isso gerou três versões simultâneas de `@react-native/codegen` (0.79.7, 0.81.5, 0.85.2)
-no lockfile. O Metro, ao traversar os symlinks do pnpm pelo monorepo, encontra versões
-incompatíveis e falha no codegen.
-
-**Dois problemas encadeados:**
-
-1. **Ausência de `.npmrc`** com `node-linker=hoisted` — sem isso o pnpm usa symlinks que o Metro não resolve corretamente
-2. **Lockfile desatualizado** — o override `react-native: ~0.79.0` já está no `package.json` raiz mas nunca foi aplicado via `pnpm install`
-
-**Plano de correção (aguardando execução):**
-
-Passo 1 — Criar `.npmrc` na raiz:
-
-```
-node-linker=hoisted
-```
-
-Passo 2 — Reinstalar dependências (PowerShell):
-
-```powershell
-Remove-Item -Recurse -Force node_modules, pnpm-lock.yaml -ErrorAction SilentlyContinue
-pnpm install
-npx expo install --fix
-npx expo-doctor
-```
-
-Passo 3 — Limpar cache do Metro:
-
-```powershell
-Remove-Item -Recurse -Force $env:TEMP\metro-cache, $env:TEMP\haste-map-* -ErrorAction SilentlyContinue
-```
-
-Nenhuma alteração de código de aplicação é necessária. Apenas configuração e reinstalação.
+## Próximo passo — Fase 4: testar no emulador
 
 ### Checklist restante Fase 4
 
@@ -75,13 +40,17 @@ Nenhuma alteração de código de aplicação é necessária. Apenas configuraç
 - [x] Banco de dados: expo-sqlite + Drizzle ORM (substituiu sql.js)
 - [x] `packages/core` compatível com expo-sqlite (CoreDatabase genérico)
 - [x] Reutilizar stores Zustand (lógica idêntica ao web)
-- [x] Bottom sheet (Modal nativo) para entrada rápida de transação
+- [x] Bottom sheet para nova transação (`TransactionForm`)
+- [x] Bottom sheet para novo cartão (`CardForm`)
+- [x] Bottom sheet para nova conta (`AccountForm`)
+- [x] Bottom sheet para nova categoria (`CategoryForm`)
+- [x] Bottom sheet para nova meta (`GoalForm`)
 - [x] Tema claro/escuro via `useThemeStore` + `AsyncStorage`
 - [x] Modo oculto (esconder valores) via `useUiStore`
 - [x] Biometria + PIN via `expo-local-authentication` (Settings)
-- [ ] **BLOQUEANTE: corrigir erro de bundling Metro** (ver acima)
-- [ ] Assets de ícone e splash screen
-- [ ] Teste em emulador Android / simulador iOS
+- [x] Correção do erro de bundling Metro (`.npmrc` + reinstall)
+- [x] Assets de ícone e splash screen (`apps/mobile/assets/`)
+- [ ] **Teste em emulador Android / simulador iOS**
 - [ ] Ajustes de UI após testes visuais
 
 ## Decisões técnicas tomadas
@@ -91,7 +60,7 @@ Nenhuma alteração de código de aplicação é necessária. Apenas configuraç
 - Drizzle ORM + SQLite (web e mobile) — valores monetários em centavos (integer)
 - Zustand para estado global (stores: transaction, account, category, card, goal, theme, ui)
 - Victory Native para gráficos (BarChart, LineChart, PieChart em packages/ui)
-- Expo Router v4 para navegação mobile (file-based routing)
+- Expo Router v5 para navegação mobile (file-based routing)
 - Vitest para testes unitários
 - ESLint 8 + Prettier 3 + Husky 9 (pre-commit com lint-staged)
 - Playwright para testes e2e (Fase 5)
@@ -100,6 +69,7 @@ Nenhuma alteração de código de aplicação é necessária. Apenas configuraç
 - `CoreDatabase` usa `BaseSQLiteDatabase<'sync', any, typeof schema>` para ser agnóstico ao driver
 - Mobile usa `expo-sqlite openDatabaseSync` (síncrono, compatível com o tipo CoreDatabase)
 - Persist de tema e UI no mobile via Zustand + AsyncStorage
+- `.npmrc` com `node-linker=hoisted` na raiz — obrigatório para o Metro resolver o monorepo corretamente
 
 ## O que foi feito em cada fase
 
@@ -133,14 +103,16 @@ Nenhuma alteração de código de aplicação é necessária. Apenas configuraç
 - **Layout:** Header, Sidebar, Layout wrapper, App.tsx com React Router
 - **Páginas:** Dashboard, Transactions, Cards, Goals, Reports, Settings
 
-### Fase 4 — apps/mobile ⚠️ (estrutura pronta, bundling bloqueado)
+### Fase 4 — apps/mobile ✅ (flows completos, aguardando teste em emulador)
 
 - **Infra:** Expo SDK 54 + Expo Router v5 + TypeScript
 - **Banco mobile:** expo-sqlite (openDatabaseSync) + Drizzle ORM — persistência nativa em arquivo
 - **Stores Zustand:** idênticos ao web + useUiStore (modo oculto + biometria)
 - **Navegação:** Tab bar com 5 telas (Expo Router file-based)
-- **Telas:** Dashboard, Transactions (com bottom sheet), Cards, Goals, Settings
+- **Telas:** Dashboard, Transactions, Cards, Goals, Settings
+- **Formulários (bottom sheet):** TransactionForm, CardForm, AccountForm, CategoryForm, GoalForm
 - **Funcionalidades:** modo oculto, biometria (expo-local-authentication), tema claro/escuro persistido
+- **Bundling:** `.npmrc` com `node-linker=hoisted` resolve o conflito de versões do Metro no monorepo pnpm
 
 ### packages/config ✅
 
@@ -154,9 +126,7 @@ Nenhuma alteração de código de aplicação é necessária. Apenas configuraç
 
 ## Problemas conhecidos / pendências
 
-- **[BLOQUEANTE] Erro de bundling Metro no mobile** — causa raiz e plano de correção documentados na seção "Próximo passo". Correção: criar `.npmrc` com `node-linker=hoisted` + reinstalar dependências. Nenhum código de aplicação precisa mudar.
 - 6 warnings de `react-hooks/exhaustive-deps` em páginas do web (padrão intencional — stores Zustand são referências estáveis)
 - Banco web em memória: resets ao recarregar a página (persistência via localStorage não implementada)
-- `apps/mobile/assets/` precisa ser criado com ícones/splash antes de rodar o Expo
 - CI/CD (GitHub Actions) não configurado (Fase 5)
 - Testes e2e Playwright não implementados (Fase 5)

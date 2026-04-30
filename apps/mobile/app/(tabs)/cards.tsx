@@ -1,5 +1,12 @@
-import React, { useEffect, useCallback } from "react";
-import { View, Text, FlatList, StyleSheet, ActivityIndicator } from "react-native";
+import React, { useEffect, useCallback, useState } from "react";
+import {
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  ActivityIndicator,
+  TouchableOpacity,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { getDatabase } from "../../src/db/index";
@@ -8,6 +15,7 @@ import { useAccountStore } from "../../src/store/useAccountStore";
 import { useThemeStore } from "../../src/store/useThemeStore";
 import { useUiStore } from "../../src/store/useUiStore";
 import { formatCurrency } from "../../src/hooks/useCurrency";
+import { CardForm } from "../../src/components/CardForm";
 import { lightColors, darkColors } from "@ctrl-custo/ui";
 import type { Colors } from "@ctrl-custo/ui";
 import type { Card } from "@ctrl-custo/core";
@@ -29,7 +37,8 @@ export default function Cards() {
 
   const { cards, load: loadCards } = useCardStore();
   const { accounts, load: loadAccounts } = useAccountStore();
-  const [loading, setLoading] = React.useState(true);
+  const [loading, setLoading] = useState(true);
+  const [formVisible, setFormVisible] = useState(false);
 
   const loadAll = useCallback(async () => {
     const db = getDatabase();
@@ -55,7 +64,7 @@ export default function Cards() {
         <FlatList
           data={cards}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 24 }}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 100 }}
           ListEmptyComponent={
             <View style={s.empty}>
               <Ionicons name="card-outline" size={40} color={colors.textDisabled} />
@@ -72,6 +81,21 @@ export default function Cards() {
           )}
         />
       )}
+
+      <TouchableOpacity
+        style={[s.fab, { bottom: insets.bottom + 24 }]}
+        onPress={() => setFormVisible(true)}
+      >
+        <Ionicons name="add" size={28} color="#fff" />
+      </TouchableOpacity>
+
+      <CardForm
+        visible={formVisible}
+        onClose={() => setFormVisible(false)}
+        db={getDatabase()}
+        accounts={accounts}
+        isDark={isDark}
+      />
     </View>
   );
 }
@@ -150,4 +174,19 @@ const styles = (colors: Colors) =>
       paddingTop: 8,
     },
     cardDateText: { fontSize: 11, color: "rgba(255,255,255,0.7)" },
+    fab: {
+      position: "absolute",
+      right: 20,
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: colors.primary,
+      justifyContent: "center",
+      alignItems: "center",
+      elevation: 6,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.25,
+      shadowRadius: 4,
+    },
   });

@@ -13,10 +13,10 @@
   "dependencies": {
     "@ctrl-custo/core": "workspace:*",
     "@ctrl-custo/ui": "workspace:*",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "react": "19.1.4",
+    "react-dom": "19.1.4",
     "react-native-web": "^0.19.13",
-    "react-native-svg": "^15.8.0",
+    "react-native-svg": "~15.12.1",
     "react-router-dom": "^6.28.0",
     "zustand": "^5.0.0",
     "sql.js": "^1.12.0",

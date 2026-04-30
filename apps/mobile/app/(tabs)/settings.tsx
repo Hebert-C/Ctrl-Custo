@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { View, Text, ScrollView, StyleSheet, Switch } from "react-native";
+import { View, Text, ScrollView, StyleSheet, Switch, TouchableOpacity } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import * as LocalAuthentication from "expo-local-authentication";
@@ -9,6 +9,8 @@ import { useCategoryStore } from "../../src/store/useCategoryStore";
 import { useThemeStore } from "../../src/store/useThemeStore";
 import { useUiStore } from "../../src/store/useUiStore";
 import { formatCurrency } from "../../src/hooks/useCurrency";
+import { AccountForm } from "../../src/components/AccountForm";
+import { CategoryForm } from "../../src/components/CategoryForm";
 import { lightColors, darkColors } from "@ctrl-custo/ui";
 import type { Colors } from "@ctrl-custo/ui";
 import type { Account, Category } from "@ctrl-custo/core";
@@ -24,6 +26,10 @@ export default function Settings() {
   const { categories, load: loadCategories } = useCategoryStore();
 
   const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [accountFormVisible, setAccountFormVisible] = useState(false);
+  const [categoryFormVisible, setCategoryFormVisible] = useState(false);
+  const [editingAccount, setEditingAccount] = useState<Account | undefined>(undefined);
+  const [editingCategory, setEditingCategory] = useState<Category | undefined>(undefined);
 
   const loadAll = useCallback(async () => {
     const db = getDatabase();
@@ -49,6 +55,26 @@ export default function Settings() {
     if (result.success) {
       setBiometricEnabled(true);
     }
+  }
+
+  function openNewAccount() {
+    setEditingAccount(undefined);
+    setAccountFormVisible(true);
+  }
+
+  function openEditAccount(account: Account) {
+    setEditingAccount(account);
+    setAccountFormVisible(true);
+  }
+
+  function openNewCategory() {
+    setEditingCategory(undefined);
+    setCategoryFormVisible(true);
+  }
+
+  function openEditCategory(category: Category) {
+    setEditingCategory(category);
+    setCategoryFormVisible(true);
   }
 
   const s = styles(colors);
@@ -110,7 +136,13 @@ export default function Settings() {
       </View>
 
       {/* Contas */}
-      <Text style={s.sectionLabel}>CONTAS ({accounts.length})</Text>
+      <View style={s.sectionHeader}>
+        <Text style={s.sectionLabel}>CONTAS ({accounts.length})</Text>
+        <TouchableOpacity style={s.addBtn} onPress={openNewAccount}>
+          <Ionicons name="add" size={18} color={colors.primary} />
+          <Text style={s.addBtnText}>Nova conta</Text>
+        </TouchableOpacity>
+      </View>
       <View style={s.section}>
         {accounts.length === 0 ? (
           <Text style={s.emptySection}>Nenhuma conta cadastrada</Text>
@@ -118,14 +150,20 @@ export default function Settings() {
           accounts.map((acc, i) => (
             <React.Fragment key={acc.id}>
               {i > 0 && <View style={s.divider} />}
-              <AccountRow account={acc} colors={colors} />
+              <AccountRow account={acc} colors={colors} onEdit={() => openEditAccount(acc)} />
             </React.Fragment>
           ))
         )}
       </View>
 
       {/* Categorias */}
-      <Text style={s.sectionLabel}>CATEGORIAS ({categories.length})</Text>
+      <View style={s.sectionHeader}>
+        <Text style={s.sectionLabel}>CATEGORIAS ({categories.length})</Text>
+        <TouchableOpacity style={s.addBtn} onPress={openNewCategory}>
+          <Ionicons name="add" size={18} color={colors.primary} />
+          <Text style={s.addBtnText}>Nova categoria</Text>
+        </TouchableOpacity>
+      </View>
       <View style={s.section}>
         {categories.length === 0 ? (
           <Text style={s.emptySection}>Nenhuma categoria cadastrada</Text>
@@ -133,11 +171,26 @@ export default function Settings() {
           categories.map((cat, i) => (
             <React.Fragment key={cat.id}>
               {i > 0 && <View style={s.divider} />}
-              <CategoryRow category={cat} colors={colors} />
+              <CategoryRow category={cat} colors={colors} onEdit={() => openEditCategory(cat)} />
             </React.Fragment>
           ))
         )}
       </View>
+
+      <AccountForm
+        visible={accountFormVisible}
+        onClose={() => setAccountFormVisible(false)}
+        db={getDatabase()}
+        isDark={isDark}
+        account={editingAccount}
+      />
+      <CategoryForm
+        visible={categoryFormVisible}
+        onClose={() => setCategoryFormVisible(false)}
+        db={getDatabase()}
+        isDark={isDark}
+        category={editingCategory}
+      />
     </ScrollView>
   );
 }
@@ -170,7 +223,15 @@ function SettingRow({
   );
 }
 
-function AccountRow({ account, colors }: { account: Account; colors: Colors }) {
+function AccountRow({
+  account,
+  colors,
+  onEdit,
+}: {
+  account: Account;
+  colors: Colors;
+  onEdit: () => void;
+}) {
   const s = styles(colors);
   return (
     <View style={s.settingRow}>
@@ -181,14 +242,23 @@ function AccountRow({ account, colors }: { account: Account; colors: Colors }) {
         <Text style={s.settingLabel}>{account.name}</Text>
         <Text style={s.settingSubtitle}>{account.bankName ?? account.type}</Text>
       </View>
-      <Text style={{ fontSize: 13, color: colors.textSecondary }}>
-        {formatCurrency(account.balance)}
-      </Text>
+      <Text style={s.rowBalance}>{formatCurrency(account.balance)}</Text>
+      <TouchableOpacity style={s.editBtn} onPress={onEdit}>
+        <Ionicons name="pencil" size={16} color={colors.primary} />
+      </TouchableOpacity>
     </View>
   );
 }
 
-function CategoryRow({ category, colors }: { category: Category; colors: Colors }) {
+function CategoryRow({
+  category,
+  colors,
+  onEdit,
+}: {
+  category: Category;
+  colors: Colors;
+  onEdit: () => void;
+}) {
   const s = styles(colors);
   const typeLabel =
     category.type === "income" ? "receita" : category.type === "expense" ? "despesa" : "ambos";
@@ -202,6 +272,9 @@ function CategoryRow({ category, colors }: { category: Category; colors: Colors 
         <Text style={s.settingLabel}>{category.name}</Text>
         <Text style={s.settingSubtitle}>{typeLabel}</Text>
       </View>
+      <TouchableOpacity style={s.editBtn} onPress={onEdit}>
+        <Ionicons name="pencil" size={16} color={colors.primary} />
+      </TouchableOpacity>
     </View>
   );
 }
@@ -210,14 +283,29 @@ const styles = (colors: Colors) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background, paddingHorizontal: 16 },
     pageTitle: { fontSize: 22, fontWeight: "700", color: colors.textPrimary, marginBottom: 16 },
+    sectionHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginTop: 16,
+      marginBottom: 6,
+    },
     sectionLabel: {
       fontSize: 11,
       fontWeight: "600",
       color: colors.textSecondary,
       letterSpacing: 0.8,
-      marginBottom: 6,
-      marginTop: 16,
     },
+    addBtn: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: 20,
+      backgroundColor: colors.primarySurface,
+    },
+    addBtnText: { fontSize: 13, color: colors.primary, fontWeight: "600" },
     section: {
       backgroundColor: colors.surface,
       borderRadius: 12,
@@ -240,6 +328,12 @@ const styles = (colors: Colors) =>
     settingText: { flex: 1 },
     settingLabel: { fontSize: 15, color: colors.textPrimary },
     settingSubtitle: { fontSize: 12, color: colors.textSecondary, marginTop: 1 },
+    rowBalance: { fontSize: 13, color: colors.textSecondary, marginRight: 8 },
+    editBtn: {
+      padding: 6,
+      borderRadius: 8,
+      backgroundColor: colors.primarySurface,
+    },
     emptySection: {
       fontSize: 13,
       color: colors.textDisabled,
