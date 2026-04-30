@@ -1,0 +1,10 @@
+{
+  "extends": "@ctrl-custo/config/tsconfig.react-native.json",
+  "compilerOptions": {
+    "paths": {
+      "@ctrl-custo/core": ["../../packages/core/src/index.ts"],
+      "@ctrl-custo/ui": ["../../packages/ui/src/index.ts"]
+    }
+  },
+  "include": ["app", "src", "*.ts", "*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"]
+}

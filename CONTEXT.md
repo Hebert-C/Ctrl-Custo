@@ -6,51 +6,100 @@
 - [x] Fase 1 — packages/core (lógica + banco + testes)
 - [x] Fase 2 — packages/ui (design system)
 - [x] Fase 3 — apps/web (versão desktop)
-- [ ] Fase 4 — apps/mobile (versão celular)
+- [x] Fase 4 — apps/mobile (versão celular) ← estrutura completa criada
 - [ ] Fase 5 — CI/CD e deploy
 
 ## Última tarefa concluída
 
-> Fix do erro ESM/CJS do sql.js no browser: movido para `optimizeDeps.include`, WASM copiado para `apps/web/public/`, `createDatabase` aceita `locateFile` opcional, `getDatabase` passa `locateFile: (file) => '/' + file`. App web rodando sem erros de importação.
+> Fase 4 implementada: estrutura completa do `apps/mobile` com Expo SDK 54 + Expo Router v5.
+> `packages/core` teve `CoreDatabase` generalizado para `BaseSQLiteDatabase<'sync', any, typeof schema>`,
+> compatível com sql.js (testes/web) e expo-sqlite (mobile). Todos os 31 testes seguem passando.
+>
+> **Pendência bloqueante:** erro de bundling no Metro (veja seção abaixo). A correção está diagnosticada
+> mas ainda não aplicada — nenhum arquivo de configuração foi alterado.
 
-## Próximo passo — Fase 4: apps/mobile
+## Próximo passo — Fase 4: corrigir bundling e testar
 
-> Testes web concluídos (usuário validou o fluxo: Configurações → Contas/Categorias → Transações → Dashboard).
-> Iniciar **Fase 4 — apps/mobile** com Expo SDK 52 + Expo Router.
+### Erro de bundling (BLOQUEANTE)
 
-### Checklist Fase 4
+**Erro:**
 
-- [ ] Criar `apps/mobile` com `create-expo-app` (template blank TypeScript)
-- [ ] Configurar Expo Router (tab bar: Dashboard, Transações, Cartões, Metas, Configurações)
-- [ ] Instalar e configurar expo-sqlite + Drizzle ORM (substituir sql.js — Expo tem SQLite nativo)
-- [ ] Adaptar `packages/core` para suportar expo-sqlite via adapter (ou criar `packages/core-mobile`)
-- [ ] Reutilizar componentes de `packages/ui` (já usam React Native primitivos)
-- [ ] Bottom sheet para entrada rápida de transação
-- [ ] Tema claro/escuro via `useThemeStore` (mesmo store do web)
-- [ ] Modo oculto (esconder valores)
-- [ ] Biometria + PIN (expo-local-authentication)
+```
+Android Bundling failed
+ERROR Error: ...VirtualViewExperimentalNativeComponent.js:
+Unable to determine event arguments for "onModeChange"
+at throwIfArgumentPropsAreNull (@react-native/codegen/...)
+```
 
-### Ordem de implementação sugerida
+**Causa raiz diagnosticada:**
+O pnpm com `autoInstallPeers: true` instalou `react-native@0.85.2` como peer implícito em
+`apps/web` (via `react-native-svg`) e `packages/core` (via `drizzle-orm` → `expo-sqlite`).
+Isso gerou três versões simultâneas de `@react-native/codegen` (0.79.7, 0.81.5, 0.85.2)
+no lockfile. O Metro, ao traversar os symlinks do pnpm pelo monorepo, encontra versões
+incompatíveis e falha no codegen.
 
-1. Estrutura base (expo + router + tsconfig)
-2. Banco de dados (expo-sqlite + drizzle adapter)
-3. Stores Zustand (reutilizar lógica do web, trocar `CoreDatabase` pelo adapter mobile)
-4. Telas principais (Dashboard, Transações, Configurações)
-5. Funcionalidades extras (biometria, modo oculto)
+**Dois problemas encadeados:**
+
+1. **Ausência de `.npmrc`** com `node-linker=hoisted` — sem isso o pnpm usa symlinks que o Metro não resolve corretamente
+2. **Lockfile desatualizado** — o override `react-native: ~0.79.0` já está no `package.json` raiz mas nunca foi aplicado via `pnpm install`
+
+**Plano de correção (aguardando execução):**
+
+Passo 1 — Criar `.npmrc` na raiz:
+
+```
+node-linker=hoisted
+```
+
+Passo 2 — Reinstalar dependências (PowerShell):
+
+```powershell
+Remove-Item -Recurse -Force node_modules, pnpm-lock.yaml -ErrorAction SilentlyContinue
+pnpm install
+npx expo install --fix
+npx expo-doctor
+```
+
+Passo 3 — Limpar cache do Metro:
+
+```powershell
+Remove-Item -Recurse -Force $env:TEMP\metro-cache, $env:TEMP\haste-map-* -ErrorAction SilentlyContinue
+```
+
+Nenhuma alteração de código de aplicação é necessária. Apenas configuração e reinstalação.
+
+### Checklist restante Fase 4
+
+- [x] Criar `apps/mobile` com Expo SDK 54 + Expo Router v5
+- [x] Configurar tab bar: Dashboard, Transações, Cartões, Metas, Configurações
+- [x] Banco de dados: expo-sqlite + Drizzle ORM (substituiu sql.js)
+- [x] `packages/core` compatível com expo-sqlite (CoreDatabase genérico)
+- [x] Reutilizar stores Zustand (lógica idêntica ao web)
+- [x] Bottom sheet (Modal nativo) para entrada rápida de transação
+- [x] Tema claro/escuro via `useThemeStore` + `AsyncStorage`
+- [x] Modo oculto (esconder valores) via `useUiStore`
+- [x] Biometria + PIN via `expo-local-authentication` (Settings)
+- [ ] **BLOQUEANTE: corrigir erro de bundling Metro** (ver acima)
+- [ ] Assets de ícone e splash screen
+- [ ] Teste em emulador Android / simulador iOS
+- [ ] Ajustes de UI após testes visuais
 
 ## Decisões técnicas tomadas
 
 - Monorepo com Turborepo + pnpm workspaces
 - TypeScript strict em todo o projeto
 - Drizzle ORM + SQLite (web e mobile) — valores monetários em centavos (integer)
-- Zustand para estado global (stores: transaction, account, category, card, goal, theme)
+- Zustand para estado global (stores: transaction, account, category, card, goal, theme, ui)
 - Victory Native para gráficos (BarChart, LineChart, PieChart em packages/ui)
-- Expo Router para navegação mobile
+- Expo Router v4 para navegação mobile (file-based routing)
 - Vitest para testes unitários
 - ESLint 8 + Prettier 3 + Husky 9 (pre-commit com lint-staged)
 - Playwright para testes e2e (Fase 5)
-- `crypto.randomUUID()` via Web Crypto API (funciona em browser e Node.js 18+)
+- `crypto.randomUUID()` via Web Crypto API (browser, Node.js 18+, Hermes/RN 0.74+)
 - `packages/core/tsconfig.json` inclui `"lib": ["ES2022", "DOM"]` para acesso ao global `crypto`
+- `CoreDatabase` usa `BaseSQLiteDatabase<'sync', any, typeof schema>` para ser agnóstico ao driver
+- Mobile usa `expo-sqlite openDatabaseSync` (síncrono, compatível com o tipo CoreDatabase)
+- Persist de tema e UI no mobile via Zustand + AsyncStorage
 
 ## O que foi feito em cada fase
 
@@ -61,54 +110,53 @@
 - `turbo.json` com pipeline de build/test/lint
 - `tsconfig.json` raiz (strict, ES2022)
 - `.gitignore` completo
-- Git inicializado na raiz, remote apontando para https://github.com/Hebert-C/Ctrl-Custo
 
 ### Fase 1 — packages/core ✅
 
 - **Tipos TypeScript:** `transaction.ts`, `category.ts`, `account.ts`, `card.ts`, `goal.ts`, `investment.ts`
 - **Schema Drizzle:** `schema.ts` com tabelas categories, accounts, cards, transactions, goals, investments
 - **Banco:** `db/index.ts` com createDatabase usando sql.js (WASM — funciona em browser e Node.js)
-- **Services:**
-  - `TransactionService` — CRUD + filtros + parcelas (createInstallments)
-  - `CategoryService` — CRUD de categorias com suporte a subcategorias
-  - `AccountService` — CRUD de contas bancárias + getTotalBalance
-  - `ReportService` — getPeriodSummary, getExpensesByCategory, getMonthlyEvolution
-  - `ExportService` — exportação para CSV e JSON
+- **Services:** TransactionService, CategoryService, AccountService, ReportService, ExportService
 - **Testes Vitest:** 31 testes, todos passando (5 arquivos de teste)
-- `index.ts` exportando tipos, schema tables, services e tipos dos reports
 
 ### Fase 2 — packages/ui ✅
 
 - **Design tokens:** `colors.ts` (light/dark), `typography.ts`, `spacing.ts`
-- **Componentes:** Button, Input, Card, Badge, Modal, CurrencyInput (máscara R$ brasileira)
+- **Componentes:** Button, Input, Card, Badge, Modal, CurrencyInput
 - **Gráficos Victory Native:** BarChart, LineChart, PieChart
 
 ### Fase 3 — apps/web ✅
 
 - **Infra:** Vite + React 19 + TypeScript + TailwindCSS
-- **Banco web:** sql.js via WASM (mesmo engine do core)
+- **Banco web:** sql.js via WASM (singleton em `src/db/index.ts`)
 - **Stores Zustand:** useTransactionStore, useAccountStore, useCategoryStore, useCardStore, useGoalStore, useThemeStore
-- **Hooks:** useCurrency (formatação BRL), useReport (cálculos de período/mês)
 - **Layout:** Header, Sidebar, Layout wrapper, App.tsx com React Router
-- **Páginas:** Dashboard, Transactions (filtros + formulário), Cards, Goals, Reports
+- **Páginas:** Dashboard, Transactions, Cards, Goals, Reports, Settings
+
+### Fase 4 — apps/mobile ⚠️ (estrutura pronta, bundling bloqueado)
+
+- **Infra:** Expo SDK 54 + Expo Router v5 + TypeScript
+- **Banco mobile:** expo-sqlite (openDatabaseSync) + Drizzle ORM — persistência nativa em arquivo
+- **Stores Zustand:** idênticos ao web + useUiStore (modo oculto + biometria)
+- **Navegação:** Tab bar com 5 telas (Expo Router file-based)
+- **Telas:** Dashboard, Transactions (com bottom sheet), Cards, Goals, Settings
+- **Funcionalidades:** modo oculto, biometria (expo-local-authentication), tema claro/escuro persistido
 
 ### packages/config ✅
 
-- `tsconfig.base.json` — TypeScript strict base
-- `tsconfig.react.json` — estende base, adiciona React/DOM
-- `tsconfig.react-native.json` — estende base, adiciona configurações React Native
+- `tsconfig.base.json`, `tsconfig.react.json`, `tsconfig.react-native.json`
 
 ### Qualidade de código ✅
 
 - `.eslintrc.cjs` raiz com suporte a TypeScript e React
 - `.prettierrc` com configurações padrão (printWidth 100, trailing comma ES5, LF)
 - `.husky/pre-commit` rodando lint-staged antes de cada commit
-- `lint-staged` formatando `.ts/.tsx` com ESLint + Prettier
 
 ## Problemas conhecidos / pendências
 
+- **[BLOQUEANTE] Erro de bundling Metro no mobile** — causa raiz e plano de correção documentados na seção "Próximo passo". Correção: criar `.npmrc` com `node-linker=hoisted` + reinstalar dependências. Nenhum código de aplicação precisa mudar.
 - 6 warnings de `react-hooks/exhaustive-deps` em páginas do web (padrão intencional — stores Zustand são referências estáveis)
-- Banco em memória: resets ao recarregar a página (persistência via localStorage não implementada)
-- `apps/mobile` vazio — Fase 4 não iniciada
-- Não há testes e2e (Playwright — Fase 5)
+- Banco web em memória: resets ao recarregar a página (persistência via localStorage não implementada)
+- `apps/mobile/assets/` precisa ser criado com ícones/splash antes de rodar o Expo
 - CI/CD (GitHub Actions) não configurado (Fase 5)
+- Testes e2e Playwright não implementados (Fase 5)

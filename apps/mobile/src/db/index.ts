@@ -1,31 +1,14 @@
-import { drizzle } from "drizzle-orm/sql-js";
-import initSqlJs from "sql.js";
-import type { BaseSQLiteDatabase } from "drizzle-orm/sqlite-core";
-import * as schema from "./schema";
+import { drizzle } from "drizzle-orm/expo-sqlite";
+import * as SQLite from "expo-sqlite";
+import { categories, accounts, cards, transactions, goals, investments } from "@ctrl-custo/core";
+import type { CoreDatabase } from "@ctrl-custo/core";
 
-// TRunResult uses `any` intentionally — driver-agnostic type that accepts both sql.js and expo-sqlite
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type CoreDatabase = BaseSQLiteDatabase<"sync", any, typeof schema>;
+const schema = { categories, accounts, cards, transactions, goals, investments };
 
-interface DatabaseConfig {
-  locateFile?: (file: string) => string;
-}
+let instance: CoreDatabase | null = null;
 
-// Cria e inicializa o banco SQLite em WASM (funciona em Node.js e browser)
-export async function createDatabase(config: DatabaseConfig = {}) {
-  const SQL = await initSqlJs(config);
-  const client = new SQL.Database();
-
-  // WAL não existe no sql.js (WASM), mas foreign keys precisam ser habilitadas
-  client.run("PRAGMA foreign_keys = ON;");
-
-  runMigrations(client);
-
-  return drizzle(client, { schema }) as unknown as CoreDatabase;
-}
-
-function runMigrations(client: { exec: (sql: string) => void; run: (sql: string) => void }): void {
-  client.exec(`
+function runMigrations(client: SQLite.SQLiteDatabase): void {
+  client.execSync(`
     CREATE TABLE IF NOT EXISTS categories (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
@@ -111,7 +94,16 @@ function runMigrations(client: { exec: (sql: string) => void; run: (sql: string)
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
+
+    PRAGMA foreign_keys = ON;
   `);
 }
 
-export { schema };
+// Singleton síncrono — abre o banco uma vez e reutiliza
+export function getDatabase(): CoreDatabase {
+  if (instance) return instance;
+  const client = SQLite.openDatabaseSync("ctrl-custo.db");
+  runMigrations(client);
+  instance = drizzle(client, { schema }) as unknown as CoreDatabase;
+  return instance;
+}
