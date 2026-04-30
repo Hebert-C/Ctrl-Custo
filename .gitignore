@@ -36,6 +36,9 @@ web-build/
 .env.local
 .env.*.local
 
+# Drizzle migrations (geradas, não comitar)
+apps/api/drizzle/
+
 # Logs
 logs
 *.log

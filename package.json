@@ -5,6 +5,7 @@
   "scripts": {
     "dev:web": "pnpm --filter web dev",
     "dev:mobile": "pnpm --filter mobile start",
+    "dev:api": "pnpm --filter @ctrl-custo/api dev",
     "build:web": "pnpm --filter web build",
     "test": "pnpm --filter @ctrl-custo/core test",
     "lint": "pnpm -r lint",
