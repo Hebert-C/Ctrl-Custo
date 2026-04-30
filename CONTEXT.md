@@ -2,14 +2,10 @@
 
 ## Status Atual
 
-- [x] Fase 0 — Monorepo & estrutura
-- [x] Fase 1 — packages/core (lógica + banco + testes)
-- [x] Fase 2 — packages/ui (design system)
-- [x] Fase 3 — apps/web (versão desktop)
 - [x] Fase 0 — Monorepo & estrutura ← branch: `main`
-- [x] Fase 1 — packages/core ← branch: `main`
-- [x] Fase 2 — packages/ui ← branch: `main`
-- [x] Fase 3 — apps/web ← branch: `main`
+- [x] Fase 1 — packages/core (lógica + banco + testes) ← branch: `main`
+- [x] Fase 2 — packages/ui (design system) ← branch: `main`
+- [x] Fase 3 — apps/web (versão desktop) ← branch: `main`
 - [x] Fase 4 — apps/mobile ← branch: `feature/mobile`
 - [x] Fase 5 — Backend API com segurança (apps/api) ← branch: `feature/phase-5-api`
 - [ ] Fase 6 — Migração do banco para PostgreSQL ← branch: `feature/phase-6-pg-migration`
