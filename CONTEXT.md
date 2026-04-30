@@ -8,7 +8,7 @@
 - [x] Fase 3 — apps/web (versão desktop) ← branch: `main`
 - [x] Fase 4 — apps/mobile ← branch: `feature/mobile`
 - [x] Fase 5 — Backend API com segurança (apps/api) ← branch: `feature/phase-5-api`
-- [ ] Fase 6 — Migração do banco para PostgreSQL ← branch: `feature/phase-6-pg-migration`
+- [x] Fase 6 — Migrations PostgreSQL ← branch: `feature/phase-6-pg-migration`
 - [ ] Fase 7 — Web app consome API (remove sql.js) ← branch: `feature/phase-7-web-api`
 - [ ] Fase 8 — Mobile app consome API (remove expo-sqlite) ← branch: `feature/phase-8-mobile-api`
 - [ ] Fase 9 — Oracle Cloud: infra, deploy e hardening ← branch: `feature/phase-9-cloud-deploy`
@@ -43,19 +43,18 @@ Cada fase é desenvolvida em uma branch dedicada e mergeada via PR ao `main`:
 
 ## Última tarefa concluída
 
-> **Fase 5** — Backend API (`apps/api`) implementado. Branch: `feature/phase-5-api`.
+> **Fase 6** — Migrations PostgreSQL. Branch: `feature/phase-6-pg-migration`.
 >
-> Criado `apps/api` completo com:
+> - `apps/api/src/db/migrate.ts` — script que executa as migrations via `pnpm db:migrate`
+> - `apps/api/drizzle/0000_violet_shriek.sql` — migration inicial: 7 enums PG + 7 tabelas com FKs e `userId`
+> - `apps/api/package.json` — script `db:migrate` atualizado para usar `tsx src/db/migrate.ts`
+> - `.gitignore` — corrigido: commitam-se os `.sql`, apenas `drizzle/meta/` é ignorada
 >
-> - **Stack:** Hono + Drizzle (PostgreSQL) + JWT (access 15min + refresh 7 dias) + Argon2id
-> - **Schema PG:** tabela `users` + todas as entidades com `userId` (isolamento por usuário)
-> - **Auth:** register, login (rate limit + lockout após 10 falhas), refresh, logout
-> - **Segurança:** security headers, CORS restrito, limite 1 MB de body, `userId` sempre do JWT
-> - **Rotas:** CRUD completo para accounts, categories, cards, transactions, goals
-> - **Transações:** atualização de saldo em DB transaction com rollback automático
-> - **Metas:** depósito com auto-complete ao atingir alvo
-> - **Reports:** `GET /reports/summary?month=YYYY-MM`
-> - **Config:** `.env.example` documentado, `drizzle.config.ts`, `pnpm dev:api` no root
+> **Comandos disponíveis:**
+>
+> - `pnpm --filter @ctrl-custo/api db:generate` — gera novo arquivo SQL ao mudar o schema
+> - `pnpm --filter @ctrl-custo/api db:push` — aplica schema direto no banco (dev)
+> - `pnpm --filter @ctrl-custo/api db:migrate` — aplica migrations em ordem (produção)
 
 ## Decisão arquitetural — sincronização entre dispositivos
 
@@ -68,44 +67,41 @@ dispositivos. A solução é um servidor HTTP com PostgreSQL centralizado.
 
 ---
 
-## Próximo passo — Fase 6: Migração do banco para PostgreSQL
+## Próximo passo — Fase 7: Web app consome API
 
-### Contexto para iniciar a Fase 6
+### Contexto para iniciar a Fase 7
 
-Branch: `feature/phase-6-pg-migration` (criar a partir de `main`)
+Branch: `feature/phase-7-web-api` (criar a partir de `feature/phase-6-pg-migration`)
 
-A Fase 5 criou o schema PostgreSQL em `apps/api/src/db/schema.ts`. A Fase 6 adapta
-`packages/core` para que seus services e tipos funcionem com PostgreSQL (além de manter
-compatibilidade SQLite para os testes Vitest existentes).
+A Fase 7 remove o `sql.js` do `apps/web` e faz o app consumir a API REST criada na Fase 5.
+Requer que a API esteja rodando localmente (`pnpm dev:api`) durante o desenvolvimento.
 
 Arquivos relevantes:
 
-- `packages/core/src/db/schema.ts` — schema SQLite atual (a adaptar)
-- `packages/core/src/db/index.ts` — `createDatabase` com sql.js (a tornar opcional)
-- `packages/core/src/index.ts` — barrel de exports
-- `apps/api/src/db/schema.ts` — schema PG já criado na Fase 5 (referência)
+- `apps/web/src/db/index.ts` — singleton sql.js a remover
+- `apps/web/src/stores/` — todos os stores a migrar para fetch
+- `apps/web/src/App.tsx` — adicionar rota `/login`
+- `apps/web/vite.config.ts` — remover CORS headers (não mais necessários)
+- `apps/web/public/sql-wasm.*` — arquivos WASM a remover
 
-### Prompt de início de sessão (Fase 6)
+### Prompt de início de sessão (Fase 7)
 
-> "Vamos iniciar a Fase 6 do Ctrl-Custo. Branch: `feature/phase-6-pg-migration`.
-> O objetivo é adaptar `packages/core` para suportar PostgreSQL. A Fase 5 já criou o schema
-> PG em `apps/api/src/db/schema.ts`. Agora precisamos: (1) criar um schema PG em
-> `packages/core/src/db/schema.pg.ts`, (2) tornar `createDatabase` agnóstico ao driver,
-> (3) garantir que os 31 testes Vitest continuem passando com SQLite. Siga o checklist do
-> CONTEXT.md."
+> "Vamos iniciar a Fase 7 do Ctrl-Custo. Branch: `feature/phase-7-web-api`.
+> O objetivo é substituir o banco local sql.js do `apps/web` por chamadas HTTP à API REST
+> (Fase 5). Remova `src/db/index.ts`, crie `src/lib/api.ts` com cliente fetch + interceptor JWT,
+> adicione tela de login/registro, e migre os stores Zustand para chamar a API.
+> Siga o checklist do CONTEXT.md."
 
 ---
 
-## Fase 6 — Migração do banco para PostgreSQL
+## Fase 6 — Migrations PostgreSQL ✅
 
-### Checklist Fase 6
+### O que foi feito
 
-- [ ] Adicionar `drizzle-orm/postgres-js` e `postgres` ao `packages/core`
-- [ ] Criar variante do schema compatível com PG (tipos: `uuid`, `text`, `integer`, `timestamp`)
-- [ ] Criar arquivo de migrations Drizzle para PG (`packages/core/src/db/migrations/`)
-- [ ] Remover dependência do `sql.js` do `packages/core` (mover para `apps/web` como devDependency, ou remover)
-- [ ] Adaptar `CoreDatabase` para aceitar tanto PG quanto SQLite (para testes)
-- [ ] Atualizar testes Vitest para usar PG in-memory (ex: `pg-mem`) ou manter SQLite só em testes
+- `apps/api/src/db/migrate.ts` — script que aplica migrations em ordem (produção)
+- `apps/api/drizzle/0000_violet_shriek.sql` — migration inicial com 7 enums PG e 7 tabelas
+- Script `db:migrate` usa `tsx src/db/migrate.ts` (independente do drizzle-kit CLI)
+- `.gitignore` corrigido: arquivos `.sql` commitados, apenas `drizzle/meta/` ignorada
 
 ---
 
