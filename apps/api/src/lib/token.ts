@@ -16,11 +16,15 @@ export async function signRefreshToken(userId: string) {
 }
 
 export async function verifyAccessToken(token: string) {
-  return verify(token, ACCESS_SECRET) as Promise<{ sub: string; exp: number; iat: number }>;
+  return verify(token, ACCESS_SECRET, "HS256") as Promise<{
+    sub: string;
+    exp: number;
+    iat: number;
+  }>;
 }
 
 export async function verifyRefreshToken(token: string) {
-  const payload = (await verify(token, REFRESH_SECRET)) as {
+  const payload = (await verify(token, REFRESH_SECRET, "HS256")) as {
     sub: string;
     type: string;
     exp: number;

@@ -1,0 +1,42 @@
+name: Deploy Web
+
+on:
+  workflow_run:
+    workflows: [CI]
+    branches: [main]
+    types: [completed]
+
+jobs:
+  deploy:
+    name: Build & deploy web to Oracle Cloud
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build web
+        working-directory: apps/web
+        run: pnpm build
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+
+      - name: Deploy dist via rsync
+        uses: burnett01/rsync-deployments@7.0.1
+        with:
+          switches: -avz --delete
+          path: apps/web/dist/
+          remote_path: /home/deploy/ctrl-custo/apps/web/dist/
+          remote_host: ${{ secrets.ORACLE_HOST }}
+          remote_user: ${{ secrets.ORACLE_USER }}
+          remote_key: ${{ secrets.ORACLE_SSH_KEY }}
