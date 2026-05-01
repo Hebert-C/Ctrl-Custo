@@ -6,7 +6,6 @@ import { useTransactionStore } from "../../store/useTransactionStore";
 import { useCategoryStore } from "../../store/useCategoryStore";
 import { useAccountStore } from "../../store/useAccountStore";
 import { useCardStore } from "../../store/useCardStore";
-import { getDatabase } from "../../db/index";
 import { formatCurrency } from "../../hooks/useCurrency";
 import type { TransactionFilters } from "@ctrl-custo/core";
 
@@ -20,40 +19,31 @@ export function Transactions() {
   const { cards, load: loadCards } = useCardStore();
 
   useEffect(() => {
-    async function init() {
-      const db = await getDatabase();
-      await Promise.all([load(db), loadCats(db), loadAccs(db), loadCards(db)]);
-      setLoading(false);
-    }
-    init();
-  }, []);
+    Promise.all([load(), loadCats(), loadAccs(), loadCards()]).then(() => setLoading(false));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const categoriesById = Object.fromEntries(categories.map((c) => [c.id, c]));
   const accountsById = Object.fromEntries(accounts.map((a) => [a.id, a]));
 
   async function handleFilterChange(f: TransactionFilters) {
-    const db = await getDatabase();
-    await setFilters(db, f);
+    await setFilters(f);
   }
 
   async function handleClearFilters() {
-    const db = await getDatabase();
-    await clearFilters(db);
+    await clearFilters();
   }
 
-  async function handleSubmit(data: Parameters<typeof add>[1], installments: number) {
-    const db = await getDatabase();
+  async function handleSubmit(data: Parameters<typeof add>[0], installments: number) {
     if (installments > 1) {
-      await addInstallments(db, data, installments);
+      await addInstallments(data, installments);
     } else {
-      await add(db, data);
+      await add(data);
     }
   }
 
   async function handleDelete(id: string) {
     if (!confirm("Excluir esta transação?")) return;
-    const db = await getDatabase();
-    await remove(db, id);
+    await remove(id);
   }
 
   return (

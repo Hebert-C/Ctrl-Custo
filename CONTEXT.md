@@ -9,7 +9,7 @@
 - [x] Fase 4 — apps/mobile ← branch: `feature/mobile`
 - [x] Fase 5 — Backend API com segurança (apps/api) ← branch: `feature/phase-5-api`
 - [x] Fase 6 — Migrations PostgreSQL ← branch: `feature/phase-6-pg-migration`
-- [ ] Fase 7 — Web app consome API (remove sql.js) ← branch: `feature/phase-7-web-api`
+- [x] Fase 7 — Web app consome API (remove sql.js) ← branch: `feature/phase-7-web-api`
 - [ ] Fase 8 — Mobile app consome API (remove expo-sqlite) ← branch: `feature/phase-8-mobile-api`
 - [ ] Fase 9 — Oracle Cloud: infra, deploy e hardening ← branch: `feature/phase-9-cloud-deploy`
 - [ ] Fase 10 — CI/CD (GitHub Actions + EAS Build) ← branch: `feature/phase-10-cicd`
@@ -43,18 +43,17 @@ Cada fase é desenvolvida em uma branch dedicada e mergeada via PR ao `main`:
 
 ## Última tarefa concluída
 
-> **Fase 6** — Migrations PostgreSQL. Branch: `feature/phase-6-pg-migration`.
+> **Fase 7** — Web app consome API (remove sql.js). Branch: `feature/phase-7-web-api`.
 >
-> - `apps/api/src/db/migrate.ts` — script que executa as migrations via `pnpm db:migrate`
-> - `apps/api/drizzle/0000_violet_shriek.sql` — migration inicial: 7 enums PG + 7 tabelas com FKs e `userId`
-> - `apps/api/package.json` — script `db:migrate` atualizado para usar `tsx src/db/migrate.ts`
-> - `.gitignore` — corrigido: commitam-se os `.sql`, apenas `drizzle/meta/` é ignorada
->
-> **Comandos disponíveis:**
->
-> - `pnpm --filter @ctrl-custo/api db:generate` — gera novo arquivo SQL ao mudar o schema
-> - `pnpm --filter @ctrl-custo/api db:push` — aplica schema direto no banco (dev)
-> - `pnpm --filter @ctrl-custo/api db:migrate` — aplica migrations em ordem (produção)
+> - `apps/web/src/lib/api.ts` — cliente HTTP com interceptor JWT, retry automático de refresh token e redirecionamento para `/login` em caso de 401
+> - `apps/web/src/hooks/useAuth.ts` — store Zustand com login, register, logout e `tryRestore` (refresh silencioso na inicialização)
+> - `apps/web/src/pages/Login/index.tsx` — tela de login/cadastro (tabs Entrar / Criar conta)
+> - `apps/web/src/App.tsx` — rota `/login` adicionada, `RequireAuth` wrapper, `tryRestore` no boot
+> - Todos os Zustand stores migrados para chamar `api.ts` (sem mais parâmetro `db`)
+> - `apps/web/src/db/index.ts` removido (singleton sql.js)
+> - `apps/web/public/sql-wasm*.wasm` removidos
+> - `apps/web/vite.config.ts` — headers CORS `Cross-Origin-Opener-Policy` / `Cross-Origin-Embedder-Policy` removidos
+> - `apps/web/.env.example` — variável `VITE_API_URL` documentada
 
 ## Decisão arquitetural — sincronização entre dispositivos
 
@@ -67,30 +66,7 @@ dispositivos. A solução é um servidor HTTP com PostgreSQL centralizado.
 
 ---
 
-## Próximo passo — Fase 7: Web app consome API
-
-### Contexto para iniciar a Fase 7
-
-Branch: `feature/phase-7-web-api` (criar a partir de `feature/phase-6-pg-migration`)
-
-A Fase 7 remove o `sql.js` do `apps/web` e faz o app consumir a API REST criada na Fase 5.
-Requer que a API esteja rodando localmente (`pnpm dev:api`) durante o desenvolvimento.
-
-Arquivos relevantes:
-
-- `apps/web/src/db/index.ts` — singleton sql.js a remover
-- `apps/web/src/stores/` — todos os stores a migrar para fetch
-- `apps/web/src/App.tsx` — adicionar rota `/login`
-- `apps/web/vite.config.ts` — remover CORS headers (não mais necessários)
-- `apps/web/public/sql-wasm.*` — arquivos WASM a remover
-
-### Prompt de início de sessão (Fase 7)
-
-> "Vamos iniciar a Fase 7 do Ctrl-Custo. Branch: `feature/phase-7-web-api`.
-> O objetivo é substituir o banco local sql.js do `apps/web` por chamadas HTTP à API REST
-> (Fase 5). Remova `src/db/index.ts`, crie `src/lib/api.ts` com cliente fetch + interceptor JWT,
-> adicione tela de login/registro, e migre os stores Zustand para chamar a API.
-> Siga o checklist do CONTEXT.md."
+## Próximo passo — Fase 8: Mobile app consome API
 
 ---
 

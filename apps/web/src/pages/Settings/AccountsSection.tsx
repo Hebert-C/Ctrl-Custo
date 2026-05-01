@@ -1,6 +1,5 @@
 import { type FormEvent, useState } from "react";
 import { useAccountStore } from "../../store/useAccountStore";
-import { getDatabase } from "../../db/index";
 import type { Account, AccountType } from "@ctrl-custo/core";
 
 const ACCOUNT_TYPES: { value: AccountType; label: string }[] = [
@@ -81,7 +80,6 @@ export function AccountsSection() {
     setSaving(true);
     setError("");
     try {
-      const db = await getDatabase();
       const data = {
         name: form.name.trim(),
         type: form.type,
@@ -92,10 +90,10 @@ export function AccountsSection() {
         isArchived: false,
       };
       if (editing) {
-        await update(db, editing.id, data);
+        await update(editing.id, data);
         setEditing(null);
       } else {
-        await add(db, data);
+        await add(data);
       }
       setForm(DEFAULT_FORM);
     } catch {
@@ -107,13 +105,11 @@ export function AccountsSection() {
 
   async function handleRemove(id: string) {
     if (!confirm("Remover esta conta? Esta ação não pode ser desfeita.")) return;
-    const db = await getDatabase();
-    await remove(db, id);
+    await remove(id);
   }
 
   async function handleArchive(id: string) {
-    const db = await getDatabase();
-    await archive(db, id);
+    await archive(id);
   }
 
   return (

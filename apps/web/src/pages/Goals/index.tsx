@@ -1,7 +1,6 @@
 import { type FormEvent, useEffect, useState } from "react";
 import { Layout } from "../../components/Layout";
 import { useGoalStore } from "../../store/useGoalStore";
-import { getDatabase } from "../../db/index";
 import { formatCurrency, parseCurrencyInput, formatCurrencyInput } from "../../hooks/useCurrency";
 import type { NewGoal } from "@ctrl-custo/core";
 
@@ -20,19 +19,13 @@ export function Goals() {
   });
 
   useEffect(() => {
-    async function init() {
-      const db = await getDatabase();
-      await load(db);
-      setLoading(false);
-    }
-    init();
-  }, []);
+    load().then(() => setLoading(false));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleAdd(e: FormEvent) {
     e.preventDefault();
     if (!form.name || !form.targetAmount) return;
-    const db = await getDatabase();
-    await add(db, form as NewGoal);
+    await add(form as NewGoal);
     setShowForm(false);
     setForm({ status: "active", color: "#22C55E", icon: "🎯", currentAmount: 0 });
   }
@@ -40,8 +33,7 @@ export function Goals() {
   async function handleDeposit(goalId: string) {
     const cents = parseCurrencyInput(depositRaw);
     if (!cents) return;
-    const db = await getDatabase();
-    await deposit(db, goalId, cents);
+    await deposit(goalId, cents);
     setDepositGoalId(null);
     setDepositRaw("");
   }

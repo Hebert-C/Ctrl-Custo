@@ -4,7 +4,6 @@ import { AccountsSection } from "./AccountsSection";
 import { CategoriesSection } from "./CategoriesSection";
 import { useAccountStore } from "../../store/useAccountStore";
 import { useCategoryStore } from "../../store/useCategoryStore";
-import { getDatabase } from "../../db/index";
 
 type Tab = "accounts" | "categories";
 
@@ -20,13 +19,8 @@ export function Settings() {
   const { load: loadCategories } = useCategoryStore();
 
   useEffect(() => {
-    async function init() {
-      const db = await getDatabase();
-      await Promise.all([loadAccounts(db), loadCategories(db)]);
-      setLoading(false);
-    }
-    init();
-  }, []);
+    Promise.all([loadAccounts(), loadCategories()]).then(() => setLoading(false));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <Layout title="Configurações">

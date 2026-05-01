@@ -2,7 +2,6 @@ import { useEffect, useState, useMemo } from "react";
 import { Layout } from "../../components/Layout";
 import { useTransactionStore } from "../../store/useTransactionStore";
 import { useCategoryStore } from "../../store/useCategoryStore";
-import { getDatabase } from "../../db/index";
 import { lastNMonths, formatMonthLabel } from "../../hooks/useReport";
 import { formatCurrency } from "../../hooks/useCurrency";
 import { createExportService } from "@ctrl-custo/core";
@@ -14,18 +13,12 @@ export function Reports() {
   const { categories, load: loadCats } = useCategoryStore();
 
   useEffect(() => {
-    async function init() {
-      const db = await getDatabase();
-      await Promise.all([load(db), loadCats(db)]);
-      setLoading(false);
-    }
-    init();
-  }, []);
+    Promise.all([load(), loadCats()]).then(() => setLoading(false));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const months = lastNMonths(selectedMonths);
   const categoriesById = Object.fromEntries(categories.map((c) => [c.id, c]));
 
-  // Evolução mensal calculada no client
   const evolution = useMemo(() => {
     return months.map((month) => {
       const monthTxs = transactions.filter(
@@ -39,7 +32,6 @@ export function Reports() {
     });
   }, [transactions, months]);
 
-  // Top categorias do período completo
   const topCategories = useMemo(() => {
     const map: Record<string, number> = {};
     const start = months[0];
