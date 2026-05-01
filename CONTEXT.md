@@ -11,7 +11,7 @@
 - [x] Fase 6 — Migrations PostgreSQL ← branch: `feature/phase-6-pg-migration`
 - [x] Fase 7 — Web app consome API (remove sql.js) ← branch: `feature/phase-7-web-api`
 - [x] Fase 8 — Mobile app consome API (remove expo-sqlite) ← branch: `feature/phase-8-mobile-api`
-- [ ] Fase 9 — Oracle Cloud: infra, deploy e hardening ← branch: `feature/phase-9-cloud-deploy`
+- [x] Fase 9 — Oracle Cloud: infra, deploy e hardening ← branch: `feature/phase-9-cloud-deploy`
 - [ ] Fase 10 — CI/CD (GitHub Actions + EAS Build) ← branch: `feature/phase-10-cicd`
 - [ ] Fase 11 — Desktop Windows (Tauri — executável .exe) ← branch: `feature/phase-11-tauri`
 
@@ -43,19 +43,15 @@ Cada fase é desenvolvida em uma branch dedicada e mergeada via PR ao `main`:
 
 ## Última tarefa concluída
 
-> **Fase 8** — Mobile app consome API (remove expo-sqlite). Branch: `feature/phase-8-mobile-api`.
+> **Fase 9** — Oracle Cloud: infra, deploy e hardening. Branch: `feature/phase-9-cloud-deploy`.
 >
-> - `apps/mobile/src/lib/api.ts` — cliente HTTP com interceptor JWT, retry de refresh token, `setUnauthorizedHandler` para redirecionar ao login
-> - `apps/mobile/src/hooks/useAuth.ts` — store Zustand com login, register, logout e `tryRestore` usando `expo-secure-store`
-> - `apps/mobile/app/login.tsx` — tela de login/cadastro (React Native)
-> - `apps/mobile/app/_layout.tsx` — `tryRestore` no boot, `<Redirect>` para login se não autenticado
-> - Todos os Zustand stores migrados para chamar `api.ts` (sem parâmetro `db`)
-> - Todos os form components migrados (sem prop `db`)
-> - Todas as telas migradas (sem `getDatabase()`)
-> - `apps/mobile/src/db/index.ts` removido (singleton expo-sqlite)
-> - `metro.config.js` — stub do sql.js removido
-> - `expo-sqlite` e `drizzle-orm` removidos do `package.json`; `expo-secure-store ~14.0.1` adicionado
-> - `apps/mobile/.env.example` — variável `EXPO_PUBLIC_API_URL` documentada
+> - `deploy/setup.sh` — script de provisionamento completo: PostgreSQL 16, Node.js 20 via nvm, PM2, nginx, certbot, ufw, fail2ban, hardening SSH
+> - `deploy/deploy.sh` — script de deploy contínuo: `git pull` + `pnpm install --prod` + `db:migrate` + build web + `pm2 restart`
+> - `deploy/nginx.conf` — configuração nginx: HTTPS-only, TLS 1.2+, HSTS, proxy para API na porta 3000, arquivos estáticos do build React, cache de assets
+> - `deploy/backup.sh` — backup diário: `pg_dump | gzip` com retenção de 30 dias; hook opcional para Oracle Object Storage
+> - `deploy/fail2ban/jail.local` — regras fail2ban: SSH (ban 24h, max 3 tentativas) + API brute-force via nginx access log
+> - `deploy/fail2ban/ctrl-custo-api.conf` — filtro fail2ban para detectar 401/429 em `POST /api/auth/login`
+> - `apps/api/ecosystem.config.js` — PM2 ecosystem config: 1 instância, restart automático, logs separados
 
 ## Decisão arquitetural — sincronização entre dispositivos
 
@@ -68,7 +64,7 @@ dispositivos. A solução é um servidor HTTP com PostgreSQL centralizado.
 
 ---
 
-## Próximo passo — Fase 9: Oracle Cloud: infra, deploy e hardening
+## Próximo passo — Fase 10: CI/CD (GitHub Actions + EAS Build)
 
 ---
 
