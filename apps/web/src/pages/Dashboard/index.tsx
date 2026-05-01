@@ -7,7 +7,6 @@ import { useTransactionStore } from "../../store/useTransactionStore";
 import { useAccountStore } from "../../store/useAccountStore";
 import { useCategoryStore } from "../../store/useCategoryStore";
 import { useMonthReport, currentMonth } from "../../hooks/useReport";
-import { getDatabase } from "../../db/index";
 
 export function Dashboard() {
   const [loading, setLoading] = useState(true);
@@ -16,13 +15,8 @@ export function Dashboard() {
   const { categories, load: loadCategories } = useCategoryStore();
 
   useEffect(() => {
-    async function init() {
-      const db = await getDatabase();
-      await Promise.all([loadTxs(db), loadAccounts(db), loadCategories(db)]);
-      setLoading(false);
-    }
-    init();
-  }, []);
+    Promise.all([loadTxs(), loadAccounts(), loadCategories()]).then(() => setLoading(false));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const month = currentMonth();
   const { totalIncome, totalExpense, balance } = useMonthReport(transactions, month);

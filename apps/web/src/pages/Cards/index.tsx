@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { Layout } from "../../components/Layout";
 import { useCardStore } from "../../store/useCardStore";
 import { useAccountStore } from "../../store/useAccountStore";
-import { getDatabase } from "../../db/index";
 import { formatCurrency } from "../../hooks/useCurrency";
 import type { NewCard } from "@ctrl-custo/core";
 
@@ -31,19 +30,13 @@ export function Cards() {
   });
 
   useEffect(() => {
-    async function init() {
-      const db = await getDatabase();
-      await Promise.all([load(db), loadAccs(db)]);
-      setLoading(false);
-    }
-    init();
-  }, []);
+    Promise.all([load(), loadAccs()]).then(() => setLoading(false));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
     if (!form.name || !form.accountId) return;
-    const db = await getDatabase();
-    await add(db, form as NewCard);
+    await add(form as NewCard);
     setShowForm(false);
     setForm({
       brand: "visa",
@@ -57,8 +50,7 @@ export function Cards() {
 
   async function handleRemove(id: string) {
     if (!confirm("Excluir este cartão?")) return;
-    const db = await getDatabase();
-    await remove(db, id);
+    await remove(id);
   }
 
   return (
@@ -76,7 +68,7 @@ export function Cards() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {cards.map((card) => {
-              const usagePercent = 0; // calculado via transações futuras
+              const usagePercent = 0;
               return (
                 <div
                   key={card.id}
@@ -104,7 +96,6 @@ export function Cards() {
                       <span>Fecha dia {card.billingDay}</span>
                       <span>Vence dia {card.dueDay}</span>
                     </div>
-                    {/* Barra de uso do limite */}
                     <div className="h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
                       <div
                         className="h-full bg-brand-500 rounded-full"
@@ -125,7 +116,6 @@ export function Cards() {
         )}
       </div>
 
-      {/* Modal de novo cartão */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
           <form

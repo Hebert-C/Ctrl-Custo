@@ -1,56 +1,62 @@
 import { create } from "zustand";
-import { createAccountService } from "@ctrl-custo/core";
+import { api } from "../lib/api";
 import type { Account, NewAccount } from "@ctrl-custo/core";
-import type { CoreDatabase } from "../db/index";
 
 interface AccountStore {
   accounts: Account[];
   totalBalance: number;
-  load: (db: CoreDatabase) => Promise<void>;
-  add: (db: CoreDatabase, data: NewAccount) => Promise<Account>;
-  update: (db: CoreDatabase, id: string, data: Partial<NewAccount>) => Promise<void>;
-  remove: (db: CoreDatabase, id: string) => Promise<void>;
-  archive: (db: CoreDatabase, id: string) => Promise<void>;
+  load: () => Promise<void>;
+  add: (data: NewAccount) => Promise<Account>;
+  update: (id: string, data: Partial<NewAccount>) => Promise<void>;
+  remove: (id: string) => Promise<void>;
+  archive: (id: string) => Promise<void>;
   byId: (id: string) => Account | undefined;
+}
+
+function sumBalances(accounts: Account[]): number {
+  return accounts.reduce((s, a) => s + a.balance, 0);
 }
 
 export const useAccountStore = create<AccountStore>((set, get) => ({
   accounts: [],
   totalBalance: 0,
 
-  load: async (db) => {
-    const svc = createAccountService(db);
-    const accounts = await svc.findAll(false);
-    const totalBalance = await svc.getTotalBalance();
-    set({ accounts, totalBalance });
+  load: async () => {
+    const accounts = await api.accounts.list();
+    set({ accounts, totalBalance: sumBalances(accounts) });
   },
 
-  add: async (db, data) => {
-    const svc = createAccountService(db);
-    const account = await svc.create(data);
-    set((s) => ({ accounts: [...s.accounts, account] }));
+  add: async (data) => {
+    const account = await api.accounts.create(data);
+    set((s) => {
+      const accounts = [...s.accounts, account];
+      return { accounts, totalBalance: sumBalances(accounts) };
+    });
     return account;
   },
 
-  update: async (db, id, data) => {
-    const svc = createAccountService(db);
-    const updated = await svc.update(id, data);
-    if (!updated) return;
-    set((s) => ({
-      accounts: s.accounts.map((a) => (a.id === id ? updated : a)),
-    }));
+  update: async (id, data) => {
+    const updated = await api.accounts.update(id, data);
+    set((s) => {
+      const accounts = s.accounts.map((a) => (a.id === id ? updated : a));
+      return { accounts, totalBalance: sumBalances(accounts) };
+    });
   },
 
-  remove: async (db, id) => {
-    const svc = createAccountService(db);
-    await svc.delete(id);
-    set((s) => ({ accounts: s.accounts.filter((a) => a.id !== id) }));
+  remove: async (id) => {
+    await api.accounts.remove(id);
+    set((s) => {
+      const accounts = s.accounts.filter((a) => a.id !== id);
+      return { accounts, totalBalance: sumBalances(accounts) };
+    });
   },
 
-  archive: async (db, id) => {
-    const svc = createAccountService(db);
-    await svc.archive(id);
-    set((s) => ({ accounts: s.accounts.filter((a) => a.id !== id) }));
+  archive: async (id) => {
+    await api.accounts.update(id, { isArchived: true });
+    set((s) => {
+      const accounts = s.accounts.filter((a) => a.id !== id);
+      return { accounts, totalBalance: sumBalances(accounts) };
+    });
   },
 
   byId: (id) => get().accounts.find((a) => a.id === id),

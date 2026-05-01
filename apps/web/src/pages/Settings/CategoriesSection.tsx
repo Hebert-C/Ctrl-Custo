@@ -1,6 +1,5 @@
 import { type FormEvent, useState } from "react";
 import { useCategoryStore } from "../../store/useCategoryStore";
-import { getDatabase } from "../../db/index";
 import type { Category, CategoryType } from "@ctrl-custo/core";
 
 const CATEGORY_TYPES: { value: CategoryType; label: string }[] = [
@@ -75,7 +74,6 @@ export function CategoriesSection() {
     setSaving(true);
     setError("");
     try {
-      const db = await getDatabase();
       const data = {
         name: form.name.trim(),
         type: form.type,
@@ -83,10 +81,10 @@ export function CategoriesSection() {
         icon: form.icon,
       };
       if (editing) {
-        await update(db, editing.id, data);
+        await update(editing.id, data);
         setEditing(null);
       } else {
-        await add(db, data);
+        await add(data);
       }
       setForm(DEFAULT_FORM);
     } catch {
@@ -98,8 +96,7 @@ export function CategoriesSection() {
 
   async function handleRemove(id: string) {
     if (!confirm("Remover esta categoria?")) return;
-    const db = await getDatabase();
-    await remove(db, id);
+    await remove(id);
   }
 
   const byType = (type: CategoryType) =>
