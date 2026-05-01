@@ -12,7 +12,7 @@
 - [x] Fase 7 — Web app consome API (remove sql.js) ← branch: `feature/phase-7-web-api`
 - [x] Fase 8 — Mobile app consome API (remove expo-sqlite) ← branch: `feature/phase-8-mobile-api`
 - [x] Fase 9 — Oracle Cloud: infra, deploy e hardening ← branch: `feature/phase-9-cloud-deploy`
-- [ ] Fase 10 — CI/CD (GitHub Actions + EAS Build) ← branch: `feature/phase-10-cicd`
+- [x] Fase 10 — CI/CD (GitHub Actions + EAS Build) ← branch: `feature/phase-10-cicd`
 - [ ] Fase 11 — Desktop Windows (Tauri — executável .exe) ← branch: `feature/phase-11-tauri`
 
 ## Convenção de branches
@@ -43,15 +43,15 @@ Cada fase é desenvolvida em uma branch dedicada e mergeada via PR ao `main`:
 
 ## Última tarefa concluída
 
-> **Fase 9** — Oracle Cloud: infra, deploy e hardening. Branch: `feature/phase-9-cloud-deploy`.
+> **Fase 10** — CI/CD (GitHub Actions + EAS Build). Branch: `feature/phase-10-cicd`.
 >
-> - `deploy/setup.sh` — script de provisionamento completo: PostgreSQL 16, Node.js 20 via nvm, PM2, nginx, certbot, ufw, fail2ban, hardening SSH
-> - `deploy/deploy.sh` — script de deploy contínuo: `git pull` + `pnpm install --prod` + `db:migrate` + build web + `pm2 restart`
-> - `deploy/nginx.conf` — configuração nginx: HTTPS-only, TLS 1.2+, HSTS, proxy para API na porta 3000, arquivos estáticos do build React, cache de assets
-> - `deploy/backup.sh` — backup diário: `pg_dump | gzip` com retenção de 30 dias; hook opcional para Oracle Object Storage
-> - `deploy/fail2ban/jail.local` — regras fail2ban: SSH (ban 24h, max 3 tentativas) + API brute-force via nginx access log
-> - `deploy/fail2ban/ctrl-custo-api.conf` — filtro fail2ban para detectar 401/429 em `POST /api/auth/login`
-> - `apps/api/ecosystem.config.js` — PM2 ecosystem config: 1 instância, restart automático, logs separados
+> - `.github/workflows/ci.yml` — CI em todo push/PR: `pnpm install`, typecheck, lint, testes Vitest; Node.js 20, ubuntu-latest
+> - `.github/workflows/deploy-api.yml` — CD API: acionado após CI verde no main, SSH na VM Oracle → `bash deploy/deploy.sh`
+> - `.github/workflows/deploy-web.yml` — CD Web: build `apps/web` + rsync `dist/` para VM Oracle via `burnett01/rsync-deployments`
+> - `.github/workflows/eas.yml` — EAS Build Android: `workflow_dispatch` (preview/production) ou tag `v*.*.*`; usa `expo/expo-github-action@v8`
+> - `apps/mobile/eas.json` — profiles: development (APK debug), preview (APK sideload), production (AAB Play Store)
+> - `apps/web/playwright.config.ts` — Playwright: baseURL `localhost:5173`, webServer `pnpm dev`, Chromium, retries em CI
+> - `apps/web/e2e/smoke.spec.ts` — Smoke tests: redirect para /login, login, dashboard, navegação para transações, abrir formulário
 
 ## Decisão arquitetural — sincronização entre dispositivos
 
@@ -64,7 +64,7 @@ dispositivos. A solução é um servidor HTTP com PostgreSQL centralizado.
 
 ---
 
-## Próximo passo — Fase 10: CI/CD (GitHub Actions + EAS Build)
+## Próximo passo — Fase 11: Desktop Windows (Tauri)
 
 ---
 
