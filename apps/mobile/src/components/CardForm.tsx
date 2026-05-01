@@ -13,7 +13,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { lightColors, darkColors } from "@ctrl-custo/ui";
 import type { Colors } from "@ctrl-custo/ui";
-import type { Account, CardBrand, CoreDatabase, NewCard } from "@ctrl-custo/core";
+import type { Account, CardBrand, NewCard } from "@ctrl-custo/core";
 import { formatCurrencyInput, parseCurrencyInput } from "../hooks/useCurrency";
 import { useCardStore } from "../store/useCardStore";
 
@@ -42,12 +42,11 @@ const PRESET_COLORS = [
 interface Props {
   visible: boolean;
   onClose: () => void;
-  db: CoreDatabase;
   accounts: Account[];
   isDark: boolean;
 }
 
-export function CardForm({ visible, onClose, db, accounts, isDark }: Props) {
+export function CardForm({ visible, onClose, accounts, isDark }: Props) {
   const colors = isDark ? darkColors : lightColors;
   const add = useCardStore((s) => s.add);
 
@@ -78,7 +77,7 @@ export function CardForm({ visible, onClose, db, accounts, isDark }: Props) {
         color,
         isArchived: false,
       };
-      await add(db, data);
+      await add(data);
       handleClose();
     } finally {
       setSaving(false);

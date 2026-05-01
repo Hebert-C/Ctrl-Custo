@@ -9,7 +9,6 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { getDatabase } from "../../src/db/index";
 import { useCardStore } from "../../src/store/useCardStore";
 import { useAccountStore } from "../../src/store/useAccountStore";
 import { useThemeStore } from "../../src/store/useThemeStore";
@@ -41,10 +40,9 @@ export default function Cards() {
   const [formVisible, setFormVisible] = useState(false);
 
   const loadAll = useCallback(async () => {
-    const db = getDatabase();
-    await Promise.all([loadCards(db), loadAccounts(db)]);
+    await Promise.all([loadCards(), loadAccounts()]);
     setLoading(false);
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     loadAll();
@@ -92,7 +90,6 @@ export default function Cards() {
       <CardForm
         visible={formVisible}
         onClose={() => setFormVisible(false)}
-        db={getDatabase()}
         accounts={accounts}
         isDark={isDark}
       />

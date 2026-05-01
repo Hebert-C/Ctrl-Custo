@@ -3,11 +3,11 @@ import { View, Text, ScrollView, StyleSheet, Switch, TouchableOpacity } from "re
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import * as LocalAuthentication from "expo-local-authentication";
-import { getDatabase } from "../../src/db/index";
 import { useAccountStore } from "../../src/store/useAccountStore";
 import { useCategoryStore } from "../../src/store/useCategoryStore";
 import { useThemeStore } from "../../src/store/useThemeStore";
 import { useUiStore } from "../../src/store/useUiStore";
+import { useAuthStore } from "../../src/hooks/useAuth";
 import { formatCurrency } from "../../src/hooks/useCurrency";
 import { AccountForm } from "../../src/components/AccountForm";
 import { CategoryForm } from "../../src/components/CategoryForm";
@@ -24,6 +24,7 @@ export default function Settings() {
   const { isHidden, toggleHidden, isBiometricEnabled, setBiometricEnabled } = useUiStore();
   const { accounts, load: loadAccounts } = useAccountStore();
   const { categories, load: loadCategories } = useCategoryStore();
+  const logout = useAuthStore((s) => s.logout);
 
   const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [accountFormVisible, setAccountFormVisible] = useState(false);
@@ -32,12 +33,11 @@ export default function Settings() {
   const [editingCategory, setEditingCategory] = useState<Category | undefined>(undefined);
 
   const loadAll = useCallback(async () => {
-    const db = getDatabase();
-    await Promise.all([loadAccounts(db), loadCategories(db)]);
+    await Promise.all([loadAccounts(), loadCategories()]);
     const hasHardware = await LocalAuthentication.hasHardwareAsync();
     const isEnrolled = await LocalAuthentication.isEnrolledAsync();
     setBiometricAvailable(hasHardware && isEnrolled);
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     loadAll();
@@ -133,6 +133,17 @@ export default function Settings() {
             />
           }
         />
+        <View style={s.divider} />
+        <SettingRow
+          label="Sair da conta"
+          icon="log-out"
+          colors={colors}
+          right={
+            <TouchableOpacity onPress={logout} style={s.logoutBtn}>
+              <Text style={s.logoutText}>Sair</Text>
+            </TouchableOpacity>
+          }
+        />
       </View>
 
       {/* Contas */}
@@ -180,14 +191,12 @@ export default function Settings() {
       <AccountForm
         visible={accountFormVisible}
         onClose={() => setAccountFormVisible(false)}
-        db={getDatabase()}
         isDark={isDark}
         account={editingAccount}
       />
       <CategoryForm
         visible={categoryFormVisible}
         onClose={() => setCategoryFormVisible(false)}
-        db={getDatabase()}
         isDark={isDark}
         category={editingCategory}
       />
@@ -340,4 +349,11 @@ const styles = (colors: Colors) =>
       textAlign: "center",
       padding: 16,
     },
+    logoutBtn: {
+      paddingHorizontal: 14,
+      paddingVertical: 6,
+      borderRadius: 8,
+      backgroundColor: colors.danger + "15",
+    },
+    logoutText: { fontSize: 13, fontWeight: "600", color: colors.danger },
   });

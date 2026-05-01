@@ -13,14 +13,13 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { lightColors, darkColors } from "@ctrl-custo/ui";
 import type { Colors } from "@ctrl-custo/ui";
-import type { Account, Category, CoreDatabase, NewTransaction } from "@ctrl-custo/core";
+import type { Account, Category, NewTransaction } from "@ctrl-custo/core";
 import { formatCurrencyInput, parseCurrencyInput } from "../hooks/useCurrency";
 import { useTransactionStore } from "../store/useTransactionStore";
 
 interface Props {
   visible: boolean;
   onClose: () => void;
-  db: CoreDatabase;
   accounts: Account[];
   categories: Category[];
   isDark: boolean;
@@ -28,7 +27,7 @@ interface Props {
 
 type TxType = "income" | "expense";
 
-export function TransactionForm({ visible, onClose, db, accounts, categories, isDark }: Props) {
+export function TransactionForm({ visible, onClose, accounts, categories, isDark }: Props) {
   const colors = isDark ? darkColors : lightColors;
   const add = useTransactionStore((s) => s.add);
   const addInstallments = useTransactionStore((s) => s.addInstallments);
@@ -62,9 +61,9 @@ export function TransactionForm({ visible, onClose, db, accounts, categories, is
 
       const total = parseInt(installments, 10) || 1;
       if (total > 1) {
-        await addInstallments(db, data, total);
+        await addInstallments(data, total);
       } else {
-        await add(db, { ...data });
+        await add({ ...data });
       }
       handleClose();
     } finally {

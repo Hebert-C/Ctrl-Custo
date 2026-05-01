@@ -9,7 +9,6 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { getDatabase } from "../../src/db/index";
 import { useGoalStore } from "../../src/store/useGoalStore";
 import { useAccountStore } from "../../src/store/useAccountStore";
 import { useCategoryStore } from "../../src/store/useCategoryStore";
@@ -37,10 +36,9 @@ export default function Goals() {
   const [depositingGoal, setDepositingGoal] = useState<Goal | undefined>(undefined);
 
   const loadAll = useCallback(async () => {
-    const db = getDatabase();
-    await Promise.all([loadGoals(db), loadAccounts(db), loadCategories(db)]);
+    await Promise.all([loadGoals(), loadAccounts(), loadCategories()]);
     setLoading(false);
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     loadAll();
@@ -90,14 +88,12 @@ export default function Goals() {
       <GoalForm
         visible={goalFormVisible}
         onClose={() => setGoalFormVisible(false)}
-        db={getDatabase()}
         isDark={isDark}
       />
 
       <DepositForm
         visible={depositingGoal !== undefined}
         onClose={() => setDepositingGoal(undefined)}
-        db={getDatabase()}
         isDark={isDark}
         goal={depositingGoal}
         accounts={accounts}
