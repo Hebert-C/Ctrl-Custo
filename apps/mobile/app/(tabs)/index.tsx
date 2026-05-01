@@ -9,7 +9,6 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { getDatabase } from "../../src/db/index";
 import { useTransactionStore } from "../../src/store/useTransactionStore";
 import { useAccountStore } from "../../src/store/useAccountStore";
 import { useCategoryStore } from "../../src/store/useCategoryStore";
@@ -36,14 +35,13 @@ export default function Dashboard() {
   const [loading, setLoading] = React.useState(true);
 
   const loadAll = useCallback(async () => {
-    const db = getDatabase();
     await Promise.all([
-      loadAccounts(db),
-      loadCategories(db),
-      loadTransactions(db, { startDate: currentMonthStart(), endDate: currentMonthEnd() }),
+      loadAccounts(),
+      loadCategories(),
+      loadTransactions({ startDate: currentMonthStart(), endDate: currentMonthEnd() }),
     ]);
     setLoading(false);
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     loadAll();

@@ -10,7 +10,7 @@
 - [x] Fase 5 — Backend API com segurança (apps/api) ← branch: `feature/phase-5-api`
 - [x] Fase 6 — Migrations PostgreSQL ← branch: `feature/phase-6-pg-migration`
 - [x] Fase 7 — Web app consome API (remove sql.js) ← branch: `feature/phase-7-web-api`
-- [ ] Fase 8 — Mobile app consome API (remove expo-sqlite) ← branch: `feature/phase-8-mobile-api`
+- [x] Fase 8 — Mobile app consome API (remove expo-sqlite) ← branch: `feature/phase-8-mobile-api`
 - [ ] Fase 9 — Oracle Cloud: infra, deploy e hardening ← branch: `feature/phase-9-cloud-deploy`
 - [ ] Fase 10 — CI/CD (GitHub Actions + EAS Build) ← branch: `feature/phase-10-cicd`
 - [ ] Fase 11 — Desktop Windows (Tauri — executável .exe) ← branch: `feature/phase-11-tauri`
@@ -43,17 +43,19 @@ Cada fase é desenvolvida em uma branch dedicada e mergeada via PR ao `main`:
 
 ## Última tarefa concluída
 
-> **Fase 7** — Web app consome API (remove sql.js). Branch: `feature/phase-7-web-api`.
+> **Fase 8** — Mobile app consome API (remove expo-sqlite). Branch: `feature/phase-8-mobile-api`.
 >
-> - `apps/web/src/lib/api.ts` — cliente HTTP com interceptor JWT, retry automático de refresh token e redirecionamento para `/login` em caso de 401
-> - `apps/web/src/hooks/useAuth.ts` — store Zustand com login, register, logout e `tryRestore` (refresh silencioso na inicialização)
-> - `apps/web/src/pages/Login/index.tsx` — tela de login/cadastro (tabs Entrar / Criar conta)
-> - `apps/web/src/App.tsx` — rota `/login` adicionada, `RequireAuth` wrapper, `tryRestore` no boot
-> - Todos os Zustand stores migrados para chamar `api.ts` (sem mais parâmetro `db`)
-> - `apps/web/src/db/index.ts` removido (singleton sql.js)
-> - `apps/web/public/sql-wasm*.wasm` removidos
-> - `apps/web/vite.config.ts` — headers CORS `Cross-Origin-Opener-Policy` / `Cross-Origin-Embedder-Policy` removidos
-> - `apps/web/.env.example` — variável `VITE_API_URL` documentada
+> - `apps/mobile/src/lib/api.ts` — cliente HTTP com interceptor JWT, retry de refresh token, `setUnauthorizedHandler` para redirecionar ao login
+> - `apps/mobile/src/hooks/useAuth.ts` — store Zustand com login, register, logout e `tryRestore` usando `expo-secure-store`
+> - `apps/mobile/app/login.tsx` — tela de login/cadastro (React Native)
+> - `apps/mobile/app/_layout.tsx` — `tryRestore` no boot, `<Redirect>` para login se não autenticado
+> - Todos os Zustand stores migrados para chamar `api.ts` (sem parâmetro `db`)
+> - Todos os form components migrados (sem prop `db`)
+> - Todas as telas migradas (sem `getDatabase()`)
+> - `apps/mobile/src/db/index.ts` removido (singleton expo-sqlite)
+> - `metro.config.js` — stub do sql.js removido
+> - `expo-sqlite` e `drizzle-orm` removidos do `package.json`; `expo-secure-store ~14.0.1` adicionado
+> - `apps/mobile/.env.example` — variável `EXPO_PUBLIC_API_URL` documentada
 
 ## Decisão arquitetural — sincronização entre dispositivos
 
@@ -66,7 +68,7 @@ dispositivos. A solução é um servidor HTTP com PostgreSQL centralizado.
 
 ---
 
-## Próximo passo — Fase 8: Mobile app consome API
+## Próximo passo — Fase 9: Oracle Cloud: infra, deploy e hardening
 
 ---
 

@@ -9,7 +9,6 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { getDatabase } from "../../src/db/index";
 import { useTransactionStore } from "../../src/store/useTransactionStore";
 import { useAccountStore } from "../../src/store/useAccountStore";
 import { useCategoryStore } from "../../src/store/useCategoryStore";
@@ -54,17 +53,12 @@ export default function Transactions() {
   const loadTransactions = useTransactionStore((s) => s.load);
 
   const loadAll = useCallback(async () => {
-    const db = getDatabase();
     const startDate = `${year}-${String(month).padStart(2, "0")}-01`;
     const lastDay = new Date(year, month, 0).getDate();
     const endDate = `${year}-${String(month).padStart(2, "0")}-${lastDay}`;
-    await Promise.all([
-      loadAccounts(db),
-      loadCategories(db),
-      loadTransactions(db, { startDate, endDate }),
-    ]);
+    await Promise.all([loadAccounts(), loadCategories(), loadTransactions({ startDate, endDate })]);
     setLoading(false);
-  }, [year, month]);
+  }, [year, month]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     setLoading(true);
@@ -86,7 +80,6 @@ export default function Transactions() {
   }
 
   const s = styles(colors);
-  const db = getDatabase();
 
   return (
     <View style={[s.container, { paddingTop: insets.top }]}>
@@ -140,7 +133,6 @@ export default function Transactions() {
       <TransactionForm
         visible={formVisible}
         onClose={() => setFormVisible(false)}
-        db={db}
         accounts={accounts}
         categories={categories}
         isDark={isDark}

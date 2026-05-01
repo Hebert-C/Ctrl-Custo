@@ -13,7 +13,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { lightColors, darkColors } from "@ctrl-custo/ui";
 import type { Colors } from "@ctrl-custo/ui";
-import type { Account, AccountType, CoreDatabase, NewAccount } from "@ctrl-custo/core";
+import type { Account, AccountType, NewAccount } from "@ctrl-custo/core";
 import { formatCurrencyInput, parseCurrencyInput } from "../hooks/useCurrency";
 import { useAccountStore } from "../store/useAccountStore";
 
@@ -43,12 +43,11 @@ const PRESET_ICONS = ["🏦", "💰", "💵", "💳", "🏧", "📊", "💹", "�
 interface Props {
   visible: boolean;
   onClose: () => void;
-  db: CoreDatabase;
   isDark: boolean;
-  account?: Account; // quando fornecido, abre em modo edição
+  account?: Account;
 }
 
-export function AccountForm({ visible, onClose, db, isDark, account }: Props) {
+export function AccountForm({ visible, onClose, isDark, account }: Props) {
   const colors = isDark ? darkColors : lightColors;
   const add = useAccountStore((s) => s.add);
   const update = useAccountStore((s) => s.update);
@@ -98,9 +97,9 @@ export function AccountForm({ visible, onClose, db, isDark, account }: Props) {
         isArchived: false,
       };
       if (account) {
-        await update(db, account.id, data);
+        await update(account.id, data);
       } else {
-        await add(db, data);
+        await add(data);
       }
       handleClose();
     } finally {

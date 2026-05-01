@@ -13,7 +13,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { lightColors, darkColors } from "@ctrl-custo/ui";
 import type { Colors } from "@ctrl-custo/ui";
-import type { Category, CategoryType, CoreDatabase, NewCategory } from "@ctrl-custo/core";
+import type { Category, CategoryType, NewCategory } from "@ctrl-custo/core";
 import { useCategoryStore } from "../store/useCategoryStore";
 
 const CATEGORY_TYPES: { value: CategoryType; label: string }[] = [
@@ -61,12 +61,11 @@ const PRESET_ICONS = [
 interface Props {
   visible: boolean;
   onClose: () => void;
-  db: CoreDatabase;
   isDark: boolean;
-  category?: Category; // quando fornecido, abre em modo edição
+  category?: Category;
 }
 
-export function CategoryForm({ visible, onClose, db, isDark, category }: Props) {
+export function CategoryForm({ visible, onClose, isDark, category }: Props) {
   const colors = isDark ? darkColors : lightColors;
   const add = useCategoryStore((s) => s.add);
   const update = useCategoryStore((s) => s.update);
@@ -107,9 +106,9 @@ export function CategoryForm({ visible, onClose, db, isDark, category }: Props) 
         color,
       };
       if (category) {
-        await update(db, category.id, data);
+        await update(category.id, data);
       } else {
-        await add(db, data);
+        await add(data);
       }
       handleClose();
     } finally {

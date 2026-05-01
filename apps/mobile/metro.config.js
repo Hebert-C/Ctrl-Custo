@@ -12,12 +12,4 @@ config.resolver.nodeModulesPaths = [
   path.resolve(workspaceRoot, "node_modules"),
 ];
 
-// sql.js is web/Node-only (uses node:fs). Mobile uses expo-sqlite instead.
-config.resolver.resolveRequest = (context, moduleName, platform) => {
-  if (moduleName === "sql.js") {
-    return { type: "empty" };
-  }
-  return context.resolveRequest(context, moduleName, platform);
-};
-
 module.exports = config;

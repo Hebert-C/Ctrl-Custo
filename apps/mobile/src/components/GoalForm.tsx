@@ -13,7 +13,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { lightColors, darkColors } from "@ctrl-custo/ui";
 import type { Colors } from "@ctrl-custo/ui";
-import type { CoreDatabase, NewGoal } from "@ctrl-custo/core";
+import type { NewGoal } from "@ctrl-custo/core";
 import { formatCurrencyInput, parseCurrencyInput } from "../hooks/useCurrency";
 import { useGoalStore } from "../store/useGoalStore";
 
@@ -35,11 +35,10 @@ const PRESET_ICONS = ["🏠", "🚗", "✈️", "📱", "💻", "🎓", "👶", 
 interface Props {
   visible: boolean;
   onClose: () => void;
-  db: CoreDatabase;
   isDark: boolean;
 }
 
-export function GoalForm({ visible, onClose, db, isDark }: Props) {
+export function GoalForm({ visible, onClose, isDark }: Props) {
   const colors = isDark ? darkColors : lightColors;
   const add = useGoalStore((s) => s.add);
 
@@ -66,7 +65,7 @@ export function GoalForm({ visible, onClose, db, isDark }: Props) {
         icon,
         notes: notes.trim() || undefined,
       };
-      await add(db, data);
+      await add(data);
       handleClose();
     } finally {
       setSaving(false);

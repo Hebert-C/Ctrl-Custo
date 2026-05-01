@@ -1,87 +1,42 @@
 import { create } from "zustand";
-import { goals } from "@ctrl-custo/core";
-import { eq } from "drizzle-orm";
-import type { Goal, NewGoal, CoreDatabase } from "@ctrl-custo/core";
-
-function rowToGoal(row: typeof goals.$inferSelect): Goal {
-  return {
-    id: row.id,
-    name: row.name,
-    targetAmount: row.targetAmount,
-    currentAmount: row.currentAmount,
-    deadline: row.deadline ?? undefined,
-    status: row.status,
-    color: row.color,
-    icon: row.icon,
-    notes: row.notes ?? undefined,
-    createdAt: row.createdAt,
-    updatedAt: row.updatedAt,
-  };
-}
+import { api } from "../lib/api";
+import type { Goal, NewGoal } from "@ctrl-custo/core";
 
 interface GoalStore {
   goals: Goal[];
-  load: (db: CoreDatabase) => Promise<void>;
-  add: (db: CoreDatabase, data: NewGoal) => Promise<Goal>;
-  deposit: (db: CoreDatabase, id: string, amountCents: number) => Promise<void>;
-  update: (db: CoreDatabase, id: string, data: Partial<NewGoal>) => Promise<void>;
-  remove: (db: CoreDatabase, id: string) => Promise<void>;
+  load: () => Promise<void>;
+  add: (data: NewGoal) => Promise<Goal>;
+  deposit: (id: string, amountCents: number) => Promise<void>;
+  update: (id: string, data: Partial<NewGoal>) => Promise<void>;
+  remove: (id: string) => Promise<void>;
 }
 
-export const useGoalStore = create<GoalStore>((set, get) => ({
+export const useGoalStore = create<GoalStore>((set) => ({
   goals: [],
 
-  load: async (db) => {
-    const rows = await db.select().from(goals);
-    set({ goals: rows.map(rowToGoal) });
+  load: async () => {
+    const goals = await api.goals.list();
+    set({ goals });
   },
 
-  add: async (db, data) => {
-    const now = new Date().toISOString();
-    const id = crypto.randomUUID();
-    await db.insert(goals).values({ id, ...data, createdAt: now, updatedAt: now });
-    const [row] = await db.select().from(goals).where(eq(goals.id, id));
-    const goal = rowToGoal(row);
+  add: async (data) => {
+    const goal = await api.goals.create(data);
     set((s) => ({ goals: [...s.goals, goal] }));
     return goal;
   },
 
-  deposit: async (db, id, amountCents) => {
-    const now = new Date().toISOString();
-    const goal = get().goals.find((g) => g.id === id);
-    if (!goal) return;
-    const newAmount = goal.currentAmount + amountCents;
-    const isCompleted = newAmount >= goal.targetAmount;
-    await db
-      .update(goals)
-      .set({
-        currentAmount: newAmount,
-        status: isCompleted ? "completed" : "active",
-        updatedAt: now,
-      })
-      .where(eq(goals.id, id));
-    set((s) => ({
-      goals: s.goals.map((g) =>
-        g.id === id
-          ? { ...g, currentAmount: newAmount, status: isCompleted ? "completed" : "active" }
-          : g
-      ),
-    }));
+  deposit: async (id, amountCents) => {
+    const updated = await api.goals.deposit(id, amountCents);
+    set((s) => ({ goals: s.goals.map((g) => (g.id === id ? updated : g)) }));
   },
 
-  update: async (db, id, data) => {
-    const now = new Date().toISOString();
-    await db
-      .update(goals)
-      .set({ ...data, updatedAt: now })
-      .where(eq(goals.id, id));
-    const [row] = await db.select().from(goals).where(eq(goals.id, id));
-    if (!row) return;
-    set((s) => ({ goals: s.goals.map((g) => (g.id === id ? rowToGoal(row) : g)) }));
+  update: async (id, data) => {
+    const updated = await api.goals.update(id, data);
+    set((s) => ({ goals: s.goals.map((g) => (g.id === id ? updated : g)) }));
   },
 
-  remove: async (db, id) => {
-    await db.delete(goals).where(eq(goals.id, id));
+  remove: async (id) => {
+    await api.goals.remove(id);
     set((s) => ({ goals: s.goals.filter((g) => g.id !== id) }));
   },
 }));

@@ -13,7 +13,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { lightColors, darkColors } from "@ctrl-custo/ui";
 import type { Colors } from "@ctrl-custo/ui";
-import type { Account, Category, CoreDatabase, Goal } from "@ctrl-custo/core";
+import type { Account, Category, Goal } from "@ctrl-custo/core";
 import { formatCurrencyInput, parseCurrencyInput } from "../hooks/useCurrency";
 import { useGoalStore } from "../store/useGoalStore";
 import { useTransactionStore } from "../store/useTransactionStore";
@@ -22,14 +22,13 @@ import { useAccountStore } from "../store/useAccountStore";
 interface Props {
   visible: boolean;
   onClose: () => void;
-  db: CoreDatabase;
   isDark: boolean;
   goal: Goal | undefined;
   accounts: Account[];
   categories: Category[];
 }
 
-export function DepositForm({ visible, onClose, db, isDark, goal, accounts, categories }: Props) {
+export function DepositForm({ visible, onClose, isDark, goal, accounts, categories }: Props) {
   const colors = isDark ? darkColors : lightColors;
   const deposit = useGoalStore((s) => s.deposit);
   const addTransaction = useTransactionStore((s) => s.add);
@@ -58,11 +57,9 @@ export function DepositForm({ visible, onClose, db, isDark, goal, accounts, cate
 
     setSaving(true);
     try {
-      // 1. Registra aporte na meta (incrementa currentAmount)
-      await deposit(db, goal.id, amount);
+      await deposit(goal.id, amount);
 
-      // 2. Cria despesa para refletir a saída do dinheiro da conta
-      await addTransaction(db, {
+      await addTransaction({
         description: `Aporte: ${goal.name}`,
         amount,
         type: "expense",
@@ -72,8 +69,7 @@ export function DepositForm({ visible, onClose, db, isDark, goal, accounts, cate
         accountId,
       });
 
-      // 3. Recarrega contas para atualizar saldos no store
-      await loadAccounts(db);
+      await loadAccounts();
 
       handleClose();
     } finally {
