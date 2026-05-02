@@ -1,9 +1,22 @@
 #!/usr/bin/env bash
 # =============================================================================
 # Ctrl-Custo — Oracle Cloud (Ubuntu 22.04 ARM) — One-time server setup
-# Run as root: sudo bash setup.sh
+# Run as root: sudo bash setup.sh <domain> <repo-url>
+#
+# Example:
+#   sudo bash setup.sh app.meudominio.com https://github.com/user/ctrl-custo.git
 # =============================================================================
 set -euo pipefail
+
+DOMAIN="${1:-}"
+REPO_URL="${2:-}"
+
+if [[ -z "${DOMAIN}" || -z "${REPO_URL}" ]]; then
+  echo "Usage: sudo bash setup.sh <domain> <repo-url>"
+  echo "  domain   — public domain pointing to this VM (ex: app.meudominio.com)"
+  echo "  repo-url — git clone URL (ex: https://github.com/user/ctrl-custo.git)"
+  exit 1
+fi
 
 DEPLOY_USER="deploy"
 DB_NAME="ctrl_custo"
@@ -127,15 +140,101 @@ sed -i \
   /etc/ssh/sshd_config
 systemctl reload sshd
 
+# =============================================================================
+# Clone repository
+# =============================================================================
+echo "==> Cloning repository"
+if [[ -d "${APP_DIR}/.git" ]]; then
+  echo "    Repo already cloned, skipping"
+else
+  sudo -u "${DEPLOY_USER}" git clone "${REPO_URL}" "${APP_DIR}"
+fi
+
+# =============================================================================
+# Generate secrets and write .env
+# =============================================================================
+echo "==> Generating secrets and writing .env"
+JWT_SECRET=$(openssl rand -hex 32)
+JWT_REFRESH_SECRET=$(openssl rand -hex 32)
+
+ENV_FILE="${APP_DIR}/apps/api/.env"
+sudo -u "${DEPLOY_USER}" tee "${ENV_FILE}" > /dev/null <<ENV
+DATABASE_URL=postgresql://${DB_USER}:${DB_PASS}@localhost:5432/${DB_NAME}
+JWT_SECRET=${JWT_SECRET}
+JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
+PORT=3000
+ALLOWED_ORIGINS=https://${DOMAIN}
+NODE_ENV=production
+ENV
+
+chmod 600 "${ENV_FILE}"
+chown "${DEPLOY_USER}:${DEPLOY_USER}" "${ENV_FILE}"
+
+# =============================================================================
+# Configure nginx with real domain
+# =============================================================================
+echo "==> Configuring nginx for domain: ${DOMAIN}"
+NGINX_CONF="/etc/nginx/sites-available/ctrl-custo"
+
+# Replace DOMAIN_PLACEHOLDER with the real domain in every occurrence
+sed "s/DOMAIN_PLACEHOLDER/${DOMAIN}/g" \
+  "$(dirname "${BASH_SOURCE[0]}")/nginx.conf" > "${NGINX_CONF}"
+
+ln -sf "${NGINX_CONF}" /etc/nginx/sites-enabled/ctrl-custo
+nginx -t
+
+systemctl reload nginx
+
+# =============================================================================
+# SSL certificate (Let's Encrypt)
+# =============================================================================
+echo "==> Requesting SSL certificate for ${DOMAIN}"
+certbot --nginx \
+  -d "${DOMAIN}" \
+  --non-interactive \
+  --agree-tos \
+  --email "admin@${DOMAIN}" \
+  --redirect
+
+systemctl reload nginx
+
+# =============================================================================
+# Install dependencies and run migrations
+# =============================================================================
+echo "==> Installing dependencies"
+sudo -u "${DEPLOY_USER}" bash -c "
+  export NVM_DIR=\"\$HOME/.nvm\"
+  source \"\$NVM_DIR/nvm.sh\"
+  cd ${APP_DIR}
+  pnpm install --frozen-lockfile --prod
+  pnpm --filter @ctrl-custo/api db:migrate
+"
+
+# =============================================================================
+# Start API via PM2
+# =============================================================================
+echo "==> Starting API via PM2"
+sudo -u "${DEPLOY_USER}" bash -c "
+  export NVM_DIR=\"\$HOME/.nvm\"
+  source \"\$NVM_DIR/nvm.sh\"
+  cd ${APP_DIR}
+  pm2 start apps/api/ecosystem.config.js --env production
+  pm2 save
+"
+
 echo ""
 echo "==================================================================="
-echo "Setup complete. Next steps:"
-echo "  1. Copy nginx.conf to /etc/nginx/sites-available/ctrl-custo"
-echo "  2. Run: certbot --nginx -d <your-domain>"
-echo "  3. Clone repo: git clone <repo> ${APP_DIR}"
-echo "  4. Create ${APP_DIR}/apps/api/.env with DB_PASS above"
-echo "  5. cd ${APP_DIR} && pnpm install --prod"
-echo "  6. pnpm --filter @ctrl-custo/api db:migrate"
-echo "  7. pm2 start ${APP_DIR}/apps/api/ecosystem.config.js --env production"
-echo "  8. pm2 save"
+echo "Setup complete!"
+echo ""
+echo "  Domain  : https://${DOMAIN}"
+echo "  API     : https://${DOMAIN}/api/health"
+echo "  Logs    : pm2 logs ctrl-custo-api"
+echo "  Status  : pm2 status"
+echo ""
+echo "  .env    : ${ENV_FILE}  (chmod 600)"
+echo ""
+echo "  Secrets generated (saved in .env — back them up securely):"
+echo "    DB_PASS            = ${DB_PASS}"
+echo "    JWT_SECRET         = ${JWT_SECRET}"
+echo "    JWT_REFRESH_SECRET = ${JWT_REFRESH_SECRET}"
 echo "==================================================================="
