@@ -82,8 +82,15 @@ sudo -u "${DEPLOY_USER}" bash -c "
   nvm install ${NODE_VERSION}
   nvm alias default ${NODE_VERSION}
   npm install -g pnpm pm2
-  pm2 startup systemd -u ${DEPLOY_USER} --hp /home/${DEPLOY_USER} | tail -1 | bash
 "
+
+# pm2 startup generates a `sudo ...` command — run it here as root directly
+PM2_STARTUP=$(sudo -u "${DEPLOY_USER}" bash -c "
+  export NVM_DIR=\"\$HOME/.nvm\"
+  source \"\$NVM_DIR/nvm.sh\"
+  pm2 startup systemd -u ${DEPLOY_USER} --hp /home/${DEPLOY_USER} 2>/dev/null | tail -1
+")
+bash -c "${PM2_STARTUP}"
 
 # =============================================================================
 # Nginx
@@ -117,15 +124,16 @@ ufw --force enable
 # fail2ban — SSH + API
 # =============================================================================
 echo "==> Configuring fail2ban"
-cp /deploy/fail2ban/ctrl-custo-api.conf /etc/fail2ban/filter.d/ctrl-custo-api.conf 2>/dev/null || true
-cp /deploy/fail2ban/jail.local /etc/fail2ban/jail.local 2>/dev/null || true
+DEPLOY_DIR="$(dirname "${BASH_SOURCE[0]}")"
+cp "${DEPLOY_DIR}/fail2ban/ctrl-custo-api.conf" /etc/fail2ban/filter.d/ctrl-custo-api.conf 2>/dev/null || true
+cp "${DEPLOY_DIR}/fail2ban/jail.local" /etc/fail2ban/jail.local 2>/dev/null || true
 systemctl enable fail2ban && systemctl restart fail2ban
 
 # =============================================================================
 # Backup cron
 # =============================================================================
 echo "==> Scheduling daily backup"
-install -m 750 /deploy/backup.sh /usr/local/bin/ctrl-custo-backup
+install -m 750 "$(dirname "${BASH_SOURCE[0]}")/backup.sh" /usr/local/bin/ctrl-custo-backup
 (crontab -u "${DEPLOY_USER}" -l 2>/dev/null; echo "0 3 * * * /usr/local/bin/ctrl-custo-backup") \
   | crontab -u "${DEPLOY_USER}" -
 
