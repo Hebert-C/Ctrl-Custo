@@ -76,5 +76,8 @@ Desktop.ini
 *.sln
 *.sw?
 
+# Tauri — artefatos de compilação Rust
+apps/web/src-tauri/target/
+
 # Claude Code (configuração local do assistente)
 .claude/

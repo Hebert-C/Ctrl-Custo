@@ -13,7 +13,7 @@
 - [x] Fase 8 — Mobile app consome API (remove expo-sqlite) ← branch: `feature/phase-8-mobile-api`
 - [x] Fase 9 — Oracle Cloud: infra, deploy e hardening ← branch: `feature/phase-9-cloud-deploy`
 - [x] Fase 10 — CI/CD (GitHub Actions + EAS Build) ← branch: `feature/phase-10-cicd`
-- [ ] Fase 11 — Desktop Windows (Tauri — executável .exe) ← branch: `feature/phase-11-tauri`
+- [x] Fase 11 — Desktop Windows (Tauri — executável .exe) ← branch: `feature/phase-11-tauri`
 
 ## Convenção de branches
 
@@ -43,6 +43,21 @@ Cada fase é desenvolvida em uma branch dedicada e mergeada via PR ao `main`:
 
 ## Última tarefa concluída
 
+> **Fase 11** — Desktop Windows com Tauri. Branch: `feature/phase-11-tauri`.
+>
+> - `apps/web/src-tauri/tauri.conf.json` — config Tauri v2: frontendDist `../dist`, devUrl `localhost:5173`, janela 1280×800, CSP restritivo, bundle identifier `com.ctrl-custo.app`
+> - `apps/web/src-tauri/src/main.rs` + `lib.rs` — ponto de entrada Rust minimalista (`tauri::Builder::default()`)
+> - `apps/web/src-tauri/Cargo.toml` — dependências: `tauri 2`, `tauri-build 2`, `serde 1`; profile release otimizado (`lto`, `strip`, `opt-level = "s"`)
+> - `apps/web/src-tauri/build.rs` — build script padrão Tauri
+> - `apps/web/src-tauri/capabilities/default.json` — capabilities mínimas (lista vazia — sem acesso a filesystem, shell ou IPC)
+> - `apps/web/app-icon.png` — ícone fonte 512×512 para geração automática de variantes via `tauri icon`
+> - `.github/workflows/tauri.yml` — build Windows via `windows-latest` + `tauri-apps/tauri-action@v0`; acionado por `workflow_dispatch` ou tag `v*.*.*`; usa `iconPath` para gerar ícones no CI; cria GitHub Release draft com instalador `.msi`/`.exe`
+> - `apps/web/package.json` — script `"tauri": "tauri"` + `@tauri-apps/cli ^2.0.0` devDep
+> - `.gitignore` — `apps/web/src-tauri/target/` adicionado
+> - `turbo.json` — `inputs: ["$TURBO_DEFAULT$", "!src-tauri/**"]` para ignorar artefatos Rust no cache do turbo
+
+## Fase 10 — CI/CD ✅
+
 > **Fase 10** — CI/CD (GitHub Actions + EAS Build). Branch: `feature/phase-10-cicd`.
 >
 > - `.github/workflows/ci.yml` — CI em todo push/PR: `pnpm install`, typecheck, lint, testes Vitest; Node.js 20, ubuntu-latest
@@ -64,7 +79,7 @@ dispositivos. A solução é um servidor HTTP com PostgreSQL centralizado.
 
 ---
 
-## Próximo passo — Fase 11: Desktop Windows (Tauri)
+## Próximo passo — Todas as fases concluídas ✅
 
 ---
 

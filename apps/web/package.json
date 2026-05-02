@@ -8,7 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint src --ext .ts,.tsx"
+    "lint": "eslint src --ext .ts,.tsx",
+    "tauri": "tauri"
   },
   "dependencies": {
     "@ctrl-custo/core": "workspace:*",
@@ -22,6 +23,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",
+    "@tauri-apps/cli": "^2.11.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.0",
