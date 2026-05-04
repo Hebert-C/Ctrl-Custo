@@ -1,6 +1,6 @@
 // PM2 process manager configuration
 // Usage:
-//   pm2 start ecosystem.config.js --env production
+//   pm2 start ecosystem.config.cjs --env production
 //   pm2 restart ctrl-custo-api
 //   pm2 logs ctrl-custo-api
 module.exports = {

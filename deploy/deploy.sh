@@ -11,8 +11,8 @@ echo "==> Pulling latest code"
 cd "${APP_DIR}"
 git pull origin main
 
-echo "==> Installing production dependencies"
-pnpm install --frozen-lockfile --prod
+echo "==> Installing dependencies"
+pnpm install --frozen-lockfile
 
 echo "==> Running database migrations"
 pnpm --filter @ctrl-custo/api db:migrate
@@ -21,7 +21,7 @@ echo "==> Building web frontend"
 pnpm --filter web build
 
 echo "==> Restarting API via PM2"
-pm2 restart ctrl-custo-api || pm2 start apps/api/ecosystem.config.js --env production
+pm2 restart ctrl-custo-api || pm2 start apps/api/ecosystem.config.cjs --env production
 
 pm2 save
 

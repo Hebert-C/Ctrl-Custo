@@ -38,6 +38,8 @@ if ! id "${DEPLOY_USER}" &>/dev/null; then
   useradd -m -s /bin/bash "${DEPLOY_USER}"
   usermod -aG sudo "${DEPLOY_USER}"
 fi
+# Allow nginx (www-data) to traverse the home directory to serve static files
+chmod o+x "/home/${DEPLOY_USER}"
 mkdir -p "${LOG_DIR}"
 chown "${DEPLOY_USER}:${DEPLOY_USER}" "${LOG_DIR}"
 
@@ -119,6 +121,18 @@ ufw allow 22/tcp     # SSH
 ufw allow 80/tcp     # HTTP (redirect → HTTPS)
 ufw allow 443/tcp    # HTTPS
 ufw --force enable
+
+# Oracle Cloud VMs have a native iptables chain that runs before UFW.
+# Insert rules for HTTP/HTTPS before the final REJECT rule to allow external traffic.
+iptables -I INPUT 5 -p tcp --dport 80 -j ACCEPT  2>/dev/null || true
+iptables -I INPUT 5 -p tcp --dport 443 -j ACCEPT 2>/dev/null || true
+# Persist rules across reboots
+if command -v netfilter-persistent &>/dev/null; then
+  netfilter-persistent save
+else
+  apt-get install -y iptables-persistent
+  iptables-save > /etc/iptables/rules.v4
+fi
 
 # =============================================================================
 # fail2ban — SSH + API
@@ -214,7 +228,7 @@ sudo -u "${DEPLOY_USER}" bash -c "
   export NVM_DIR=\"\$HOME/.nvm\"
   source \"\$NVM_DIR/nvm.sh\"
   cd ${APP_DIR}
-  pnpm install --frozen-lockfile --prod
+  pnpm install --frozen-lockfile
   pnpm --filter @ctrl-custo/api db:migrate
 "
 
@@ -226,7 +240,7 @@ sudo -u "${DEPLOY_USER}" bash -c "
   export NVM_DIR=\"\$HOME/.nvm\"
   source \"\$NVM_DIR/nvm.sh\"
   cd ${APP_DIR}
-  pm2 start apps/api/ecosystem.config.js --env production
+  pm2 start apps/api/ecosystem.config.cjs --env production
   pm2 save
 "
 

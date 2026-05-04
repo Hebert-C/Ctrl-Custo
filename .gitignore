@@ -36,8 +36,8 @@ web-build/
 .env.local
 .env.*.local
 
-# Drizzle — journal de meta gerado automaticamente (não commitar)
-apps/api/drizzle/meta/
+# Drizzle — snapshot gerado automaticamente (não precisa de commit)
+apps/api/drizzle/meta/0000_snapshot.json
 
 # Logs
 logs
