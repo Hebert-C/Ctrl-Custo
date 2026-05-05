@@ -77,6 +77,15 @@ transactionsRouter.put("/:id", zValidator("json", transactionBody.partial()), as
     .limit(1);
   if (!existing) return c.json({ error: "Not found" }, 404);
 
+  if (body.accountId && body.accountId !== existing.accountId) {
+    const [acct] = await db
+      .select({ id: accounts.id })
+      .from(accounts)
+      .where(and(eq(accounts.id, body.accountId), eq(accounts.userId, userId)))
+      .limit(1);
+    if (!acct) return c.json({ error: "Not found" }, 404);
+  }
+
   const [row] = await db.transaction(async (trx) => {
     if (existing.status === "confirmed") {
       const oldDelta = balanceDelta(existing.type, existing.amount);
@@ -84,7 +93,7 @@ transactionsRouter.put("/:id", zValidator("json", transactionBody.partial()), as
         await trx
           .update(accounts)
           .set({ balance: sql`${accounts.balance} - ${oldDelta}`, updatedAt: new Date() })
-          .where(eq(accounts.id, existing.accountId));
+          .where(and(eq(accounts.id, existing.accountId), eq(accounts.userId, userId)));
       }
     }
 
@@ -95,7 +104,7 @@ transactionsRouter.put("/:id", zValidator("json", transactionBody.partial()), as
         await trx
           .update(accounts)
           .set({ balance: sql`${accounts.balance} + ${newDelta}`, updatedAt: new Date() })
-          .where(eq(accounts.id, merged.accountId));
+          .where(and(eq(accounts.id, merged.accountId), eq(accounts.userId, userId)));
       }
     }
 
@@ -127,7 +136,7 @@ transactionsRouter.delete("/:id", async (c) => {
         await trx
           .update(accounts)
           .set({ balance: sql`${accounts.balance} - ${delta}`, updatedAt: new Date() })
-          .where(eq(accounts.id, existing.accountId));
+          .where(and(eq(accounts.id, existing.accountId), eq(accounts.userId, userId)));
       }
     }
     await trx.delete(transactions).where(eq(transactions.id, id));

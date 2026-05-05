@@ -1,34 +1,97 @@
 import { type FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../hooks/useAuth";
+import { api, ApiError } from "../../lib/api";
 
 type Mode = "login" | "register";
 
 export function Login() {
   const navigate = useNavigate();
-  const { login, register } = useAuthStore();
+  const { login, register, pendingVerificationEmail, clearPendingVerification } = useAuthStore();
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [errorCode, setErrorCode] = useState("");
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendDone, setResendDone] = useState(false);
+
+  if (pendingVerificationEmail) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 p-4">
+        <div className="w-full max-w-sm bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-8 text-center space-y-4">
+          <div className="text-4xl">✉</div>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            Verifique seu e-mail
+          </h2>
+          <p className="text-sm text-gray-500">
+            Enviamos um link de confirmação para{" "}
+            <span className="font-medium text-gray-700 dark:text-gray-300">
+              {pendingVerificationEmail}
+            </span>
+            . Clique no link para ativar sua conta.
+          </p>
+          <p className="text-xs text-gray-400">O link expira em 24 horas.</p>
+          {resendDone ? (
+            <p className="text-xs text-green-600">E-mail reenviado!</p>
+          ) : (
+            <button
+              onClick={async () => {
+                setResendLoading(true);
+                await api.auth.resendVerification(pendingVerificationEmail).catch(() => undefined);
+                setResendLoading(false);
+                setResendDone(true);
+              }}
+              disabled={resendLoading}
+              className="text-xs text-blue-600 hover:underline disabled:opacity-50"
+            >
+              {resendLoading ? "Enviando…" : "Reenviar e-mail"}
+            </button>
+          )}
+          <button
+            onClick={() => {
+              clearPendingVerification();
+              setMode("login");
+            }}
+            className="block w-full text-xs text-gray-400 hover:text-gray-600 mt-2"
+          >
+            Voltar ao login
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError("");
+    setErrorCode("");
     try {
       if (mode === "login") {
         await login(email, password);
+        navigate("/dashboard", { replace: true });
       } else {
         await register(email, password);
       }
-      navigate("/dashboard", { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao autenticar.");
+      if (err instanceof ApiError) {
+        setError(err.message);
+        setErrorCode(err.code ?? "");
+      } else {
+        setError(err instanceof Error ? err.message : "Erro ao autenticar.");
+      }
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleResend() {
+    setResendLoading(true);
+    await api.auth.resendVerification(email).catch(() => undefined);
+    setResendLoading(false);
+    setResendDone(true);
   }
 
   return (
@@ -42,7 +105,6 @@ export function Login() {
         </div>
 
         <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6 space-y-5">
-          {/* Tab switch */}
           <div className="flex rounded-lg bg-gray-100 dark:bg-gray-800 p-1">
             {(["login", "register"] as Mode[]).map((m) => (
               <button
@@ -51,6 +113,8 @@ export function Login() {
                 onClick={() => {
                   setMode(m);
                   setError("");
+                  setErrorCode("");
+                  setResendDone(false);
                 }}
                 className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-colors ${
                   mode === m
@@ -95,7 +159,29 @@ export function Login() {
               />
             </div>
 
-            {error && <p className="text-xs text-red-500">{error}</p>}
+            {error && (
+              <div className="space-y-1">
+                <p className="text-xs text-red-500">{error}</p>
+                {errorCode === "EMAIL_NOT_VERIFIED" && (
+                  <>
+                    {resendDone ? (
+                      <p className="text-xs text-green-600">
+                        E-mail reenviado! Verifique sua caixa de entrada.
+                      </p>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleResend}
+                        disabled={resendLoading}
+                        className="text-xs text-blue-600 hover:underline disabled:opacity-50"
+                      >
+                        {resendLoading ? "Enviando…" : "Reenviar e-mail de verificação"}
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
 
             <button
               type="submit"

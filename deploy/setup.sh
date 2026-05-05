@@ -186,7 +186,15 @@ JWT_SECRET=${JWT_SECRET}
 JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
 PORT=3000
 ALLOWED_ORIGINS=https://${DOMAIN}
+APP_URL=https://${DOMAIN}
 NODE_ENV=production
+
+# SMTP — preencha com as credenciais do seu provedor de e-mail
+SMTP_HOST=
+SMTP_PORT=587
+SMTP_USER=
+SMTP_PASS=
+SMTP_FROM=noreply@${DOMAIN}
 ENV
 
 chmod 600 "${ENV_FILE}"

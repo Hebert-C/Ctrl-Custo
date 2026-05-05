@@ -70,8 +70,8 @@ async function req<T>(path: string, init: RequestInit = {}): Promise<T> {
   }
 
   if (!res.ok) {
-    const body = (await res.json().catch(() => ({}))) as { error?: string };
-    throw new Error(body.error ?? `HTTP ${res.status}`);
+    const body = (await res.json().catch(() => ({}))) as { error?: string; code?: string };
+    throw new ApiError(body.error ?? `HTTP ${res.status}`, body.code);
   }
 
   if (res.status === 204) return {} as T;
@@ -252,6 +252,15 @@ function toApiTx(data: Partial<NewTransaction>): Record<string, unknown> {
 
 // --- Public API ---
 
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public code?: string
+  ) {
+    super(message);
+  }
+}
+
 export const api = {
   auth: {
     login: (email: string, password: string) =>
@@ -260,9 +269,18 @@ export const api = {
         body: JSON.stringify({ email, password }),
       }),
     register: (email: string, password: string) =>
-      req<{ accessToken: string }>("/auth/register", {
+      req<{ message: string }>("/auth/register", {
         method: "POST",
         body: JSON.stringify({ email, password }),
+      }),
+    verifyEmail: (token: string) =>
+      req<{ accessToken: string }>(`/auth/verify-email?token=${encodeURIComponent(token)}`, {
+        method: "GET",
+      }),
+    resendVerification: (email: string) =>
+      req<{ ok: boolean }>("/auth/resend-verification", {
+        method: "POST",
+        body: JSON.stringify({ email }),
       }),
     refresh: () =>
       fetch(`${BASE}/auth/refresh`, { method: "POST", credentials: "include" }).then((r) =>
