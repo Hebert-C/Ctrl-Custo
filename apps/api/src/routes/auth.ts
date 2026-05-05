@@ -3,14 +3,17 @@ import { zValidator } from "@hono/zod-validator";
 import { setCookie, getCookie, deleteCookie } from "hono/cookie";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
+import { randomBytes } from "node:crypto";
 import { db } from "../db/index";
 import { users } from "../db/schema";
 import { hashPassword, verifyPassword } from "../lib/password";
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from "../lib/token";
+import { sendVerificationEmail } from "../lib/email";
 import { rateLimit } from "../middleware/rateLimit";
 
 const MAX_FAILED_ATTEMPTS = 10;
 const LOCKOUT_MS = 30 * 60 * 1000;
+const VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;
 
 const authBody = z.object({
   email: z.string().email().max(255),
@@ -25,6 +28,13 @@ const cookieOpts = {
   maxAge: 7 * 24 * 60 * 60,
   path: "/",
 };
+
+// Generate once at startup to avoid timing leak on login
+const dummyHashPromise = hashPassword("__ctrl_custo_dummy__");
+
+function generateVerificationToken() {
+  return randomBytes(32).toString("hex");
+}
 
 export const authRouter = new Hono();
 
@@ -42,16 +52,24 @@ authRouter.post("/register", zValidator("json", authBody), async (c) => {
     return c.json({ error: "Email already registered" }, 409);
   }
 
-  const passwordHash = await hashPassword(password);
-  const [user] = await db.insert(users).values({ email, passwordHash }).returning({ id: users.id });
-
-  const [accessToken, refreshToken] = await Promise.all([
-    signAccessToken(user.id),
-    signRefreshToken(user.id),
+  const [passwordHash, verificationToken] = await Promise.all([
+    hashPassword(password),
+    Promise.resolve(generateVerificationToken()),
   ]);
+  const verificationExpiresAt = new Date(Date.now() + VERIFICATION_TTL_MS);
 
-  setCookie(c, REFRESH_COOKIE, refreshToken, cookieOpts);
-  return c.json({ accessToken }, 201);
+  await db.insert(users).values({
+    email,
+    passwordHash,
+    emailVerificationToken: verificationToken,
+    emailVerificationExpiresAt: verificationExpiresAt,
+  });
+
+  await sendVerificationEmail(email, verificationToken).catch((err) => {
+    console.error("[auth] failed to send verification email:", err);
+  });
+
+  return c.json({ message: "Conta criada. Verifique seu e-mail para ativar a conta." }, 201);
 });
 
 authRouter.post("/login", zValidator("json", authBody), async (c) => {
@@ -59,6 +77,7 @@ authRouter.post("/login", zValidator("json", authBody), async (c) => {
 
   const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
   if (!user) {
+    await verifyPassword(await dummyHashPromise, password);
     return c.json({ error: "Invalid credentials" }, 401);
   }
 
@@ -77,6 +96,16 @@ authRouter.post("/login", zValidator("json", authBody), async (c) => {
     return c.json({ error: "Invalid credentials" }, 401);
   }
 
+  if (!user.emailVerified) {
+    return c.json(
+      {
+        error: "E-mail não verificado. Verifique sua caixa de entrada.",
+        code: "EMAIL_NOT_VERIFIED",
+      },
+      403
+    );
+  }
+
   if (user.failedAttempts > 0) {
     await db
       .update(users)
@@ -92,6 +121,74 @@ authRouter.post("/login", zValidator("json", authBody), async (c) => {
   setCookie(c, REFRESH_COOKIE, refreshToken, cookieOpts);
   return c.json({ accessToken });
 });
+
+authRouter.get("/verify-email", async (c) => {
+  const token = c.req.query("token");
+  if (!token) return c.json({ error: "Token inválido" }, 400);
+
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(eq(users.emailVerificationToken, token))
+    .limit(1);
+
+  if (!user) return c.json({ error: "Token inválido ou expirado" }, 400);
+
+  if (!user.emailVerificationExpiresAt || user.emailVerificationExpiresAt < new Date()) {
+    return c.json({ error: "Token expirado. Solicite um novo e-mail de verificação." }, 400);
+  }
+
+  await db
+    .update(users)
+    .set({
+      emailVerified: true,
+      emailVerificationToken: null,
+      emailVerificationExpiresAt: null,
+      updatedAt: new Date(),
+    })
+    .where(eq(users.id, user.id));
+
+  const [accessToken, refreshToken] = await Promise.all([
+    signAccessToken(user.id),
+    signRefreshToken(user.id),
+  ]);
+
+  setCookie(c, REFRESH_COOKIE, refreshToken, cookieOpts);
+  return c.json({ accessToken });
+});
+
+authRouter.post(
+  "/resend-verification",
+  zValidator("json", z.object({ email: z.string().email().max(255) })),
+  async (c) => {
+    const { email } = c.req.valid("json");
+
+    const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+
+    // Always respond with 200 to avoid email enumeration
+    if (!user || user.emailVerified) {
+      return c.json({ ok: true });
+    }
+
+    const verificationToken = generateVerificationToken();
+    const verificationExpiresAt = new Date(Date.now() + VERIFICATION_TTL_MS);
+
+    await db
+      .update(users)
+      .set({
+        emailVerificationToken: verificationToken,
+        emailVerificationExpiresAt: verificationExpiresAt,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, user.id));
+
+    await sendVerificationEmail(email, verificationToken).catch((err) => {
+      console.error("[auth] failed to resend verification email:", err);
+    });
+
+    return c.json({ ok: true });
+  }
+);
 
 authRouter.post("/refresh", async (c) => {
   const token = getCookie(c, REFRESH_COOKIE);
