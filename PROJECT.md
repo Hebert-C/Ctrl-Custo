@@ -139,34 +139,19 @@ packages/config/ — tsconfig bases
 | Migração 0002        | ✅     | aplicada (7 schemas + 6 views em `reports.*`)                              |
 | Cadastro de conta    | ✅     | funcionando                                                                |
 | HTTPS/SSL            | ✅     | Certificado Let's Encrypt ativo — expira 2026-08-04 (renovação automática) |
-| CI/CD automático     | ❌     | falta configurar secrets SSH                                               |
+| CI/CD automático     | ✅     | CI + Deploy API + Deploy Web funcionando                                   |
 
 ---
 
 ## Pendências Prioritárias
 
-1. **Configurar GitHub Secrets** para CI/CD automático (deploy automático ao fazer push)
-
-   ```bash
-   ssh-keygen -t ed25519 -C "github-actions-deploy" -f deploy_key -N ""
-   # Adicionar deploy_key.pub em ~/.ssh/authorized_keys do usuário deploy na VM
-   # Adicionar ORACLE_HOST, ORACLE_USER, ORACLE_SSH_KEY no GitHub Secrets
-   ```
-
-2. **Deploy manual atual** (até CI/CD estar configurado):
-
-   ```bash
-   # Push para main, depois na VM:
-   ssh oracle-ctrl-custos "sudo -u deploy bash -c 'cd /home/deploy/ctrl-custo && git pull && source ~/.nvm/nvm.sh && pnpm --filter web build && pm2 restart ctrl-custo-api'"
-   ```
-
-3. **PM2 fork mode** — aplicar `exec_mode: fork` do ecosystem.config.cjs (já commitado, precisa de `pm2 delete + pm2 start` na VM para vigorar)
+1. **PM2 fork mode** — aplicar `exec_mode: fork` do ecosystem.config.cjs (já commitado, precisa de `pm2 delete + pm2 start` na VM para vigorar)
 
    ```bash
    ssh oracle-ctrl-custos "sudo -u deploy bash -c 'source ~/.nvm/nvm.sh && pm2 delete ctrl-custo-api && cd /home/deploy/ctrl-custo/apps/api && pm2 start ecosystem.config.cjs --env production'"
    ```
 
-4. **Reabrir cadastro** quando encerrar fase de testes — alterar `REGISTRATION_ENABLED = true` em `apps/web/src/pages/Login/index.tsx`
+2. **Reabrir cadastro** quando encerrar fase de testes — alterar `REGISTRATION_ENABLED = true` em `apps/web/src/pages/Login/index.tsx`
 
 ---
 
