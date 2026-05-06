@@ -1,6 +1,5 @@
 import {
-  pgTable,
-  pgEnum,
+  pgSchema,
   uuid,
   text,
   integer,
@@ -9,15 +8,26 @@ import {
   doublePrecision,
 } from "drizzle-orm/pg-core";
 
-export const categoryTypeEnum = pgEnum("category_type", ["income", "expense", "both"]);
-export const accountTypeEnum = pgEnum("account_type", [
+// ─── Schema definitions ───────────────────────────────────────────────────────
+
+export const authSchema = pgSchema("auth");
+export const bankingSchema = pgSchema("banking");
+export const ledgerSchema = pgSchema("ledger");
+export const planningSchema = pgSchema("planning");
+export const portfolioSchema = pgSchema("portfolio");
+export const householdSchema = pgSchema("household");
+
+// ─── Enums (scoped to their domain) ──────────────────────────────────────────
+
+export const accountTypeEnum = bankingSchema.enum("account_type", [
   "checking",
   "savings",
   "investment",
   "cash",
   "wallet",
 ]);
-export const cardBrandEnum = pgEnum("card_brand", [
+
+export const cardBrandEnum = bankingSchema.enum("card_brand", [
   "visa",
   "mastercard",
   "elo",
@@ -25,14 +35,28 @@ export const cardBrandEnum = pgEnum("card_brand", [
   "hipercard",
   "other",
 ]);
-export const transactionTypeEnum = pgEnum("transaction_type", ["income", "expense", "transfer"]);
-export const transactionStatusEnum = pgEnum("transaction_status", [
+
+export const categoryTypeEnum = ledgerSchema.enum("category_type", ["income", "expense", "both"]);
+
+export const transactionTypeEnum = ledgerSchema.enum("transaction_type", [
+  "income",
+  "expense",
+  "transfer",
+]);
+
+export const transactionStatusEnum = ledgerSchema.enum("transaction_status", [
   "confirmed",
   "pending",
   "cancelled",
 ]);
-export const goalStatusEnum = pgEnum("goal_status", ["active", "completed", "cancelled"]);
-export const investmentTypeEnum = pgEnum("investment_type", [
+
+export const goalStatusEnum = planningSchema.enum("goal_status", [
+  "active",
+  "completed",
+  "cancelled",
+]);
+
+export const investmentTypeEnum = portfolioSchema.enum("investment_type", [
   "stock",
   "fund",
   "crypto",
@@ -41,7 +65,9 @@ export const investmentTypeEnum = pgEnum("investment_type", [
   "other",
 ]);
 
-export const users = pgTable("users", {
+// ─── auth ─────────────────────────────────────────────────────────────────────
+
+export const users = authSchema.table("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   email: text("email").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
@@ -49,26 +75,16 @@ export const users = pgTable("users", {
   lockedUntil: timestamp("locked_until", { withTimezone: true }),
   emailVerified: boolean("email_verified").notNull().default(false),
   emailVerificationToken: text("email_verification_token"),
-  emailVerificationExpiresAt: timestamp("email_verification_expires_at", { withTimezone: true }),
+  emailVerificationExpiresAt: timestamp("email_verification_expires_at", {
+    withTimezone: true,
+  }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const categories = pgTable("categories", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  name: text("name").notNull(),
-  type: categoryTypeEnum("type").notNull(),
-  color: text("color").notNull(),
-  icon: text("icon").notNull(),
-  parentId: uuid("parent_id"),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
+// ─── banking ──────────────────────────────────────────────────────────────────
 
-export const accounts = pgTable("accounts", {
+export const accounts = bankingSchema.table("accounts", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id")
     .notNull()
@@ -84,7 +100,7 @@ export const accounts = pgTable("accounts", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const cards = pgTable("cards", {
+export const cards = bankingSchema.table("cards", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id")
     .notNull()
@@ -104,7 +120,23 @@ export const cards = pgTable("cards", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const transactions = pgTable("transactions", {
+// ─── ledger ───────────────────────────────────────────────────────────────────
+
+export const categories = ledgerSchema.table("categories", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  type: categoryTypeEnum("type").notNull(),
+  color: text("color").notNull(),
+  icon: text("icon").notNull(),
+  parentId: uuid("parent_id"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const transactions = ledgerSchema.table("transactions", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id")
     .notNull()
@@ -129,7 +161,9 @@ export const transactions = pgTable("transactions", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const goals = pgTable("goals", {
+// ─── planning ─────────────────────────────────────────────────────────────────
+
+export const goals = planningSchema.table("goals", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id")
     .notNull()
@@ -146,7 +180,9 @@ export const goals = pgTable("goals", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const investments = pgTable("investments", {
+// ─── portfolio ────────────────────────────────────────────────────────────────
+
+export const investments = portfolioSchema.table("investments", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id")
     .notNull()

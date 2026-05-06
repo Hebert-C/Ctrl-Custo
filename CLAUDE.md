@@ -2,6 +2,17 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Leitura obrigatória no início de cada sessão
+
+Leia `PROJECT.md` antes de qualquer tarefa. Ele contém:
+
+- Status atual de cada fase do projeto
+- Estado da VM Oracle Cloud e pendências de infra
+- Log de todas as sessões anteriores (o que foi feito, o que ficou em aberto)
+- Próximos passos priorizados
+
+Ao final de cada sessão, atualize a seção **Log de Sessões** do `PROJECT.md` com o que foi feito e o que ficou pendente.
+
 ## Project Overview
 
 **Ctrl-Custo** is a personal finance app (Brazilian Portuguese) with a web version (React) and a mobile version (Expo). Business logic, the SQLite database, and TypeScript types live in a shared `packages/core` package.
@@ -121,6 +132,10 @@ Shared design system built on React Native primitives (works on web via `react-n
 - `tokens/colors.ts` — light/dark palettes, semantic colors (income = green, expense = red, transfer = blue, investment = purple, pending = yellow), 10 fixed category colors, surface/text/state tokens
 - `tokens/typography.ts` — font sizes, weights, line heights
 - `tokens/spacing.ts` — space scale
+
+## Commits
+
+- **Nunca adicionar `Co-Authored-By: Claude...`** nas mensagens de commit. Omitir completamente essa linha em todos os commits deste projeto.
 
 ## Key constraints
 
