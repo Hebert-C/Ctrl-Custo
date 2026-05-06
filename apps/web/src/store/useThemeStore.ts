@@ -22,6 +22,11 @@ export const useThemeStore = create<ThemeStore>()(
         set({ isDark: dark });
       },
     }),
-    { name: "ctrl-custo-theme" }
+    {
+      name: "ctrl-custo-theme",
+      onRehydrateStorage: () => (state) => {
+        if (state) document.documentElement.classList.toggle("dark", state.isDark);
+      },
+    }
   )
 );
