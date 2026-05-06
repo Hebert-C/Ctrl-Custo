@@ -13,7 +13,7 @@ reportsRouter.get("/summary", async (c) => {
   const month = c.req.query("month");
 
   if (!month || !/^\d{4}-\d{2}$/.test(month)) {
-    return c.json({ error: "Query param 'month' required in format YYYY-MM" }, 400);
+    return c.json({ error: "Parâmetro 'month' obrigatório no formato AAAA-MM." }, 400);
   }
 
   const from = `${month}-01`;

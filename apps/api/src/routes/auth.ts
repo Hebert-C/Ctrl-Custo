@@ -5,7 +5,7 @@ import { z } from "zod";
 import { eq } from "drizzle-orm";
 import { randomBytes } from "node:crypto";
 import { db } from "../db/index";
-import { users } from "../db/schema";
+import { users, categories } from "../db/schema";
 import { hashPassword, verifyPassword } from "../lib/password";
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from "../lib/token";
 import { sendVerificationEmail } from "../lib/email";
@@ -36,6 +36,27 @@ function generateVerificationToken() {
   return randomBytes(32).toString("hex");
 }
 
+async function seedDefaultCategories(userId: string) {
+  const defaults = [
+    { name: "Alimentação", type: "expense" as const, icon: "🍽️", color: "#F97316" },
+    { name: "Transporte", type: "expense" as const, icon: "🚗", color: "#06B6D4" },
+    { name: "Moradia", type: "expense" as const, icon: "🏠", color: "#6366F1" },
+    { name: "Saúde", type: "expense" as const, icon: "💊", color: "#EF4444" },
+    { name: "Educação", type: "expense" as const, icon: "📚", color: "#3B82F6" },
+    { name: "Lazer", type: "expense" as const, icon: "🎬", color: "#EC4899" },
+    { name: "Compras", type: "expense" as const, icon: "🛒", color: "#F59E0B" },
+    { name: "Vestuário", type: "expense" as const, icon: "👗", color: "#84CC16" },
+    { name: "Assinaturas", type: "expense" as const, icon: "📱", color: "#6B7280" },
+    { name: "Contas & Utilidades", type: "expense" as const, icon: "⚡", color: "#10B981" },
+    { name: "Salário", type: "income" as const, icon: "💰", color: "#16A34A" },
+    { name: "Freelance", type: "income" as const, icon: "💻", color: "#8B5CF6" },
+    { name: "Investimentos", type: "income" as const, icon: "📈", color: "#2563EB" },
+    { name: "Presentes", type: "income" as const, icon: "🎁", color: "#DB2777" },
+    { name: "Outros", type: "both" as const, icon: "❓", color: "#6B7280" },
+  ];
+  await db.insert(categories).values(defaults.map((cat) => ({ ...cat, userId })));
+}
+
 export const authRouter = new Hono();
 
 authRouter.use("*", rateLimit(10, 15 * 60 * 1000));
@@ -49,7 +70,7 @@ authRouter.post("/register", zValidator("json", authBody), async (c) => {
     .where(eq(users.email, email))
     .limit(1);
   if (existing.length > 0) {
-    return c.json({ error: "Email already registered" }, 409);
+    return c.json({ error: "E-mail já cadastrado." }, 409);
   }
 
   const [passwordHash, verificationToken] = await Promise.all([
@@ -58,11 +79,18 @@ authRouter.post("/register", zValidator("json", authBody), async (c) => {
   ]);
   const verificationExpiresAt = new Date(Date.now() + VERIFICATION_TTL_MS);
 
-  await db.insert(users).values({
-    email,
-    passwordHash,
-    emailVerificationToken: verificationToken,
-    emailVerificationExpiresAt: verificationExpiresAt,
+  const [newUser] = await db
+    .insert(users)
+    .values({
+      email,
+      passwordHash,
+      emailVerificationToken: verificationToken,
+      emailVerificationExpiresAt: verificationExpiresAt,
+    })
+    .returning({ id: users.id });
+
+  seedDefaultCategories(newUser.id).catch((err) => {
+    console.error("[auth] failed to seed default categories:", err);
   });
 
   await sendVerificationEmail(email, verificationToken).catch((err) => {
@@ -78,11 +106,14 @@ authRouter.post("/login", zValidator("json", authBody), async (c) => {
   const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
   if (!user) {
     await verifyPassword(await dummyHashPromise, password);
-    return c.json({ error: "Invalid credentials" }, 401);
+    return c.json({ error: "E-mail ou senha incorretos." }, 401);
   }
 
   if (user.lockedUntil && user.lockedUntil > new Date()) {
-    return c.json({ error: "Account temporarily locked. Try again later." }, 423);
+    return c.json(
+      { error: "Conta bloqueada temporariamente. Tente novamente em 30 minutos." },
+      423
+    );
   }
 
   const valid = await verifyPassword(user.passwordHash, password);
@@ -93,7 +124,7 @@ authRouter.post("/login", zValidator("json", authBody), async (c) => {
       .update(users)
       .set({ failedAttempts: newFailed, lockedUntil, updatedAt: new Date() })
       .where(eq(users.id, user.id));
-    return c.json({ error: "Invalid credentials" }, 401);
+    return c.json({ error: "E-mail ou senha incorretos." }, 401);
   }
 
   if (!user.emailVerified) {
@@ -192,7 +223,7 @@ authRouter.post(
 
 authRouter.post("/refresh", async (c) => {
   const token = getCookie(c, REFRESH_COOKIE);
-  if (!token) return c.json({ error: "Unauthorized" }, 401);
+  if (!token) return c.json({ error: "Não autorizado." }, 401);
 
   try {
     const payload = await verifyRefreshToken(token);
@@ -200,7 +231,7 @@ authRouter.post("/refresh", async (c) => {
     return c.json({ accessToken });
   } catch {
     deleteCookie(c, REFRESH_COOKIE, { path: "/" });
-    return c.json({ error: "Unauthorized" }, 401);
+    return c.json({ error: "Não autorizado." }, 401);
   }
 });
 

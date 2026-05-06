@@ -22,23 +22,33 @@ const PRESET_COLORS = [
 ];
 
 const PRESET_ICONS = [
-  "food",
-  "transport",
-  "housing",
-  "health",
-  "education",
-  "entertainment",
-  "shopping",
-  "salary",
-  "investment",
-  "other",
+  { value: "🍽️", label: "Alimentação" },
+  { value: "🚗", label: "Transporte" },
+  { value: "🏠", label: "Moradia" },
+  { value: "💊", label: "Saúde" },
+  { value: "📚", label: "Educação" },
+  { value: "🎬", label: "Lazer" },
+  { value: "🛒", label: "Compras" },
+  { value: "👗", label: "Vestuário" },
+  { value: "⚡", label: "Contas" },
+  { value: "📱", label: "Assinaturas" },
+  { value: "💰", label: "Salário" },
+  { value: "💻", label: "Freelance" },
+  { value: "📈", label: "Investimentos" },
+  { value: "🎁", label: "Presentes" },
+  { value: "🏋️", label: "Academia" },
+  { value: "✈️", label: "Viagem" },
+  { value: "🐾", label: "Pets" },
+  { value: "🏥", label: "Médico" },
+  { value: "🍺", label: "Restaurante" },
+  { value: "❓", label: "Outros" },
 ];
 
 const DEFAULT_FORM = {
   name: "",
   type: "expense" as CategoryType,
   color: "#EF4444",
-  icon: "other",
+  icon: "🍽️",
 };
 
 export function CategoriesSection() {
@@ -153,16 +163,23 @@ export function CategoriesSection() {
             <div className="flex flex-wrap gap-2">
               {PRESET_ICONS.map((icon) => (
                 <button
-                  key={icon}
+                  key={icon.value}
                   type="button"
-                  onClick={() => setForm((f) => ({ ...f, icon }))}
-                  className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${
-                    form.icon === icon
-                      ? "bg-blue-600 text-white border-blue-600"
-                      : "bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-600 hover:border-blue-400"
+                  onClick={() => setForm((f) => ({ ...f, icon: icon.value }))}
+                  className={`flex flex-col items-center gap-0.5 p-2 w-16 rounded-lg border transition-colors ${
+                    form.icon === icon.value
+                      ? "bg-blue-600 border-blue-600"
+                      : "bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600 hover:border-blue-400"
                   }`}
                 >
-                  {icon}
+                  <span className="text-xl">{icon.value}</span>
+                  <span
+                    className={`text-[9px] leading-tight truncate w-full text-center ${
+                      form.icon === icon.value ? "text-white" : "text-gray-500 dark:text-gray-400"
+                    }`}
+                  >
+                    {icon.label}
+                  </span>
                 </button>
               ))}
             </div>
@@ -233,17 +250,17 @@ export function CategoriesSection() {
                     className="flex items-center gap-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 px-4 py-3"
                   >
                     <div
-                      className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-white text-xs font-bold"
+                      className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center text-lg"
                       style={{ backgroundColor: cat.color }}
                     >
-                      {cat.name.charAt(0).toUpperCase()}
+                      {cat.icon}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                         {cat.name}
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {CATEGORY_TYPES.find((t) => t.value === cat.type)?.label} · {cat.icon}
+                        {CATEGORY_TYPES.find((t) => t.value === cat.type)?.label}
                       </p>
                     </div>
                     <div className="flex gap-1 flex-shrink-0">

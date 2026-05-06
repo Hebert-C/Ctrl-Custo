@@ -53,7 +53,7 @@ goalsRouter.put("/:id", zValidator("json", goalBody.partial()), async (c) => {
     .set({ ...body, updatedAt: new Date() })
     .where(and(eq(goals.id, id), eq(goals.userId, userId)))
     .returning();
-  if (!row) return c.json({ error: "Not found" }, 404);
+  if (!row) return c.json({ error: "Meta não encontrada." }, 404);
   return c.json(row);
 });
 
@@ -64,7 +64,7 @@ goalsRouter.delete("/:id", async (c) => {
     .delete(goals)
     .where(and(eq(goals.id, id), eq(goals.userId, userId)))
     .returning({ id: goals.id });
-  if (!row) return c.json({ error: "Not found" }, 404);
+  if (!row) return c.json({ error: "Meta não encontrada." }, 404);
   return c.json({ ok: true });
 });
 
@@ -78,7 +78,7 @@ goalsRouter.post("/:id/deposit", zValidator("json", depositBody), async (c) => {
     .set({ currentAmount: sql`${goals.currentAmount} + ${amount}`, updatedAt: new Date() })
     .where(and(eq(goals.id, id), eq(goals.userId, userId)))
     .returning();
-  if (!row) return c.json({ error: "Not found" }, 404);
+  if (!row) return c.json({ error: "Meta não encontrada." }, 404);
 
   if (row.currentAmount >= row.targetAmount && row.status === "active") {
     const [completed] = await db

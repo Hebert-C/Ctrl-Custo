@@ -75,7 +75,7 @@ transactionsRouter.put("/:id", zValidator("json", transactionBody.partial()), as
     .from(transactions)
     .where(and(eq(transactions.id, id), eq(transactions.userId, userId)))
     .limit(1);
-  if (!existing) return c.json({ error: "Not found" }, 404);
+  if (!existing) return c.json({ error: "Transação não encontrada." }, 404);
 
   if (body.accountId && body.accountId !== existing.accountId) {
     const [acct] = await db
@@ -83,7 +83,7 @@ transactionsRouter.put("/:id", zValidator("json", transactionBody.partial()), as
       .from(accounts)
       .where(and(eq(accounts.id, body.accountId), eq(accounts.userId, userId)))
       .limit(1);
-    if (!acct) return c.json({ error: "Not found" }, 404);
+    if (!acct) return c.json({ error: "Transação não encontrada." }, 404);
   }
 
   const [row] = await db.transaction(async (trx) => {
@@ -127,7 +127,7 @@ transactionsRouter.delete("/:id", async (c) => {
     .from(transactions)
     .where(and(eq(transactions.id, id), eq(transactions.userId, userId)))
     .limit(1);
-  if (!existing) return c.json({ error: "Not found" }, 404);
+  if (!existing) return c.json({ error: "Transação não encontrada." }, 404);
 
   await db.transaction(async (trx) => {
     if (existing.status === "confirmed") {

@@ -43,7 +43,7 @@ categoriesRouter.put("/:id", zValidator("json", categoryBody.partial()), async (
     .set({ ...body, updatedAt: new Date() })
     .where(and(eq(categories.id, id), eq(categories.userId, userId)))
     .returning();
-  if (!row) return c.json({ error: "Not found" }, 404);
+  if (!row) return c.json({ error: "Categoria não encontrada." }, 404);
   return c.json(row);
 });
 
@@ -54,6 +54,6 @@ categoriesRouter.delete("/:id", async (c) => {
     .delete(categories)
     .where(and(eq(categories.id, id), eq(categories.userId, userId)))
     .returning({ id: categories.id });
-  if (!row) return c.json({ error: "Not found" }, 404);
+  if (!row) return c.json({ error: "Categoria não encontrada." }, 404);
   return c.json({ ok: true });
 });

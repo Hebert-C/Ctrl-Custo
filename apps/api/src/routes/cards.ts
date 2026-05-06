@@ -50,7 +50,7 @@ cardsRouter.put("/:id", zValidator("json", cardBody.partial()), async (c) => {
     .set({ ...body, updatedAt: new Date() })
     .where(and(eq(cards.id, id), eq(cards.userId, userId)))
     .returning();
-  if (!row) return c.json({ error: "Not found" }, 404);
+  if (!row) return c.json({ error: "Cartão não encontrado." }, 404);
   return c.json(row);
 });
 
@@ -61,6 +61,6 @@ cardsRouter.delete("/:id", async (c) => {
     .delete(cards)
     .where(and(eq(cards.id, id), eq(cards.userId, userId)))
     .returning({ id: cards.id });
-  if (!row) return c.json({ error: "Not found" }, 404);
+  if (!row) return c.json({ error: "Cartão não encontrado." }, 404);
   return c.json({ ok: true });
 });

@@ -48,7 +48,7 @@ accountsRouter.put("/:id", zValidator("json", accountBody.partial()), async (c) 
     .set({ ...body, updatedAt: new Date() })
     .where(and(eq(accounts.id, id), eq(accounts.userId, userId)))
     .returning();
-  if (!row) return c.json({ error: "Not found" }, 404);
+  if (!row) return c.json({ error: "Conta não encontrada." }, 404);
   return c.json(row);
 });
 
@@ -59,6 +59,6 @@ accountsRouter.delete("/:id", async (c) => {
     .delete(accounts)
     .where(and(eq(accounts.id, id), eq(accounts.userId, userId)))
     .returning({ id: accounts.id });
-  if (!row) return c.json({ error: "Not found" }, 404);
+  if (!row) return c.json({ error: "Conta não encontrada." }, 404);
   return c.json({ ok: true });
 });
