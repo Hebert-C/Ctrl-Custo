@@ -59,9 +59,9 @@ async function seedDefaultCategories(userId: string) {
 
 export const authRouter = new Hono();
 
-authRouter.use("*", rateLimit(10, 15 * 60 * 1000));
+const credentialRateLimit = rateLimit(10, 15 * 60 * 1000);
 
-authRouter.post("/register", zValidator("json", authBody), async (c) => {
+authRouter.post("/register", credentialRateLimit, zValidator("json", authBody), async (c) => {
   const { email, password } = c.req.valid("json");
 
   const existing = await db
@@ -100,7 +100,7 @@ authRouter.post("/register", zValidator("json", authBody), async (c) => {
   return c.json({ message: "Conta criada. Verifique seu e-mail para ativar a conta." }, 201);
 });
 
-authRouter.post("/login", zValidator("json", authBody), async (c) => {
+authRouter.post("/login", credentialRateLimit, zValidator("json", authBody), async (c) => {
   const { email, password } = c.req.valid("json");
 
   const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
@@ -190,6 +190,7 @@ authRouter.get("/verify-email", async (c) => {
 
 authRouter.post(
   "/resend-verification",
+  credentialRateLimit,
   zValidator("json", z.object({ email: z.string().email().max(255) })),
   async (c) => {
     const { email } = c.req.valid("json");
