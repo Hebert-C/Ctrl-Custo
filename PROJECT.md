@@ -130,7 +130,7 @@ packages/config/ — tsconfig bases
 | -------------------- | ------ | -------------------------------------------------------------------------- |
 | Nginx                | ✅     | rodando                                                                    |
 | PostgreSQL 16        | ✅     | rodando                                                                    |
-| PM2 `ctrl-custo-api` | ✅     | online via tsx                                                             |
+| PM2 `ctrl-custo-api` | ✅     | online em fork mode — logs em `/home/deploy/logs/api-out.log`              |
 | Frontend acessível   | ✅     | `https://ctrlcusto.duckdns.org`                                            |
 | API health           | ✅     | `http://ctrlcusto.duckdns.org/api/health`                                  |
 | CORS                 | ✅     | resolvido                                                                  |
@@ -145,13 +145,7 @@ packages/config/ — tsconfig bases
 
 ## Pendências Prioritárias
 
-1. **PM2 fork mode** — aplicar `exec_mode: fork` do ecosystem.config.cjs (já commitado, precisa de `pm2 delete + pm2 start` na VM para vigorar)
-
-   ```bash
-   ssh oracle-ctrl-custos "sudo -u deploy bash -c 'source ~/.nvm/nvm.sh && pm2 delete ctrl-custo-api && cd /home/deploy/ctrl-custo/apps/api && pm2 start ecosystem.config.cjs --env production'"
-   ```
-
-2. **Reabrir cadastro** quando encerrar fase de testes — alterar `REGISTRATION_ENABLED = true` em `apps/web/src/pages/Login/index.tsx`
+1. **Reabrir cadastro** quando encerrar fase de testes — alterar `REGISTRATION_ENABLED = true` em `apps/web/src/pages/Login/index.tsx`
 
 ---
 
