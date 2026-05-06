@@ -214,6 +214,76 @@ Coletado via WhatsApp após primeira sessão de uso real.
 
 ---
 
+### Feedback — Iramaya — 2026-05-06
+
+Coletado após primeira sessão de uso real.
+
+---
+
+#### 1. Cartão pede conta duas vezes
+
+**Prioridade:** Alta
+**Origem:** "Quando adiciona cartão já pede conta para pagamento, mas quando vai colocar a despesa e seleciona cartão pede conta novamente."
+**O que fazer:**
+
+- Ao selecionar um cartão no formulário de transação, preencher/ocultar o campo de conta automaticamente usando a conta vinculada ao cartão
+- O campo "conta" não deve aparecer quando um cartão já está selecionado (a conta é implícita)
+
+---
+
+#### 2. Depósito de meta não gera transação
+
+**Prioridade:** Alta
+**Origem:** "Depósito da meta não está entrando na transação."
+**O que fazer:**
+
+- Verificar o endpoint `POST /goals/:id/deposit` — ao depositar deve criar uma transação do tipo `expense` na conta vinculada com categoria "Metas"
+- Confirmar se a lógica existe na API ou se foi omitida
+
+---
+
+#### 3. Detalhamento ao clicar no cartão
+
+**Prioridade:** Média
+**Origem:** "Tem como clicar no cartão e ver o detalhamento do cartão?"
+**O que fazer:**
+
+- Criar página/modal de detalhe do cartão com: transações do mês, fatura atual, limite disponível
+- Na listagem de cartões, tornar cada card clicável
+
+---
+
+#### 4. Personalização de cor dos cartões
+
+**Prioridade:** Baixa
+**Origem:** "Tem como personalizar as cores dos cartões igual personaliza para as contas?"
+**O que fazer:**
+
+- Verificar se o formulário de cartão já expõe o campo `color` — se não, adicionar seletor de cor igual ao de contas
+
+---
+
+#### 5. Editar transação ao invés de só excluir
+
+**Prioridade:** Alta
+**Origem:** "Ao invés de excluir totalmente uma transação, tem como editar ela?"
+**O que fazer:**
+
+- Adicionar botão "Editar" nas transações (endpoint `PUT /transactions/:id` já existe na API)
+- Abrir o formulário pré-preenchido com os dados da transação selecionada
+
+---
+
+#### 6. Saldo negativo em vermelho
+
+**Prioridade:** Média
+**Origem:** "Quando o saldo total fica negativo, dá para mudar de verde para vermelho?"
+**O que fazer:**
+
+- No Dashboard (BalanceCard) e em qualquer lugar que exiba saldo total, aplicar cor condicional: verde se ≥ 0, vermelho se < 0
+
+---
+
 ## Log de Sessões
 
 ### 2026-05-06 — Hotfixes pós-testes com usuários reais
