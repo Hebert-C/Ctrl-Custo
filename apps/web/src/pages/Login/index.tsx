@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../hooks/useAuth";
 import { api, ApiError } from "../../lib/api";
 
+const REGISTRATION_ENABLED = false;
+
 type Mode = "login" | "register";
 
 export function Login() {
@@ -105,27 +107,29 @@ export function Login() {
         </div>
 
         <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6 space-y-5">
-          <div className="flex rounded-lg bg-gray-100 dark:bg-gray-800 p-1">
-            {(["login", "register"] as Mode[]).map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => {
-                  setMode(m);
-                  setError("");
-                  setErrorCode("");
-                  setResendDone(false);
-                }}
-                className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                  mode === m
-                    ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm"
-                    : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-                }`}
-              >
-                {m === "login" ? "Entrar" : "Criar conta"}
-              </button>
-            ))}
-          </div>
+          {REGISTRATION_ENABLED && (
+            <div className="flex rounded-lg bg-gray-100 dark:bg-gray-800 p-1">
+              {(["login", "register"] as Mode[]).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => {
+                    setMode(m);
+                    setError("");
+                    setErrorCode("");
+                    setResendDone(false);
+                  }}
+                  className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                    mode === m
+                      ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm"
+                      : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                  }`}
+                >
+                  {m === "login" ? "Entrar" : "Criar conta"}
+                </button>
+              ))}
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>

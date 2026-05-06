@@ -217,7 +217,7 @@ export function AccountsSection() {
           <div className="flex gap-2">
             <button
               type="submit"
-              disabled={saving || !editing}
+              disabled={saving}
               className="px-4 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-60"
             >
               {saving ? "Salvando…" : editing ? "Atualizar" : "Adicionar"}
