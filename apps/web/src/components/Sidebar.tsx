@@ -1,5 +1,6 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
+import { useAuthStore } from "../hooks/useAuth";
 
 const NAV_ITEMS = [
   { to: "/", label: "Dashboard", icon: "⊞" },
@@ -11,6 +12,8 @@ const NAV_ITEMS = [
 ] as const;
 
 export function Sidebar() {
+  const logout = useAuthStore((s) => s.logout);
+
   return (
     <aside className="w-56 flex-shrink-0 h-screen sticky top-0 flex flex-col bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800">
       {/* Logo */}
@@ -43,8 +46,15 @@ export function Sidebar() {
       </nav>
 
       {/* Rodapé */}
-      <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-800">
-        <p className="text-xs text-gray-400 text-center">v0.1.0</p>
+      <div className="px-3 py-3 border-t border-gray-200 dark:border-gray-800 space-y-1">
+        <button
+          onClick={() => logout()}
+          className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+        >
+          <span className="text-base w-5 text-center">⏻</span>
+          Sair
+        </button>
+        <p className="text-xs text-gray-400 text-center pt-1">v0.1.0</p>
       </div>
     </aside>
   );
