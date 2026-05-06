@@ -53,9 +53,10 @@ async function req<T>(path: string, init: RequestInit = {}): Promise<T> {
   const hdrs: Record<string, string> = { "Content-Type": "application/json" };
   if (_token) hdrs["Authorization"] = `Bearer ${_token}`;
 
+  const hadToken = !!_token;
   let res = await fetch(`${BASE}${path}`, { ...init, headers: hdrs, credentials: "include" });
 
-  if (res.status === 401 && _token) {
+  if (res.status === 401 && hadToken) {
     const ok = await refreshTokenOnce();
     if (ok) {
       hdrs["Authorization"] = `Bearer ${_token!}`;
@@ -64,9 +65,13 @@ async function req<T>(path: string, init: RequestInit = {}): Promise<T> {
   }
 
   if (res.status === 401) {
-    clearToken();
-    window.location.replace("/login");
-    throw new Error("Unauthorized");
+    if (hadToken) {
+      clearToken();
+      window.location.replace("/login");
+      throw new Error("Unauthorized");
+    }
+    const body = (await res.json().catch(() => ({}))) as { error?: string; code?: string };
+    throw new ApiError(body.error ?? `HTTP ${res.status}`, body.code);
   }
 
   if (!res.ok) {
