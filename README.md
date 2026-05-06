@@ -1,6 +1,6 @@
 # Ctrl-Custo
 
-Aplicativo de finanças pessoais com versão web (React) e mobile (Expo), compartilhando lógica de negócio e componentes via monorepo.
+Aplicativo de finanças pessoais com versão web (React), mobile (Expo) e desktop (Tauri), compartilhando lógica de negócio e componentes via monorepo.
 
 ## Estrutura
 
