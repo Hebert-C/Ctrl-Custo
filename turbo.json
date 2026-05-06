@@ -4,7 +4,8 @@
     "build": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**"],
-      "inputs": ["$TURBO_DEFAULT$", "!src-tauri/**"]
+      "inputs": ["$TURBO_DEFAULT$", "!src-tauri/**"],
+      "env": ["VITE_API_URL"]
     },
     "dev": {
       "cache": false,

@@ -12,8 +12,7 @@ import type {
 } from "@ctrl-custo/core";
 import type { InstallmentInfo } from "@ctrl-custo/core";
 
-declare const __API_URL__: string;
-const BASE = __API_URL__;
+const BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 
 let _token: string | null = null;
 let _refreshing: Promise<boolean> | null = null;
