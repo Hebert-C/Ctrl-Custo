@@ -25,11 +25,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Criar .env.production
+        working-directory: apps/web
+        run: echo "VITE_API_URL=${{ secrets.VITE_API_URL }}" > .env.production
+
       - name: Build web
         working-directory: apps/web
         run: pnpm build
-        env:
-          VITE_API_URL: ${{ secrets.VITE_API_URL }}
 
       - name: Deploy dist via rsync
         uses: burnett01/rsync-deployments@7.0.1
