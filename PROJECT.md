@@ -322,41 +322,40 @@ Coletado após primeira sessão de uso real.
 
 ---
 
-### 2. Seção de Investimentos com cotações da B3
+### 2. Seção de Investimentos — Carteira
 
 **Prioridade:** Média
-**Ideia:** Na página de Investimentos, além de registrar aportes manualmente, exibir a cotação atual de ações e FIIs da B3 em tempo real (ou próximo disso), de forma similar ao que o Status Invest faz.
+**Ideia:** Página dedicada para o usuário registrar seus aportes em ações, FIIs e ETFs da B3. O foco é facilitar o cadastro — o usuário digita o ticker e o nome do ativo é preenchido automaticamente, sem depender de API externa.
 
 #### Como implementar
 
-**API de cotações recomendada: [brapi.dev](https://brapi.dev)**
+**Autocomplete de tickers — lista estática embutida no app**
 
-- API brasileira especializada em B3 (ações, FIIs, BDRs, ETFs)
-- Free tier: ilimitado para 4 tickers fixos (PETR4, MGLU3, VALE3, ITUB4) — bom para protótipo
-- Plano pago (Startup): todos os tickers, ~R$50/mês
-- Endpoint principal: `GET https://brapi.dev/api/quote/{TICKER}?token=SEU_TOKEN`
-- Resposta: preço atual, variação do dia (%), volume, mín/máx
-- **Não requer API key no free tier**
+- Criar um arquivo JSON em `apps/web/src/data/b3-tickers.json` com todos os ativos da B3 (~500 itens): ticker + nome completo + tipo (ação, FII, ETF)
+- Sem API, sem rate limit, funciona offline, sempre disponível
+- Lista muda raramente (novos IPOs e delistings ocasionais) — atualização manual algumas vezes por ano
+- Exemplo de entrada: `{ "ticker": "PETR4", "name": "Petróleo Brasileiro S.A. — Petrobras PN", "type": "stock" }`
 
-**Alternativa:** HG Brasil Finance — free tier de 400 requests/dia, requer API key, mais simples de integrar mas com limite baixo para produção.
+**Fluxo de cadastro:**
 
-**Status Invest não tem API oficial** — usa scraping não-oficial, não recomendado para produção.
+1. Usuário digita o ticker (ex: "PETR") → autocomplete sugere os ativos correspondentes
+2. Seleciona o ativo → nome preenchido automaticamente
+3. Informa quantidade e preço médio de compra — o app calcula o valor total do aporte
+4. Para ativos não listados (renda fixa, cripto, exterior) → preenchimento manual livre
 
 **Backend (`apps/api`):**
 
-- Adicionar campo `ticker` (string, opcional) na tabela `portfolio.investments`
-- Migration para adicionar a coluna
-- Nova rota `GET /investments/quote/:ticker` — proxy para brapi.dev com cache em memória de 5 minutos (evita rate limit e deixa a resposta rápida)
-- `BRAPI_TOKEN` como variável de ambiente (opcional no free tier)
+- Rotas `GET/POST/PUT/DELETE /investments` (tabela `portfolio.investments` já existe na migration 0002)
+- Campos: `ticker` (opcional), `name`, `quantity`, `averagePrice` (centavos), `type` (stock | fii | etf | other)
 
 **Web (`apps/web`):**
 
-- Ao cadastrar um investimento, campo opcional "Ticker B3" (ex: PETR4, KNRI11)
-- Na listagem, exibir ao lado de cada investimento: cotação atual, variação do dia (verde/vermelho)
-- Badge "Ao vivo" indicando que o valor é buscado da API, não inserido manualmente
-- Se ticker não informado, exibe só o valor do aporte manual
+- Página `/investments` com listagem dos aportes cadastrados
+- Formulário com autocomplete de ticker via lista estática
+- Exibição: ticker, nome, quantidade, preço médio, valor total do aporte
+- Adicionar item "Carteira" na navegação (Sidebar)
 
-**Complexidade:** Média — a integração com brapi.dev é simples (1 fetch), o maior trabalho é criar a página de Investimentos (rotas API + UI), que já estava planejada no backlog original.
+**Complexidade:** Média — o maior trabalho é criar as rotas na API e a página web. O autocomplete com lista estática é simples de implementar.
 
 ---
 
