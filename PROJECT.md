@@ -369,6 +369,73 @@ Coletado após primeira sessão de uso real.
 
 ---
 
+## Bugs e Melhorias — 2026-05-07
+
+### Bugs
+
+#### 1. Parcelas no cartão não são divididas nem projetadas
+
+**Prioridade:** Alta
+**Sintoma:** Criar despesa de R$1.000 em 4x no cartão registra o valor inteiro em vez de dividir em R$250 por mês e gerar as 4 parcelas nos meses seguintes.
+**O que investigar:**
+
+- `addInstallments` no `useTransactionStore` — verificar se está sendo chamado corretamente quando `installments > 1`
+- No Dashboard, o formulário chama `add` ou `addInstallments`? Verificar se a lógica de parcelas está conectada
+- A API `POST /transactions` suporta parcelamento ou precisa de chamadas múltiplas?
+
+---
+
+#### 2. Saldo da conta não atualiza ao adicionar transação
+
+**Prioridade:** Alta
+**Sintoma:** Após adicionar uma transação pelo modal do Dashboard, o "Saldo nos Bancos" continua mostrando o valor antigo até recarregar a página.
+**O que investigar:**
+
+- `useAccountStore` não está sendo recarregado após o `add` de transação
+- No Dashboard, após `handleSubmit` chamar `add`, precisa também chamar `loadAccounts()` para refletir o novo saldo
+- Verificar se o mesmo problema ocorre na página de Transações
+
+---
+
+### Melhorias
+
+#### 3. Detalhamento no card "Saldo nos Bancos"
+
+**Prioridade:** Média
+**Ideia:** Clicar no card "Saldo nos Bancos" abre um detalhamento com cada banco separado — nome, tipo e saldo individual. Padrão igual ao donut do Saldo do Mês, mas aqui é uma lista simples (não gráfico), já que pode haver poucos bancos cadastrados.
+**O que fazer:**
+
+- Toggle ao clicar no card: abre painel abaixo com lista de bancos (nome · tipo · saldo)
+- Saldo de cada banco em vermelho se negativo
+- Fechar clicando novamente no card ou no ✕
+
+---
+
+#### 4. Relatórios — incluir mês atual
+
+**Prioridade:** Média
+**Sintoma:** O seletor de 3/6/12 meses em Relatórios exibe os meses passados mas pode não incluir o mês atual de forma clara.
+**O que fazer:**
+
+- Verificar se `lastNMonths(n)` inclui o mês atual — se não, corrigir
+- Adicionar opção "Mês atual" no seletor para ver apenas o mês em curso isolado
+- Na tabela de evolução, destacar visualmente a linha do mês atual (negrito ou fundo sutil)
+
+---
+
+#### 5. Clarificar o conceito de Transferência
+
+**Prioridade:** Média
+**Dúvida:** O tipo "Transferência" não é nem entrada nem saída — move dinheiro entre duas contas próprias (ex: Nubank → Itaú). No formulário atual não há campo "conta de destino", o que gera confusão.
+**O que fazer:**
+
+- Adicionar campo "Banco de destino" no formulário quando o tipo for Transferência
+- Ao salvar: debitar a conta de origem e creditar a conta de destino
+- No filtro e listagem, exibir "→ [banco destino]" nas transferências para deixar claro o fluxo
+- Avaliar se Transferência deve aparecer nos totais de Receitas/Despesas do Dashboard (atualmente não aparece, o que é correto — mas não está documentado)
+
+---
+
 ## Log de Sessões
 
 ### 2026-05-06 — Hotfixes pós-testes com usuários reais
