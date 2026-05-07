@@ -6,6 +6,7 @@ interface ReportData {
   totalExpense: number;
   balance: number;
   byCategory: Record<string, number>;
+  byCategoryIncome: Record<string, number>;
 }
 
 // Agrega transações do mês para o dashboard sem depender do ReportService assíncrono
@@ -18,16 +19,26 @@ export function useMonthReport(transactions: Transaction[], month: string): Repo
     let totalIncome = 0;
     let totalExpense = 0;
     const byCategory: Record<string, number> = {};
+    const byCategoryIncome: Record<string, number> = {};
 
     for (const tx of monthTxs) {
-      if (tx.type === "income") totalIncome += tx.amount;
+      if (tx.type === "income") {
+        totalIncome += tx.amount;
+        byCategoryIncome[tx.categoryId] = (byCategoryIncome[tx.categoryId] ?? 0) + tx.amount;
+      }
       if (tx.type === "expense") {
         totalExpense += tx.amount;
         byCategory[tx.categoryId] = (byCategory[tx.categoryId] ?? 0) + tx.amount;
       }
     }
 
-    return { totalIncome, totalExpense, balance: totalIncome - totalExpense, byCategory };
+    return {
+      totalIncome,
+      totalExpense,
+      balance: totalIncome - totalExpense,
+      byCategory,
+      byCategoryIncome,
+    };
   }, [transactions, month]);
 }
 

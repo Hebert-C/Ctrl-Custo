@@ -157,7 +157,7 @@ Coletado via WhatsApp após primeira sessão de uso real.
 
 ---
 
-#### 1. Dashboard: mostrar fluxo mensal em vez de saldo bancário
+#### 1. Dashboard: mostrar fluxo mensal em vez de saldo bancário ✅
 
 **Prioridade:** Alta
 **Origem:** "Como é um relatório mensal, acho que você deveria ter receitas e saídas. Em vez de ele tirar do saldo da conta, tirar da sua receita mensal."
@@ -166,6 +166,15 @@ Coletado via WhatsApp após primeira sessão de uso real.
 - Mover o resumo mensal (Receitas / Saídas / Saldo do mês) para o topo do Dashboard como card principal
 - O saldo bancário das contas passa a ser informação secundária, visível em "Carteiras"
 - Não altera a lógica de negócio — transações continuam afetando o saldo das contas. Apenas a hierarquia visual muda.
+
+**✅ Implementado — Gráficos interativos no card de resumo (dois níveis):**
+
+- **Nível 1 — clicar no total do mês:** abre gráfico de pizza com Entradas vs Saídas do mês atual (ex: 40% entradas · 60% saídas)
+- **Nível 2 — clicar na fatia de Saídas:** detalha as saídas por categoria (ex: 35% Aluguel · 20% Alimentação · 15% Transporte · …)
+- **Nível 2 — clicar na fatia de Entradas:** detalha as entradas por categoria (ex: 70% Salário · 20% Freelance · 10% Outros)
+- Ambos os detalhamentos usam as categorias reais criadas pelo usuário
+- Gráficos usam o `PieChart` já disponível em `packages/ui` — dados calculados das transações do mês já carregadas no Dashboard
+- Clicar fora ou no card novamente fecha o gráfico e volta ao nível anterior
 
 ---
 
@@ -181,7 +190,7 @@ Coletado via WhatsApp após primeira sessão de uso real.
 
 ---
 
-#### 3. Gráficos no Dashboard e Relatórios
+#### 3. Gráficos no Dashboard e Relatórios ✅
 
 **Prioridade:** Média
 **Origem:** "Gráficos vai ser legal."
@@ -281,6 +290,82 @@ Coletado após primeira sessão de uso real.
 **O que fazer:**
 
 - No Dashboard (BalanceCard) e em qualquer lugar que exiba saldo total, aplicar cor condicional: verde se ≥ 0, vermelho se < 0
+
+---
+
+## Novas Features Planejadas
+
+---
+
+### 1. Contas Família — acesso compartilhado entre múltiplos usuários
+
+**Prioridade:** Média
+**Ideia:** Dois ou mais e-mails acessam as mesmas informações financeiras (transações, contas, metas, cartões). Útil para casais ou famílias que gerenciam o orçamento juntos.
+
+#### Como implementar
+
+**Banco de dados** — o schema `household` já existe (criado na migration 0002, vazio, reservado para essa feature):
+
+- `household.groups` — id, name, owner_id, created_at
+- `household.members` — group_id, user_id, role (`owner` | `member`), invited_at, accepted_at
+- `household.invites` — id, group_id, invited_email, token (UUID), expires_at, accepted_at
+
+**API (`apps/api`):**
+
+- `POST /family/create` — cria grupo, adiciona o próprio usuário como owner
+- `POST /family/invite` — gera token de convite, envia e-mail com link de aceitação
+- `GET /family/accept?token=xxx` — valida token, adiciona usuário ao grupo
+- `GET /family/members` — lista membros do grupo
+- `DELETE /family/members/:userId` — remove membro (só owner pode)
+- Todas as rotas de dados (`/transactions`, `/accounts`, etc.) precisam aceitar `groupId` extraído do JWT ou do membership — escopo muda de `userId` para `groupId`
+
+**Web (`apps/web`):**
+
+- Aba **"Família"** em Configurações
+- Listar membros com e-mail e papel (dono / membro)
+- Botão "Convidar" abre campo de e-mail e dispara convite
+- Botão "Remover" para o owner excluir membros
+- Página `/family/accept?token=xxx` para o convidado confirmar o ingresso
+
+**Complexidade:** Alta — a mudança de escopo `userId → groupId` afeta todas as queries da API. Melhor implementar em branch dedicada (`feature/family-accounts`) e fazer migration separada.
+
+---
+
+### 2. Seção de Investimentos — Carteira
+
+**Prioridade:** Média
+**Ideia:** Página dedicada para o usuário registrar seus aportes em ações, FIIs e ETFs da B3. O foco é facilitar o cadastro — o usuário digita o ticker e o nome do ativo é preenchido automaticamente, sem depender de API externa.
+
+#### Como implementar
+
+**Autocomplete de tickers — lista estática embutida no app**
+
+- Criar um arquivo JSON em `apps/web/src/data/b3-tickers.json` com todos os ativos da B3 (~500 itens): ticker + nome completo + tipo (ação, FII, ETF)
+- Sem API, sem rate limit, funciona offline, sempre disponível
+- Lista muda raramente (novos IPOs e delistings ocasionais) — atualização manual algumas vezes por ano
+- Exemplo de entrada: `{ "ticker": "PETR4", "name": "Petróleo Brasileiro S.A. — Petrobras PN", "type": "stock" }`
+
+**Fluxo de cadastro:**
+
+1. Usuário digita o ticker (ex: "PETR") → autocomplete sugere os ativos correspondentes
+2. Seleciona o ativo → nome preenchido automaticamente
+3. Informa quantidade e preço médio de compra — o app calcula o valor total do aporte
+4. Para ativos não listados (renda fixa, cripto, exterior) → preenchimento manual livre
+
+**Backend (`apps/api`):**
+
+- Rotas `GET/POST/PUT/DELETE /investments` (tabela `portfolio.investments` já existe na migration 0002)
+- Campos: `ticker` (opcional), `name`, `quantity`, `averagePrice` (centavos), `type` (stock | fii | etf | other)
+
+**Web (`apps/web`):**
+
+- Página `/investments` com listagem dos aportes cadastrados
+- Formulário com autocomplete de ticker via lista estática
+- Exibição: ticker, nome, quantidade, preço médio, valor total do aporte
+- Adicionar item "Carteira" na navegação (Sidebar)
+- **Card de total investido clicável:** exibe o valor total da carteira; ao clicar, abre um gráfico de pizza com a distribuição percentual por tipo de ativo (ex: 60% FII · 30% Ações · 10% ETF). O gráfico usa o `PieChart` já disponível em `packages/ui`. Clicar fora ou no card novamente fecha o gráfico.
+
+**Complexidade:** Média — o maior trabalho é criar as rotas na API e a página web. O autocomplete com lista estática é simples de implementar.
 
 ---
 
