@@ -5,46 +5,66 @@ interface SummaryCardsProps {
   totalIncome: number;
   totalExpense: number;
   balance: number;
+  month: string;
 }
 
-export function SummaryCards({ totalIncome, totalExpense, balance }: SummaryCardsProps) {
+export function SummaryCards({ totalIncome, totalExpense, balance, month }: SummaryCardsProps) {
+  const [year, m] = month.split("-");
+  const monthLabel = new Date(`${year}-${m}-01`).toLocaleDateString("pt-BR", {
+    month: "long",
+    year: "numeric",
+  });
+
   const cards = [
     {
       label: "Receitas",
       value: totalIncome,
       icon: "▲",
-      className: "text-income",
-      bg: "bg-green-50 dark:bg-green-950",
+      valueClass: "text-green-600 dark:text-green-400",
+      iconBg: "bg-green-100 dark:bg-green-900",
+      iconClass: "text-green-600 dark:text-green-400",
     },
     {
       label: "Despesas",
       value: totalExpense,
       icon: "▼",
-      className: "text-expense",
-      bg: "bg-red-50 dark:bg-red-950",
+      valueClass: "text-red-500 dark:text-red-400",
+      iconBg: "bg-red-100 dark:bg-red-900",
+      iconClass: "text-red-500 dark:text-red-400",
     },
     {
       label: "Saldo do Mês",
       value: balance,
       icon: "=",
-      className: balance >= 0 ? "text-income" : "text-expense",
-      bg: "bg-gray-50 dark:bg-gray-800",
+      valueClass:
+        balance >= 0 ? "text-green-600 dark:text-green-400" : "text-red-500 dark:text-red-400",
+      iconBg: "bg-gray-100 dark:bg-gray-800",
+      iconClass: "text-gray-500 dark:text-gray-400",
     },
   ];
 
   return (
-    <div className="grid grid-cols-3 gap-4">
-      {cards.map((card) => (
-        <div key={card.label} className="card p-4">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-sm text-gray-500 dark:text-gray-400">{card.label}</p>
-            <span className={`text-xs font-bold p-1.5 rounded-md ${card.bg} ${card.className}`}>
-              {card.icon}
-            </span>
+    <div className="space-y-2">
+      <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide capitalize">
+        {monthLabel}
+      </p>
+      <div className="grid grid-cols-3 gap-4">
+        {cards.map((card) => (
+          <div key={card.label} className="card p-5">
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{card.label}</p>
+              <span
+                className={`text-xs font-bold w-7 h-7 flex items-center justify-center rounded-full ${card.iconBg} ${card.iconClass}`}
+              >
+                {card.icon}
+              </span>
+            </div>
+            <p className={`text-3xl font-bold tracking-tight ${card.valueClass}`}>
+              {formatCurrency(card.value)}
+            </p>
           </div>
-          <p className={`text-2xl font-bold ${card.className}`}>{formatCurrency(card.value)}</p>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }

@@ -50,22 +50,27 @@ export function Dashboard() {
   return (
     <Layout title="Dashboard">
       <div className="space-y-6 max-w-5xl">
-        {/* Linha 1: Saldo + Resumo do mês */}
+        {/* Linha 1: Fluxo mensal — hero */}
+        <SummaryCards
+          totalIncome={totalIncome}
+          totalExpense={totalExpense}
+          balance={balance}
+          month={month}
+        />
+
+        {/* Linha 2: Saldo nos bancos (secundário) + Últimas transações */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
           <div className="lg:col-span-1">
-            <BalanceCard totalBalance={totalBalance} monthBalance={balance} />
+            <BalanceCard totalBalance={totalBalance} />
           </div>
           <div className="lg:col-span-3">
-            <SummaryCards totalIncome={totalIncome} totalExpense={totalExpense} balance={balance} />
+            <RecentTransactions
+              transactions={transactions}
+              categoriesById={categoriesById}
+              onAdd={() => setShowForm(true)}
+            />
           </div>
         </div>
-
-        {/* Linha 2: Últimas transações */}
-        <RecentTransactions
-          transactions={transactions}
-          categoriesById={categoriesById}
-          onAdd={() => setShowForm(true)}
-        />
       </div>
 
       {showForm && (
