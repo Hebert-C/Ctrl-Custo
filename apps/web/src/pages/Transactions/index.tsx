@@ -7,13 +7,23 @@ import { useCategoryStore } from "../../store/useCategoryStore";
 import { useAccountStore } from "../../store/useAccountStore";
 import { useCardStore } from "../../store/useCardStore";
 import { formatCurrency } from "../../hooks/useCurrency";
-import type { TransactionFilters } from "@ctrl-custo/core";
+import type { Transaction, TransactionFilters } from "@ctrl-custo/core";
 
 export function Transactions() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const { transactions, filters, load, setFilters, clearFilters, add, addInstallments, remove } =
-    useTransactionStore();
+  const [editingTx, setEditingTx] = useState<Transaction | null>(null);
+  const {
+    transactions,
+    filters,
+    load,
+    setFilters,
+    clearFilters,
+    add,
+    addInstallments,
+    update,
+    remove,
+  } = useTransactionStore();
   const { categories, load: loadCats } = useCategoryStore();
   const { accounts, load: loadAccs } = useAccountStore();
   const { cards, load: loadCards } = useCardStore();
@@ -34,11 +44,23 @@ export function Transactions() {
   }
 
   async function handleSubmit(data: Parameters<typeof add>[0], installments: number) {
-    if (installments > 1) {
+    if (editingTx) {
+      await update(editingTx.id, data);
+    } else if (installments > 1) {
       await addInstallments(data, installments);
     } else {
       await add(data);
     }
+  }
+
+  function handleEdit(tx: Transaction) {
+    setEditingTx(tx);
+    setShowForm(true);
+  }
+
+  function handleCloseForm() {
+    setShowForm(false);
+    setEditingTx(null);
   }
 
   async function handleDelete(id: string) {
@@ -54,7 +76,13 @@ export function Transactions() {
           <p className="text-sm text-gray-500 dark:text-gray-400">
             {transactions.length} transação(ões)
           </p>
-          <button onClick={() => setShowForm(true)} className="btn-primary text-sm">
+          <button
+            onClick={() => {
+              setEditingTx(null);
+              setShowForm(true);
+            }}
+            className="btn-primary text-sm"
+          >
             + Nova Transação
           </button>
         </div>
@@ -126,13 +154,22 @@ export function Transactions() {
                   </span>
 
                   {/* Ações */}
-                  <button
-                    onClick={() => handleDelete(tx.id)}
-                    className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-opacity p-1"
-                    title="Excluir"
-                  >
-                    ✕
-                  </button>
+                  <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity">
+                    <button
+                      onClick={() => handleEdit(tx)}
+                      className="text-gray-400 hover:text-blue-500 p-1"
+                      title="Editar"
+                    >
+                      ✎
+                    </button>
+                    <button
+                      onClick={() => handleDelete(tx.id)}
+                      className="text-gray-400 hover:text-red-500 p-1"
+                      title="Excluir"
+                    >
+                      ✕
+                    </button>
+                  </div>
                 </div>
               );
             })
@@ -146,7 +183,8 @@ export function Transactions() {
           accounts={accounts}
           cards={cards}
           onSubmit={handleSubmit}
-          onClose={() => setShowForm(false)}
+          onClose={handleCloseForm}
+          editingTx={editingTx ?? undefined}
         />
       )}
     </Layout>

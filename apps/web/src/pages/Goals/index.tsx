@@ -1,6 +1,7 @@
 import { type FormEvent, useEffect, useState } from "react";
 import { Layout } from "../../components/Layout";
 import { useGoalStore } from "../../store/useGoalStore";
+import { useAccountStore } from "../../store/useAccountStore";
 import { formatCurrency, parseCurrencyInput, formatCurrencyInput } from "../../hooks/useCurrency";
 import type { NewGoal } from "@ctrl-custo/core";
 
@@ -9,7 +10,9 @@ export function Goals() {
   const [showForm, setShowForm] = useState(false);
   const [depositGoalId, setDepositGoalId] = useState<string | null>(null);
   const [depositRaw, setDepositRaw] = useState("");
+  const [depositAccountId, setDepositAccountId] = useState("");
   const { goals, load, add, deposit } = useGoalStore();
+  const { accounts, load: loadAccs } = useAccountStore();
 
   const [form, setForm] = useState<Partial<NewGoal>>({
     status: "active",
@@ -19,7 +22,7 @@ export function Goals() {
   });
 
   useEffect(() => {
-    load().then(() => setLoading(false));
+    Promise.all([load(), loadAccs()]).then(() => setLoading(false));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleAdd(e: FormEvent) {
@@ -32,10 +35,11 @@ export function Goals() {
 
   async function handleDeposit(goalId: string) {
     const cents = parseCurrencyInput(depositRaw);
-    if (!cents) return;
-    await deposit(goalId, cents);
+    if (!cents || !depositAccountId) return;
+    await deposit(goalId, cents, depositAccountId);
     setDepositGoalId(null);
     setDepositRaw("");
+    setDepositAccountId("");
   }
 
   return (
@@ -105,40 +109,55 @@ export function Goals() {
                   {!isCompleted && (
                     <div className="mt-4 flex gap-2">
                       {depositGoalId === goal.id ? (
-                        <div className="flex gap-2 flex-1">
-                          <div className="relative flex-1">
-                            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs">
-                              R$
-                            </span>
-                            <input
-                              className="input-field pl-7 text-sm"
-                              placeholder="0,00"
-                              inputMode="numeric"
-                              value={depositRaw}
-                              autoFocus
-                              onChange={(e) =>
-                                setDepositRaw(
-                                  formatCurrencyInput(parseCurrencyInput(e.target.value))
-                                )
-                              }
-                              onKeyDown={(e) => e.key === "Enter" && handleDeposit(goal.id)}
-                            />
+                        <div className="flex flex-col gap-2 flex-1">
+                          <select
+                            className="input-field text-sm"
+                            value={depositAccountId}
+                            onChange={(e) => setDepositAccountId(e.target.value)}
+                            autoFocus
+                          >
+                            <option value="">Conta de origem…</option>
+                            {accounts.map((a) => (
+                              <option key={a.id} value={a.id}>
+                                {a.name}
+                              </option>
+                            ))}
+                          </select>
+                          <div className="flex gap-2">
+                            <div className="relative flex-1">
+                              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs">
+                                R$
+                              </span>
+                              <input
+                                className="input-field pl-7 text-sm"
+                                placeholder="0,00"
+                                inputMode="numeric"
+                                value={depositRaw}
+                                onChange={(e) =>
+                                  setDepositRaw(
+                                    formatCurrencyInput(parseCurrencyInput(e.target.value))
+                                  )
+                                }
+                                onKeyDown={(e) => e.key === "Enter" && handleDeposit(goal.id)}
+                              />
+                            </div>
+                            <button
+                              onClick={() => handleDeposit(goal.id)}
+                              className="btn-primary text-sm px-3"
+                            >
+                              ✓
+                            </button>
+                            <button
+                              onClick={() => {
+                                setDepositGoalId(null);
+                                setDepositRaw("");
+                                setDepositAccountId("");
+                              }}
+                              className="btn-ghost text-sm px-2"
+                            >
+                              ✕
+                            </button>
                           </div>
-                          <button
-                            onClick={() => handleDeposit(goal.id)}
-                            className="btn-primary text-sm px-3"
-                          >
-                            ✓
-                          </button>
-                          <button
-                            onClick={() => {
-                              setDepositGoalId(null);
-                              setDepositRaw("");
-                            }}
-                            className="btn-ghost text-sm px-2"
-                          >
-                            ✕
-                          </button>
                         </div>
                       ) : (
                         <button
