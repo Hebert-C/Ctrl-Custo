@@ -354,6 +354,7 @@ Coletado após primeira sessão de uso real.
 - Formulário com autocomplete de ticker via lista estática
 - Exibição: ticker, nome, quantidade, preço médio, valor total do aporte
 - Adicionar item "Carteira" na navegação (Sidebar)
+- **Card de total investido clicável:** exibe o valor total da carteira; ao clicar, abre um gráfico de pizza com a distribuição percentual por tipo de ativo (ex: 60% FII · 30% Ações · 10% ETF). O gráfico usa o `PieChart` já disponível em `packages/ui`. Clicar fora ou no card novamente fecha o gráfico.
 
 **Complexidade:** Média — o maior trabalho é criar as rotas na API e a página web. O autocomplete com lista estática é simples de implementar.
 
