@@ -6,9 +6,18 @@ interface SummaryCardsProps {
   totalExpense: number;
   balance: number;
   month: string;
+  onChartToggle: () => void;
+  chartOpen: boolean;
 }
 
-export function SummaryCards({ totalIncome, totalExpense, balance, month }: SummaryCardsProps) {
+export function SummaryCards({
+  totalIncome,
+  totalExpense,
+  balance,
+  month,
+  onChartToggle,
+  chartOpen,
+}: SummaryCardsProps) {
   const [year, m] = month.split("-");
   const monthLabel = new Date(`${year}-${m}-01`).toLocaleDateString("pt-BR", {
     month: "long",
@@ -49,21 +58,33 @@ export function SummaryCards({ totalIncome, totalExpense, balance, month }: Summ
         {monthLabel}
       </p>
       <div className="grid grid-cols-3 gap-4">
-        {cards.map((card) => (
-          <div key={card.label} className="card p-5">
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{card.label}</p>
-              <span
-                className={`text-xs font-bold w-7 h-7 flex items-center justify-center rounded-full ${card.iconBg} ${card.iconClass}`}
-              >
-                {card.icon}
-              </span>
+        {cards.map((card) => {
+          const isBalance = card.label === "Saldo do Mês";
+          return (
+            <div
+              key={card.label}
+              onClick={isBalance ? onChartToggle : undefined}
+              className={`card p-5 ${isBalance ? "cursor-pointer hover:ring-2 hover:ring-brand-400 dark:hover:ring-brand-600 transition-shadow" : ""} ${isBalance && chartOpen ? "ring-2 ring-brand-500" : ""}`}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{card.label}</p>
+                <span
+                  className={`text-xs font-bold w-7 h-7 flex items-center justify-center rounded-full ${card.iconBg} ${card.iconClass}`}
+                >
+                  {card.icon}
+                </span>
+              </div>
+              <p className={`text-3xl font-bold tracking-tight ${card.valueClass}`}>
+                {formatCurrency(card.value)}
+              </p>
+              {isBalance && (
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
+                  {chartOpen ? "Clique para fechar ↑" : "Clique para detalhar ↓"}
+                </p>
+              )}
             </div>
-            <p className={`text-3xl font-bold tracking-tight ${card.valueClass}`}>
-              {formatCurrency(card.value)}
-            </p>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
