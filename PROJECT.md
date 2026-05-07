@@ -438,6 +438,29 @@ Coletado após primeira sessão de uso real.
 
 ## Log de Sessões
 
+### 2026-05-07 — UX improvements + gráficos + planejamento de features
+
+#### O que foi feito
+
+- **chore:** `CONTEXT.md` removido do repositório (já migrado para `PROJECT.md`)
+- **feat(web) — PR #10:** Renomear "Contas" → "Bancos" em toda a UI; botão "+ Adicionar" no Dashboard abre modal de transação direto; saldo negativo em vermelho no BalanceCard
+- **feat(web) — PR #12:** Dashboard reorganizado com fluxo mensal (Receitas/Despesas/Saldo do Mês) como hero em largura total; "Saldo nos Bancos" vira card compacto secundário; donut interativo em dois níveis ao clicar no Saldo do Mês; `BarChart` e `LineChart` SVG puros adicionados à página de Relatórios
+- **docs:** Adicionado planejamento de Contas Família (schema `household` já reservado no banco) e seção Carteira com lista estática de tickers B3 + autocomplete
+- **docs:** Gráfico de pizza na Carteira (distribuição por tipo de ativo) e gráficos interativos em dois níveis no Dashboard documentados
+- **docs:** Plano mobile documentado (itens 1, 2 e 3B no Dashboard mobile usando `react-native-svg`)
+- **docs:** 2 bugs e 3 melhorias registrados após teste com usuário
+
+#### Pendências em aberto
+
+- **Bug (alta):** Parcelas no cartão não dividem o valor nem projetam para meses seguintes
+- **Bug (alta):** Saldo nos Bancos não atualiza após adicionar transação pelo modal do Dashboard
+- **Melhoria:** Detalhamento ao clicar em "Saldo nos Bancos" (lista por banco)
+- **Melhoria:** Relatórios incluir mês atual no seletor
+- **Melhoria:** Transferência — adicionar campo "banco de destino" e clarificar que não conta como receita/despesa
+- **Mobile:** Implementar itens 1, 2 e 3B no Dashboard mobile (branch `feature/mobile-dashboard-improvements` a criar a partir de `main`)
+
+---
+
 ### 2026-05-06 — Hotfixes pós-testes com usuários reais
 
 #### O que foi feito
