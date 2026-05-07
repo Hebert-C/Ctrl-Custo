@@ -369,10 +369,10 @@ export const api = {
         body: JSON.stringify(data),
       }).then(mapGoal),
     remove: (id: string) => req<{ ok: boolean }>(`/goals/${id}`, { method: "DELETE" }),
-    deposit: (id: string, amount: number) =>
+    deposit: (id: string, amount: number, accountId: string) =>
       req<ApiGoal>(`/goals/${id}/deposit`, {
         method: "POST",
-        body: JSON.stringify({ amount }),
+        body: JSON.stringify({ amount, accountId }),
       }).then(mapGoal),
   },
 };

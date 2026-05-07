@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import type { NewTransaction, Category, Account, Card } from "@ctrl-custo/core";
+import type { NewTransaction, Transaction, Category, Account, Card } from "@ctrl-custo/core";
 import { formatCurrencyInput, parseCurrencyInput } from "../../hooks/useCurrency";
 
 interface TransactionFormProps {
@@ -8,6 +8,7 @@ interface TransactionFormProps {
   cards: Card[];
   onSubmit: (data: NewTransaction, installments: number) => Promise<void>;
   onClose: () => void;
+  editingTx?: Transaction;
 }
 
 const EMPTY_FORM = {
@@ -23,19 +24,46 @@ const EMPTY_FORM = {
   notes: "",
 };
 
+function txToForm(tx: Transaction) {
+  return {
+    description: tx.description,
+    amountRaw: formatCurrencyInput(tx.amount),
+    type: tx.type,
+    status: tx.status,
+    date: tx.date,
+    categoryId: tx.categoryId,
+    accountId: tx.accountId,
+    cardId: tx.cardId ?? "",
+    installments: 1,
+    notes: tx.notes ?? "",
+  };
+}
+
 export function TransactionForm({
   categories,
   accounts,
   cards,
   onSubmit,
   onClose,
+  editingTx,
 }: TransactionFormProps) {
-  const [form, setForm] = useState(EMPTY_FORM);
+  const [form, setForm] = useState(editingTx ? txToForm(editingTx) : EMPTY_FORM);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const isEditing = !!editingTx;
+
   function set<K extends keyof typeof EMPTY_FORM>(key: K, value: (typeof EMPTY_FORM)[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function handleCardChange(cardId: string) {
+    const card = cards.find((c) => c.id === cardId);
+    setForm((prev) => ({
+      ...prev,
+      cardId,
+      accountId: card ? card.accountId : "",
+    }));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -72,13 +100,16 @@ export function TransactionForm({
   }
 
   const filteredCategories = categories.filter((c) => c.type === form.type || c.type === "both");
+  const cardSelected = form.type === "expense" && !!form.cardId;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
       <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Nova Transação</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            {isEditing ? "Editar Transação" : "Nova Transação"}
+          </h2>
           <button onClick={onClose} className="btn-ghost p-1.5">
             ✕
           </button>
@@ -150,8 +181,45 @@ export function TransactionForm({
             </div>
           </div>
 
+          {/* Cartão + Parcelas (apenas despesas) */}
+          {form.type === "expense" && (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="label">Cartão (opcional)</label>
+                <select
+                  className="input-field"
+                  value={form.cardId}
+                  onChange={(e) => handleCardChange(e.target.value)}
+                >
+                  <option value="">Nenhum</option>
+                  {cards.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {!isEditing && (
+                <div>
+                  <label className="label">Parcelas</label>
+                  <select
+                    className="input-field"
+                    value={form.installments}
+                    onChange={(e) => set("installments", Number(e.target.value))}
+                  >
+                    {Array.from({ length: 24 }, (_, i) => i + 1).map((n) => (
+                      <option key={n} value={n}>
+                        {n}x{n > 1 ? " (parcelado)" : " (à vista)"}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Categoria + Conta */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className={`grid gap-3 ${cardSelected ? "grid-cols-1" : "grid-cols-2"}`}>
             <div>
               <label className="label">Categoria</label>
               <select
@@ -167,57 +235,24 @@ export function TransactionForm({
                 ))}
               </select>
             </div>
-            <div>
-              <label className="label">Conta</label>
-              <select
-                className="input-field"
-                value={form.accountId}
-                onChange={(e) => set("accountId", e.target.value)}
-              >
-                <option value="">Selecionar…</option>
-                {accounts.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {!cardSelected && (
+              <div>
+                <label className="label">Conta</label>
+                <select
+                  className="input-field"
+                  value={form.accountId}
+                  onChange={(e) => set("accountId", e.target.value)}
+                >
+                  <option value="">Selecionar…</option>
+                  {accounts.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
-
-          {/* Cartão + Parcelas (apenas despesas) */}
-          {form.type === "expense" && (
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="label">Cartão (opcional)</label>
-                <select
-                  className="input-field"
-                  value={form.cardId}
-                  onChange={(e) => set("cardId", e.target.value)}
-                >
-                  <option value="">Nenhum</option>
-                  {cards.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="label">Parcelas</label>
-                <select
-                  className="input-field"
-                  value={form.installments}
-                  onChange={(e) => set("installments", Number(e.target.value))}
-                >
-                  {Array.from({ length: 24 }, (_, i) => i + 1).map((n) => (
-                    <option key={n} value={n}>
-                      {n}x{n > 1 ? " (parcelado)" : " (à vista)"}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          )}
 
           {/* Status */}
           <div>
@@ -252,7 +287,7 @@ export function TransactionForm({
               Cancelar
             </button>
             <button type="submit" disabled={loading} className="btn-primary flex-1">
-              {loading ? "Salvando…" : "Salvar"}
+              {loading ? "Salvando…" : isEditing ? "Salvar Alterações" : "Salvar"}
             </button>
           </div>
         </form>

@@ -3,7 +3,7 @@ import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { eq, and, sql } from "drizzle-orm";
 import { db } from "../db/index";
-import { goals } from "../db/schema";
+import { goals, transactions, categories, accounts } from "../db/schema";
 import { requireAuth, type AuthEnv } from "../middleware/auth";
 
 const goalBody = z.object({
@@ -22,6 +22,7 @@ const goalBody = z.object({
 
 const depositBody = z.object({
   amount: z.number().int().positive(),
+  accountId: z.string().uuid(),
 });
 
 export const goalsRouter = new Hono<AuthEnv>();
@@ -71,23 +72,63 @@ goalsRouter.delete("/:id", async (c) => {
 goalsRouter.post("/:id/deposit", zValidator("json", depositBody), async (c) => {
   const userId = c.get("userId");
   const id = c.req.param("id");
-  const { amount } = c.req.valid("json");
+  const { amount, accountId } = c.req.valid("json");
 
-  const [row] = await db
-    .update(goals)
-    .set({ currentAmount: sql`${goals.currentAmount} + ${amount}`, updatedAt: new Date() })
-    .where(and(eq(goals.id, id), eq(goals.userId, userId)))
-    .returning();
-  if (!row) return c.json({ error: "Meta não encontrada." }, 404);
+  const [account] = await db
+    .select({ id: accounts.id })
+    .from(accounts)
+    .where(and(eq(accounts.id, accountId), eq(accounts.userId, userId)))
+    .limit(1);
+  if (!account) return c.json({ error: "Conta não encontrada." }, 404);
 
-  if (row.currentAmount >= row.targetAmount && row.status === "active") {
-    const [completed] = await db
-      .update(goals)
-      .set({ status: "completed", updatedAt: new Date() })
-      .where(eq(goals.id, id))
+  let [metasCategory] = await db
+    .select()
+    .from(categories)
+    .where(and(eq(categories.userId, userId), eq(categories.name, "Metas")))
+    .limit(1);
+  if (!metasCategory) {
+    [metasCategory] = await db
+      .insert(categories)
+      .values({ userId, name: "Metas", type: "expense", color: "#8B5CF6", icon: "🎯" })
       .returning();
-    return c.json(completed);
   }
 
-  return c.json(row);
+  const result = await db.transaction(async (trx) => {
+    const [updated] = await trx
+      .update(goals)
+      .set({ currentAmount: sql`${goals.currentAmount} + ${amount}`, updatedAt: new Date() })
+      .where(and(eq(goals.id, id), eq(goals.userId, userId)))
+      .returning();
+    if (!updated) return null;
+
+    await trx.insert(transactions).values({
+      userId,
+      description: `Depósito: ${updated.name}`,
+      amount,
+      type: "expense",
+      status: "confirmed",
+      date: new Date().toISOString().split("T")[0],
+      categoryId: metasCategory.id,
+      accountId,
+    });
+
+    await trx
+      .update(accounts)
+      .set({ balance: sql`${accounts.balance} - ${amount}`, updatedAt: new Date() })
+      .where(eq(accounts.id, accountId));
+
+    if (updated.currentAmount >= updated.targetAmount && updated.status === "active") {
+      const [completed] = await trx
+        .update(goals)
+        .set({ status: "completed", updatedAt: new Date() })
+        .where(eq(goals.id, id))
+        .returning();
+      return completed ?? updated;
+    }
+
+    return updated;
+  });
+
+  if (!result) return c.json({ error: "Meta não encontrada." }, 404);
+  return c.json(result);
 });
