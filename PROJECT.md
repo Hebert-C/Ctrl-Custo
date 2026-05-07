@@ -170,8 +170,9 @@ Coletado via WhatsApp após primeira sessão de uso real.
 **Gráficos interativos no card de resumo (dois níveis):**
 
 - **Nível 1 — clicar no total do mês:** abre gráfico de pizza com Entradas vs Saídas do mês atual (ex: 40% entradas · 60% saídas)
-- **Nível 2 — clicar no fatia de Saídas:** detalha as saídas por categoria com base nas categorias reais do usuário (ex: 35% Aluguel · 20% Alimentação · 15% Transporte · …)
-- O mesmo pode ser feito para Entradas: detalha por categoria de receita (Salário, Freelance, etc.)
+- **Nível 2 — clicar na fatia de Saídas:** detalha as saídas por categoria (ex: 35% Aluguel · 20% Alimentação · 15% Transporte · …)
+- **Nível 2 — clicar na fatia de Entradas:** detalha as entradas por categoria (ex: 70% Salário · 20% Freelance · 10% Outros)
+- Ambos os detalhamentos usam as categorias reais criadas pelo usuário
 - Gráficos usam o `PieChart` já disponível em `packages/ui` — dados calculados das transações do mês já carregadas no Dashboard
 - Clicar fora ou no card novamente fecha o gráfico e volta ao nível anterior
 
