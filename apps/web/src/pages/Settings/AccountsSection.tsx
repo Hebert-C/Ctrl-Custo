@@ -117,7 +117,7 @@ export function AccountsSection() {
       {/* Formulário */}
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
         <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">
-          {editing ? "Editar Conta" : "Nova Conta"}
+          {editing ? "Editar Banco" : "Novo Banco"}
         </h3>
 
         <form onSubmit={handleSubmit} className="space-y-4">

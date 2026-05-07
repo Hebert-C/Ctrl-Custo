@@ -8,7 +8,7 @@ import { useCategoryStore } from "../../store/useCategoryStore";
 type Tab = "accounts" | "categories";
 
 const TABS: { id: Tab; label: string }[] = [
-  { id: "accounts", label: "Contas" },
+  { id: "accounts", label: "Bancos" },
   { id: "categories", label: "Categorias" },
 ];
 

@@ -198,7 +198,7 @@ export function Cards() {
               </div>
             </div>
             <div>
-              <label className="label">Conta para Pagamento</label>
+              <label className="label">Banco para Pagamento</label>
               <select
                 className="input-field"
                 value={form.accountId ?? ""}

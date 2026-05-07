@@ -71,7 +71,7 @@ export function TransactionFiltersBar({
 
       {/* Conta */}
       <div>
-        <label className="label">Conta</label>
+        <label className="label">Banco</label>
         <select
           className="input-field"
           value={filters.accountId ?? ""}

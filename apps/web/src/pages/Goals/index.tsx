@@ -116,7 +116,7 @@ export function Goals() {
                             onChange={(e) => setDepositAccountId(e.target.value)}
                             autoFocus
                           >
-                            <option value="">Conta de origem…</option>
+                            <option value="">Banco de origem…</option>
                             {accounts.map((a) => (
                               <option key={a.id} value={a.id}>
                                 {a.name}
