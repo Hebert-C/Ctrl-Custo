@@ -284,6 +284,82 @@ Coletado após primeira sessão de uso real.
 
 ---
 
+## Novas Features Planejadas
+
+---
+
+### 1. Contas Família — acesso compartilhado entre múltiplos usuários
+
+**Prioridade:** Média
+**Ideia:** Dois ou mais e-mails acessam as mesmas informações financeiras (transações, contas, metas, cartões). Útil para casais ou famílias que gerenciam o orçamento juntos.
+
+#### Como implementar
+
+**Banco de dados** — o schema `household` já existe (criado na migration 0002, vazio, reservado para essa feature):
+
+- `household.groups` — id, name, owner_id, created_at
+- `household.members` — group_id, user_id, role (`owner` | `member`), invited_at, accepted_at
+- `household.invites` — id, group_id, invited_email, token (UUID), expires_at, accepted_at
+
+**API (`apps/api`):**
+
+- `POST /family/create` — cria grupo, adiciona o próprio usuário como owner
+- `POST /family/invite` — gera token de convite, envia e-mail com link de aceitação
+- `GET /family/accept?token=xxx` — valida token, adiciona usuário ao grupo
+- `GET /family/members` — lista membros do grupo
+- `DELETE /family/members/:userId` — remove membro (só owner pode)
+- Todas as rotas de dados (`/transactions`, `/accounts`, etc.) precisam aceitar `groupId` extraído do JWT ou do membership — escopo muda de `userId` para `groupId`
+
+**Web (`apps/web`):**
+
+- Aba **"Família"** em Configurações
+- Listar membros com e-mail e papel (dono / membro)
+- Botão "Convidar" abre campo de e-mail e dispara convite
+- Botão "Remover" para o owner excluir membros
+- Página `/family/accept?token=xxx` para o convidado confirmar o ingresso
+
+**Complexidade:** Alta — a mudança de escopo `userId → groupId` afeta todas as queries da API. Melhor implementar em branch dedicada (`feature/family-accounts`) e fazer migration separada.
+
+---
+
+### 2. Seção de Investimentos com cotações da B3
+
+**Prioridade:** Média
+**Ideia:** Na página de Investimentos, além de registrar aportes manualmente, exibir a cotação atual de ações e FIIs da B3 em tempo real (ou próximo disso), de forma similar ao que o Status Invest faz.
+
+#### Como implementar
+
+**API de cotações recomendada: [brapi.dev](https://brapi.dev)**
+
+- API brasileira especializada em B3 (ações, FIIs, BDRs, ETFs)
+- Free tier: ilimitado para 4 tickers fixos (PETR4, MGLU3, VALE3, ITUB4) — bom para protótipo
+- Plano pago (Startup): todos os tickers, ~R$50/mês
+- Endpoint principal: `GET https://brapi.dev/api/quote/{TICKER}?token=SEU_TOKEN`
+- Resposta: preço atual, variação do dia (%), volume, mín/máx
+- **Não requer API key no free tier**
+
+**Alternativa:** HG Brasil Finance — free tier de 400 requests/dia, requer API key, mais simples de integrar mas com limite baixo para produção.
+
+**Status Invest não tem API oficial** — usa scraping não-oficial, não recomendado para produção.
+
+**Backend (`apps/api`):**
+
+- Adicionar campo `ticker` (string, opcional) na tabela `portfolio.investments`
+- Migration para adicionar a coluna
+- Nova rota `GET /investments/quote/:ticker` — proxy para brapi.dev com cache em memória de 5 minutos (evita rate limit e deixa a resposta rápida)
+- `BRAPI_TOKEN` como variável de ambiente (opcional no free tier)
+
+**Web (`apps/web`):**
+
+- Ao cadastrar um investimento, campo opcional "Ticker B3" (ex: PETR4, KNRI11)
+- Na listagem, exibir ao lado de cada investimento: cotação atual, variação do dia (verde/vermelho)
+- Badge "Ao vivo" indicando que o valor é buscado da API, não inserido manualmente
+- Se ticker não informado, exibe só o valor do aporte manual
+
+**Complexidade:** Média — a integração com brapi.dev é simples (1 fetch), o maior trabalho é criar a página de Investimentos (rotas API + UI), que já estava planejada no backlog original.
+
+---
+
 ## Log de Sessões
 
 ### 2026-05-06 — Hotfixes pós-testes com usuários reais
