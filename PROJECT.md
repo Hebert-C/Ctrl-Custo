@@ -167,6 +167,14 @@ Coletado via WhatsApp após primeira sessão de uso real.
 - O saldo bancário das contas passa a ser informação secundária, visível em "Carteiras"
 - Não altera a lógica de negócio — transações continuam afetando o saldo das contas. Apenas a hierarquia visual muda.
 
+**Gráficos interativos no card de resumo (dois níveis):**
+
+- **Nível 1 — clicar no total do mês:** abre gráfico de pizza com Entradas vs Saídas do mês atual (ex: 40% entradas · 60% saídas)
+- **Nível 2 — clicar no fatia de Saídas:** detalha as saídas por categoria com base nas categorias reais do usuário (ex: 35% Aluguel · 20% Alimentação · 15% Transporte · …)
+- O mesmo pode ser feito para Entradas: detalha por categoria de receita (Salário, Freelance, etc.)
+- Gráficos usam o `PieChart` já disponível em `packages/ui` — dados calculados das transações do mês já carregadas no Dashboard
+- Clicar fora ou no card novamente fecha o gráfico e volta ao nível anterior
+
 ---
 
 #### 2. Renomear "Contas" para "Carteiras"
