@@ -1,5 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { Layout } from "../../components/Layout";
+import { BarChart } from "../../components/BarChart";
+import { LineChart } from "../../components/LineChart";
 import { useTransactionStore } from "../../store/useTransactionStore";
 import { useCategoryStore } from "../../store/useCategoryStore";
 import { lastNMonths, formatMonthLabel } from "../../hooks/useReport";
@@ -107,6 +109,37 @@ export function Reports() {
             </button>
           </div>
         </div>
+
+        {/* Gráfico de barras — Receitas vs Despesas */}
+        {!loading && (
+          <div className="card p-5">
+            <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              Receitas vs Despesas
+            </h3>
+            <BarChart
+              data={evolution.map((r) => ({
+                label: formatMonthLabel(r.month).slice(0, 3),
+                income: r.income,
+                expense: r.expense,
+              }))}
+            />
+          </div>
+        )}
+
+        {/* Gráfico de linha — Evolução do saldo */}
+        {!loading && (
+          <div className="card p-5">
+            <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              Evolução do Saldo
+            </h3>
+            <LineChart
+              data={evolution.map((r) => ({
+                label: formatMonthLabel(r.month).slice(0, 3),
+                value: r.balance,
+              }))}
+            />
+          </div>
+        )}
 
         {/* Tabela de evolução mensal */}
         <div className="card overflow-hidden">
