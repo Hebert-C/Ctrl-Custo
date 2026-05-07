@@ -157,7 +157,7 @@ Coletado via WhatsApp após primeira sessão de uso real.
 
 ---
 
-#### 1. Dashboard: mostrar fluxo mensal em vez de saldo bancário
+#### 1. Dashboard: mostrar fluxo mensal em vez de saldo bancário ✅
 
 **Prioridade:** Alta
 **Origem:** "Como é um relatório mensal, acho que você deveria ter receitas e saídas. Em vez de ele tirar do saldo da conta, tirar da sua receita mensal."
@@ -167,7 +167,7 @@ Coletado via WhatsApp após primeira sessão de uso real.
 - O saldo bancário das contas passa a ser informação secundária, visível em "Carteiras"
 - Não altera a lógica de negócio — transações continuam afetando o saldo das contas. Apenas a hierarquia visual muda.
 
-**Gráficos interativos no card de resumo (dois níveis):**
+**✅ Implementado — Gráficos interativos no card de resumo (dois níveis):**
 
 - **Nível 1 — clicar no total do mês:** abre gráfico de pizza com Entradas vs Saídas do mês atual (ex: 40% entradas · 60% saídas)
 - **Nível 2 — clicar na fatia de Saídas:** detalha as saídas por categoria (ex: 35% Aluguel · 20% Alimentação · 15% Transporte · …)
@@ -190,7 +190,7 @@ Coletado via WhatsApp após primeira sessão de uso real.
 
 ---
 
-#### 3. Gráficos no Dashboard e Relatórios
+#### 3. Gráficos no Dashboard e Relatórios ✅
 
 **Prioridade:** Média
 **Origem:** "Gráficos vai ser legal."
