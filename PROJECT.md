@@ -587,6 +587,23 @@ Migration `0003` será aplicada automaticamente pelo CI/CD no próximo push (dep
 
 ## Log de Sessões
 
+### 2026-05-08 — Backlog web zerado + testes automáticos
+
+#### O que foi feito
+
+- **feat(cards) — `89fe6c3`:** API `GET /cards/:id/statement?month=YYYY-MM`; modal de detalhamento ao clicar no cartão (fatura, disponível, transações do mês, navegação por mês); seletor de cor no formulário de novo cartão; E2E `cards.spec.ts`
+- **feat(dashboard) — `dececc2`:** `BalanceCard` expandível ao clicar — lista bancos com nome, tipo e saldo (negativo em vermelho); E2E no smoke test
+- **feat(reports) — `7e3ff86`:** botão "Mês atual" adicionado ao seletor de período; linha do mês corrente destacada com badge "atual"
+- **Estratégia de testes adotada:** typecheck + 31 testes unitários core (Vitest/sql.js) rodados a cada item; E2E Playwright em `apps/web/e2e/` cobre fluxos de UI (smoke + cards)
+- **Contas de teste criadas no banco:** `andre@teste.com`, `vitor@teste.com`, `bio@teste.com` (padrão: `nome@teste.com` / `Teste@1234`, e-mail já verificado)
+
+#### Pendências em aberto
+
+- **Mobile:** Dashboard mobile com fluxo mensal + donut (branch `feature/mobile-dashboard-improvements`)
+- Próximos itens do backlog: Seção de Investimentos, Pagamentos Recorrentes, Visão de Parcelas Futuras
+
+---
+
 ### 2026-05-08 — Correção de bugs, backlog e feature de transferência
 
 #### O que foi feito
@@ -600,12 +617,7 @@ Migration `0003` será aplicada automaticamente pelo CI/CD no próximo push (dep
 - **Descoberta:** migrations automatizadas funcionam corretamente via CI/CD; SSH local conecta como `ubuntu` (sem acesso ao `.env`), não como `deploy`; arquivos SQL criados manualmente precisam de entrada no `_journal.json`
 - Migration `0003` confirmada aplicada na VM — coluna `destination_account_id` presente em `ledger.transactions`
 
-#### Pendências em aberto (ordem de implementação)
-
-1. **Detalhamento ao clicar no cartão** — transações do mês, fatura, limite (Média)
-2. **Detalhamento ao clicar em "Saldo nos Bancos"** — lista por banco (Média)
-3. **Relatórios — opção "Mês atual" no seletor** (Média)
-4. **Cor dos cartões** — seletor de cor no formulário (Baixa)
+#### Pendências em aberto
 
 - **Mobile:** Dashboard mobile com fluxo mensal + donut (branch `feature/mobile-dashboard-improvements`)
 
