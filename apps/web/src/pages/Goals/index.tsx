@@ -37,6 +37,7 @@ export function Goals() {
     const cents = parseCurrencyInput(depositRaw);
     if (!cents || !depositAccountId) return;
     await deposit(goalId, cents, depositAccountId);
+    await loadAccs();
     setDepositGoalId(null);
     setDepositRaw("");
     setDepositAccountId("");
