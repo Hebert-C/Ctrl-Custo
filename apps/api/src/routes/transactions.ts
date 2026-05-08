@@ -6,7 +6,7 @@ import { db } from "../db/index";
 import { transactions, accounts } from "../db/schema";
 import { requireAuth, type AuthEnv } from "../middleware/auth";
 
-const transactionBody = z.object({
+const transactionBodyBase = z.object({
   description: z.string().min(1).max(255),
   amount: z.number().int().positive(),
   type: z.enum(["income", "expense", "transfer"]),
@@ -14,6 +14,7 @@ const transactionBody = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD"),
   categoryId: z.string().uuid(),
   accountId: z.string().uuid(),
+  destinationAccountId: z.string().uuid().optional(),
   cardId: z.string().uuid().optional(),
   installmentTotal: z.number().int().positive().optional(),
   installmentCurrent: z.number().int().positive().optional(),
@@ -21,10 +22,40 @@ const transactionBody = z.object({
   notes: z.string().max(1000).optional(),
 });
 
-function balanceDelta(type: string, amount: number): number {
-  if (type === "income") return amount;
-  if (type === "expense") return -amount;
-  return 0;
+const transactionBody = transactionBodyBase.refine(
+  (d) => d.type !== "transfer" || !!d.destinationAccountId,
+  {
+    message: "destinationAccountId é obrigatório para transferências.",
+    path: ["destinationAccountId"],
+  }
+);
+
+async function applyTransferBalances(
+  trx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  type: string,
+  amount: number,
+  accountId: string,
+  destinationAccountId: string | null | undefined,
+  userId: string,
+  direction: 1 | -1
+) {
+  if (type === "income" || type === "expense") {
+    const delta = (type === "income" ? amount : -amount) * direction;
+    await trx
+      .update(accounts)
+      .set({ balance: sql`${accounts.balance} + ${delta}`, updatedAt: new Date() })
+      .where(and(eq(accounts.id, accountId), eq(accounts.userId, userId)));
+  } else if (type === "transfer" && destinationAccountId) {
+    // débito na origem, crédito no destino
+    await trx
+      .update(accounts)
+      .set({ balance: sql`${accounts.balance} + ${-amount * direction}`, updatedAt: new Date() })
+      .where(and(eq(accounts.id, accountId), eq(accounts.userId, userId)));
+    await trx
+      .update(accounts)
+      .set({ balance: sql`${accounts.balance} + ${amount * direction}`, updatedAt: new Date() })
+      .where(and(eq(accounts.id, destinationAccountId), eq(accounts.userId, userId)));
+  }
 }
 
 export const transactionsRouter = new Hono<AuthEnv>();
@@ -51,13 +82,15 @@ transactionsRouter.post("/", zValidator("json", transactionBody), async (c) => {
       .values({ ...body, userId })
       .returning();
     if (body.status === "confirmed") {
-      const delta = balanceDelta(body.type, body.amount);
-      if (delta !== 0) {
-        await trx
-          .update(accounts)
-          .set({ balance: sql`${accounts.balance} + ${delta}`, updatedAt: new Date() })
-          .where(and(eq(accounts.id, body.accountId), eq(accounts.userId, userId)));
-      }
+      await applyTransferBalances(
+        trx,
+        body.type,
+        body.amount,
+        body.accountId,
+        body.destinationAccountId,
+        userId,
+        1
+      );
     }
     return inserted;
   });
@@ -65,7 +98,7 @@ transactionsRouter.post("/", zValidator("json", transactionBody), async (c) => {
   return c.json(row, 201);
 });
 
-transactionsRouter.put("/:id", zValidator("json", transactionBody.partial()), async (c) => {
+transactionsRouter.put("/:id", zValidator("json", transactionBodyBase.partial()), async (c) => {
   const userId = c.get("userId");
   const id = c.req.param("id");
   const body = c.req.valid("json");
@@ -88,24 +121,28 @@ transactionsRouter.put("/:id", zValidator("json", transactionBody.partial()), as
 
   const [row] = await db.transaction(async (trx) => {
     if (existing.status === "confirmed") {
-      const oldDelta = balanceDelta(existing.type, existing.amount);
-      if (oldDelta !== 0) {
-        await trx
-          .update(accounts)
-          .set({ balance: sql`${accounts.balance} - ${oldDelta}`, updatedAt: new Date() })
-          .where(and(eq(accounts.id, existing.accountId), eq(accounts.userId, userId)));
-      }
+      await applyTransferBalances(
+        trx,
+        existing.type,
+        existing.amount,
+        existing.accountId,
+        existing.destinationAccountId,
+        userId,
+        -1
+      );
     }
 
     const merged = { ...existing, ...body };
     if (merged.status === "confirmed") {
-      const newDelta = balanceDelta(merged.type, merged.amount);
-      if (newDelta !== 0) {
-        await trx
-          .update(accounts)
-          .set({ balance: sql`${accounts.balance} + ${newDelta}`, updatedAt: new Date() })
-          .where(and(eq(accounts.id, merged.accountId), eq(accounts.userId, userId)));
-      }
+      await applyTransferBalances(
+        trx,
+        merged.type,
+        merged.amount,
+        merged.accountId,
+        merged.destinationAccountId,
+        userId,
+        1
+      );
     }
 
     return trx
@@ -131,13 +168,15 @@ transactionsRouter.delete("/:id", async (c) => {
 
   await db.transaction(async (trx) => {
     if (existing.status === "confirmed") {
-      const delta = balanceDelta(existing.type, existing.amount);
-      if (delta !== 0) {
-        await trx
-          .update(accounts)
-          .set({ balance: sql`${accounts.balance} - ${delta}`, updatedAt: new Date() })
-          .where(and(eq(accounts.id, existing.accountId), eq(accounts.userId, userId)));
-      }
+      await applyTransferBalances(
+        trx,
+        existing.type,
+        existing.amount,
+        existing.accountId,
+        existing.destinationAccountId,
+        userId,
+        -1
+      );
     }
     await trx.delete(transactions).where(eq(transactions.id, id));
   });

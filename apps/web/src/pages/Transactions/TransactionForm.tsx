@@ -19,6 +19,7 @@ const EMPTY_FORM = {
   date: new Date().toISOString().split("T")[0],
   categoryId: "",
   accountId: "",
+  destinationAccountId: "",
   cardId: "",
   installments: 1,
   notes: "",
@@ -33,6 +34,7 @@ function txToForm(tx: Transaction) {
     date: tx.date,
     categoryId: tx.categoryId,
     accountId: tx.accountId,
+    destinationAccountId: tx.destinationAccountId ?? "",
     cardId: tx.cardId ?? "",
     installments: 1,
     notes: tx.notes ?? "",
@@ -73,7 +75,11 @@ export function TransactionForm({
     const amount = parseCurrencyInput(form.amountRaw);
     if (!amount) return setError("Informe um valor válido.");
     if (!form.categoryId) return setError("Selecione uma categoria.");
-    if (!form.accountId) return setError("Selecione uma conta.");
+    if (!form.accountId) return setError("Selecione um banco de origem.");
+    if (form.type === "transfer" && !form.destinationAccountId)
+      return setError("Selecione um banco de destino.");
+    if (form.type === "transfer" && form.destinationAccountId === form.accountId)
+      return setError("Banco de origem e destino não podem ser iguais.");
 
     setLoading(true);
     try {
@@ -86,6 +92,7 @@ export function TransactionForm({
           date: form.date,
           categoryId: form.categoryId,
           accountId: form.accountId,
+          destinationAccountId: form.type === "transfer" ? form.destinationAccountId : undefined,
           cardId: form.cardId || undefined,
           notes: form.notes || undefined,
         },
@@ -237,7 +244,9 @@ export function TransactionForm({
             </div>
             {!cardSelected && (
               <div>
-                <label className="label">Banco</label>
+                <label className="label">
+                  {form.type === "transfer" ? "Banco de origem" : "Banco"}
+                </label>
                 <select
                   className="input-field"
                   value={form.accountId}
@@ -253,6 +262,27 @@ export function TransactionForm({
               </div>
             )}
           </div>
+
+          {/* Banco de destino (apenas transferências) */}
+          {form.type === "transfer" && (
+            <div>
+              <label className="label">Banco de destino</label>
+              <select
+                className="input-field"
+                value={form.destinationAccountId}
+                onChange={(e) => set("destinationAccountId", e.target.value)}
+              >
+                <option value="">Selecionar…</option>
+                {accounts
+                  .filter((a) => a.id !== form.accountId)
+                  .map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name}
+                    </option>
+                  ))}
+              </select>
+            </div>
+          )}
 
           {/* Status */}
           <div>

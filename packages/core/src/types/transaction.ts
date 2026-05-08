@@ -17,6 +17,7 @@ export interface Transaction {
   date: string; // ISO 8601: "YYYY-MM-DD"
   categoryId: string;
   accountId: string;
+  destinationAccountId?: string;
   cardId?: string;
   installment?: InstallmentInfo;
   notes?: string;

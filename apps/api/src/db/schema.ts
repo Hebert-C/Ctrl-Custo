@@ -153,6 +153,7 @@ export const transactions = ledgerSchema.table("transactions", {
     .notNull()
     .references(() => accounts.id),
   cardId: uuid("card_id").references(() => cards.id),
+  destinationAccountId: uuid("destination_account_id").references(() => accounts.id),
   installmentTotal: integer("installment_total"),
   installmentCurrent: integer("installment_current"),
   installmentGroupId: uuid("installment_group_id"),

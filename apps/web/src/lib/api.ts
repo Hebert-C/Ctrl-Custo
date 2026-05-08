@@ -99,6 +99,7 @@ interface ApiTransaction extends ApiRow {
   date: string;
   categoryId: string;
   accountId: string;
+  destinationAccountId: string | null;
   cardId: string | null;
   installmentTotal: number | null;
   installmentCurrent: number | null;
@@ -163,6 +164,7 @@ function mapTransaction(row: ApiTransaction): Transaction {
     date: row.date,
     categoryId: row.categoryId,
     accountId: row.accountId,
+    destinationAccountId: row.destinationAccountId ?? undefined,
     cardId: row.cardId ?? undefined,
     notes: row.notes ?? undefined,
     createdAt: row.createdAt,
