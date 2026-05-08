@@ -164,7 +164,7 @@ Coletado via WhatsApp após primeira sessão de uso real.
 **O que fazer:**
 
 - Mover o resumo mensal (Receitas / Saídas / Saldo do mês) para o topo do Dashboard como card principal
-- O saldo bancário das contas passa a ser informação secundária, visível em "Carteiras"
+- O saldo bancário das contas passa a ser informação secundária, visível em "Bancos"
 - Não altera a lógica de negócio — transações continuam afetando o saldo das contas. Apenas a hierarquia visual muda.
 
 **✅ Implementado — Gráficos interativos no card de resumo (dois níveis):**
@@ -178,15 +178,11 @@ Coletado via WhatsApp após primeira sessão de uso real.
 
 ---
 
-#### 2. Renomear "Contas" para "Carteiras"
+#### 2. Renomear "Contas" para "Bancos" ✅
 
 **Prioridade:** Alta (junto com item 1)
 **Origem:** "Acho que a 'conta' não deveria se chamar 'conta'. A conta ser algo separado."
-**O que fazer:**
-
-- Renomear o item de navegação "Contas" → "Carteiras" no Sidebar
-- Renomear labels na página de Settings onde aparece "Conta"
-- Ajuste apenas de texto/label, sem alteração de schema ou lógica
+**Implementado:** Renomeado para "Bancos" em toda a UI (PR #10). "Carteira" está reservado para a seção de Investimentos.
 
 ---
 
