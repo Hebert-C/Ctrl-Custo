@@ -577,16 +577,11 @@ ai_terms_accepted_at timestamptz
 
 ---
 
-#### 5. Clarificar o conceito de Transferência
+#### 5. Clarificar o conceito de Transferência ✅
 
 **Prioridade:** Média
-**Dúvida:** O tipo "Transferência" não é nem entrada nem saída — move dinheiro entre duas contas próprias (ex: Nubank → Itaú). No formulário atual não há campo "conta de destino", o que gera confusão.
-**O que fazer:**
-
-- Adicionar campo "Banco de destino" no formulário quando o tipo for Transferência
-- Ao salvar: debitar a conta de origem e creditar a conta de destino
-- No filtro e listagem, exibir "→ [banco destino]" nas transferências para deixar claro o fluxo
-- Avaliar se Transferência deve aparecer nos totais de Receitas/Despesas do Dashboard (atualmente não aparece, o que é correto — mas não está documentado)
+**Implementado — `984294b`:** Campo "Banco de destino" aparece no form quando tipo = Transferência; API debita origem e credita destino atomicamente; PUT/DELETE revertem ambas as contas. Migration `0003` adiciona `destination_account_id` na tabela.
+**Pendente:** aplicar migration na VM (`pnpm db:migrate` no servidor).
 
 ---
 
