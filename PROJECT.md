@@ -581,7 +581,7 @@ ai_terms_accepted_at timestamptz
 
 **Prioridade:** Média
 **Implementado — `984294b`:** Campo "Banco de destino" aparece no form quando tipo = Transferência; API debita origem e credita destino atomicamente; PUT/DELETE revertem ambas as contas. Migration `0003` adiciona `destination_account_id` na tabela.
-**Pendente:** aplicar migration na VM (`pnpm db:migrate` no servidor).
+Migration `0003` será aplicada automaticamente pelo CI/CD no próximo push (deploy.sh → pnpm db:migrate).
 
 ---
 
