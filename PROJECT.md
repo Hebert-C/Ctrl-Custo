@@ -225,25 +225,19 @@ Coletado após primeira sessão de uso real.
 
 ---
 
-#### 1. Cartão pede conta duas vezes
+#### 1. Cartão pede conta duas vezes ✅
 
 **Prioridade:** Alta
 **Origem:** "Quando adiciona cartão já pede conta para pagamento, mas quando vai colocar a despesa e seleciona cartão pede conta novamente."
-**O que fazer:**
-
-- Ao selecionar um cartão no formulário de transação, preencher/ocultar o campo de conta automaticamente usando a conta vinculada ao cartão
-- O campo "conta" não deve aparecer quando um cartão já está selecionado (a conta é implícita)
+**Implementado:** `TransactionForm.tsx` — `handleCardChange` preenche `accountId` automaticamente; campo "Banco" oculto via `{!cardSelected && ...}` quando cartão está selecionado.
 
 ---
 
-#### 2. Depósito de meta não gera transação
+#### 2. Depósito de meta não gera transação ✅
 
 **Prioridade:** Alta
 **Origem:** "Depósito da meta não está entrando na transação."
-**O que fazer:**
-
-- Verificar o endpoint `POST /goals/:id/deposit` — ao depositar deve criar uma transação do tipo `expense` na conta vinculada com categoria "Metas"
-- Confirmar se a lógica existe na API ou se foi omitida
+**Implementado:** API já criava a transação corretamente. Fix `8e8336f`: `Goals/index.tsx` agora chama `loadAccs()` após o depósito, refletindo o saldo debitado sem recarregar a página.
 
 ---
 
@@ -268,24 +262,19 @@ Coletado após primeira sessão de uso real.
 
 ---
 
-#### 5. Editar transação ao invés de só excluir
+#### 5. Editar transação ao invés de só excluir ✅
 
 **Prioridade:** Alta
 **Origem:** "Ao invés de excluir totalmente uma transação, tem como editar ela?"
-**O que fazer:**
-
-- Adicionar botão "Editar" nas transações (endpoint `PUT /transactions/:id` já existe na API)
-- Abrir o formulário pré-preenchido com os dados da transação selecionada
+**Implementado:** Botão "Editar" na listagem (`Transactions/index.tsx` linha 160), form suporta `editingTx`, store tem `update()`, API tem `PUT /transactions/:id`.
 
 ---
 
-#### 6. Saldo negativo em vermelho
+#### 6. Saldo negativo em vermelho ✅
 
 **Prioridade:** Média
 **Origem:** "Quando o saldo total fica negativo, dá para mudar de verde para vermelho?"
-**O que fazer:**
-
-- No Dashboard (BalanceCard) e em qualquer lugar que exiba saldo total, aplicar cor condicional: verde se ≥ 0, vermelho se < 0
+**Implementado:** `BalanceCard.tsx` — `isNegative = totalBalance < 0` aplica `text-red-500` no valor e ícone quando saldo é negativo.
 
 ---
 
@@ -465,27 +454,19 @@ planning.recurring_payments (
 
 ### Bugs
 
-#### 1. Parcelas no cartão não são divididas nem projetadas
+#### 1. Parcelas no cartão não são divididas nem projetadas ✅
 
 **Prioridade:** Alta
 **Sintoma:** Criar despesa de R$1.000 em 4x no cartão registra o valor inteiro em vez de dividir em R$250 por mês e gerar as 4 parcelas nos meses seguintes.
-**O que investigar:**
-
-- `addInstallments` no `useTransactionStore` — verificar se está sendo chamado corretamente quando `installments > 1`
-- No Dashboard, o formulário chama `add` ou `addInstallments`? Verificar se a lógica de parcelas está conectada
-- A API `POST /transactions` suporta parcelamento ou precisa de chamadas múltiplas?
+**Implementado — fix `0b2a3d9`:** `addInstallments` divide `amount / total` com `Math.round` e projeta `+i meses` por parcela. Dashboard e Transactions chamam `addInstallments` corretamente.
 
 ---
 
-#### 2. Saldo da conta não atualiza ao adicionar transação
+#### 2. Saldo da conta não atualiza ao adicionar transação ✅
 
 **Prioridade:** Alta
 **Sintoma:** Após adicionar uma transação pelo modal do Dashboard, o "Saldo nos Bancos" continua mostrando o valor antigo até recarregar a página.
-**O que investigar:**
-
-- `useAccountStore` não está sendo recarregado após o `add` de transação
-- No Dashboard, após `handleSubmit` chamar `add`, precisa também chamar `loadAccounts()` para refletir o novo saldo
-- Verificar se o mesmo problema ocorre na página de Transações
+**Implementado — fix `0b2a3d9`:** Dashboard e Transactions chamam `loadAccounts()` após qualquer `add` ou `addInstallments`.
 
 ---
 
