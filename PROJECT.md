@@ -452,7 +452,8 @@ planning.recurring_payments (
 
 ### 5. Assistente Financeiro com IA — Dicas sobre o saldo do mês
 
-**Prioridade:** Média
+**Prioridade:** Média — ⚠️ requer monetização
+**Observação de custo:** Cada chamada à Claude API (Haiku 4.5) custa ~$0,002. Com limite de 1 dica/usuário/mês o custo é negligenciável em escala pequena, mas existe e escala com usuários. Implementar somente quando o app tiver plano pago, ou com limite rígido de 1 chamada/mês por usuário como diferencial de plano premium.
 **Ideia:** Um assistente de IA analisa o perfil financeiro do usuário e o saldo que sobrou no mês, sugerindo o que pode ser feito com esse dinheiro. O assistente nunca promete retornos garantidos nem cria expectativas irreais — sempre apresenta as sugestões como possibilidades, não verdades. O usuário aceita um termo de ciência antes de usar o recurso pela primeira vez.
 
 #### Perfil do investidor
