@@ -587,24 +587,26 @@ Migration `0003` será aplicada automaticamente pelo CI/CD no próximo push (dep
 
 ## Log de Sessões
 
-### 2026-05-08 — Correção de bugs e backlog de features
+### 2026-05-08 — Correção de bugs, backlog e feature de transferência
 
 #### O que foi feito
 
-- **fix(store) — commit `0b2a3d9`:** `addInstallments` em web e mobile agora divide `amount` por `total` (usando `Math.round`) e projeta a data +1 mês por parcela — espelha a lógica já existente em `TransactionService.createInstallments` do `packages/core`
-- **fix(web) — mesmo commit:** Dashboard e Transactions chamam `loadAccounts()` após criar qualquer transação (simples ou parcelada), refletindo o novo saldo sem recarregar a página
-- Push feito para `main` — CI + deploy automático trigados
-- **Verificação:** "Editar transação" já estava 100% implementado (botão, form, store, API) — nada a fazer
-- **Verificação:** "Cartão pede conta duas vezes" já estava corrigido — campo "Banco" some quando cartão é selecionado e `accountId` é preenchido automaticamente
-- **Verificação:** "Renomear Contas → Carteiras" — renomeação já feita anteriormente para "Bancos" na UI
-- **fix(web) — `8e8336f`:** depósito de meta agora chama `loadAccs()` após confirmar, refletindo o saldo debitado sem recarregar a página
-- **docs:** adicionado ao backlog item "Pagamentos Recorrentes" (contas fixas mensais com notificação de vencimento e confirmação que gera transação)
+- **fix(store) — `0b2a3d9`:** `addInstallments` divide valor por parcela e projeta datas mensais; Dashboard e Transactions chamam `loadAccounts()` após criar transação
+- **fix(web) — `8e8336f`:** depósito de meta chama `loadAccs()` após confirmar, refletindo saldo debitado sem recarregar
+- **Verificações:** "Editar transação", "Cartão pede conta duas vezes" e "Saldo negativo em vermelho" já estavam implementados — confirmado no código
+- **docs:** backlog atualizado com ✅ em todos os itens já implementados; adicionadas features: Pagamentos Recorrentes, Visão de Parcelas Futuras, Assistente Financeiro com IA (⚠️ requer monetização), lista de ordem de implementação
+- **feat(transfer) — `984294b`:** campo "Banco de destino" no formulário de transação (tipo Transferência); API debita origem e credita destino atomicamente; PUT/DELETE revertem ambas as contas; migration `0003_transfer_destination.sql`
+- **fix(migrate) — `97936b6`:** adicionada entrada da `0003` no `meta/_journal.json` — sem isso o Drizzle ignora o arquivo silenciosamente mesmo com deploy success
+- **Descoberta:** migrations automatizadas funcionam corretamente via CI/CD; SSH local conecta como `ubuntu` (sem acesso ao `.env`), não como `deploy`; arquivos SQL criados manualmente precisam de entrada no `_journal.json`
+- Migration `0003` confirmada aplicada na VM — coluna `destination_account_id` presente em `ledger.transactions`
 
-#### Pendências em aberto
+#### Pendências em aberto (ordem de implementação)
 
-- **Detalhamento ao clicar em "Saldo nos Bancos"** (Média)
-- **Relatórios incluir mês atual no seletor** (Média)
-- **Transferência — campo "banco de destino"** (Média)
+1. **Detalhamento ao clicar no cartão** — transações do mês, fatura, limite (Média)
+2. **Detalhamento ao clicar em "Saldo nos Bancos"** — lista por banco (Média)
+3. **Relatórios — opção "Mês atual" no seletor** (Média)
+4. **Cor dos cartões** — seletor de cor no formulário (Baixa)
+
 - **Mobile:** Dashboard mobile com fluxo mensal + donut (branch `feature/mobile-dashboard-improvements`)
 
 ---
