@@ -36,6 +36,19 @@ test.describe("Dashboard", () => {
   test("shows balance card", async ({ page }) => {
     await expect(page.getByText("Saldo total")).toBeVisible();
   });
+
+  test("saldo nos bancos expande ao clicar", async ({ page }) => {
+    const btn = page.getByRole("button", { name: /saldo nos bancos/i });
+    await expect(btn).toBeVisible();
+    // Painel fechado — ▼ visível
+    await expect(page.getByText("▼")).toBeVisible();
+    await btn.click();
+    // Painel aberto — ▲ visível
+    await expect(page.getByText("▲")).toBeVisible();
+    // Fecha ao clicar novamente
+    await btn.click();
+    await expect(page.getByText("▼")).toBeVisible();
+  });
 });
 
 test.describe("Transactions", () => {
