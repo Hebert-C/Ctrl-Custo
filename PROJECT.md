@@ -149,6 +149,245 @@ packages/config/ — tsconfig bases
 
 ---
 
+## Paridade Mobile ↔ Web — Plano de Implementação
+
+> **Contexto:** O mobile tem a estrutura certa (stores com CRUD completo, cliente HTTP, todos os endpoints). A UI, porém, implementou apenas Create + Read na maioria dos fluxos. Cobertura atual estimada: ~45% da paridade com o web.
+>
+> **Princípio:** Nenhum item abaixo exige mudança de API ou banco — tudo já tem suporte no backend e nos stores. O trabalho é 100% de UI mobile.
+>
+> **Branch:** `feature/mobile-parity` (criar a partir de `main`)
+
+---
+
+### Grupo 1 — CRUD completo (Alta prioridade)
+
+Afeta uso diário. Stores já têm `update()` e `remove()` implementados — falta só expor na UI.
+
+#### 1.1 Transações: editar e excluir
+
+**Situação atual:** `app/(tabs)/transactions.tsx` só cria. Não há swipe, long-press nem botão de edição.
+
+**O que fazer:**
+
+- Swipe para esquerda em cada item da lista → botão "Excluir" (vermelho) com `confirm`
+- Tap no item → abre `TransactionForm` pré-preenchido com os dados da transação (modo edição)
+- `TransactionForm` já aceita `editing` prop? Verificar — se não, adicionar
+- Após salvar/excluir: recarregar `loadAccounts()` para refletir saldo
+
+**Arquivos a modificar:**
+
+- `apps/mobile/app/(tabs)/transactions.tsx`
+- `apps/mobile/src/components/TransactionForm.tsx` (adicionar modo edição se necessário)
+
+---
+
+#### 1.2 Cartões: excluir (edição é baixa prioridade)
+
+**Situação atual:** `app/(tabs)/cards.tsx` só cria. Não há forma de excluir.
+
+**O que fazer:**
+
+- Long-press no card → menu de contexto com "Excluir"
+- OU: botão ✕ visível no canto do card (padrão igual ao web)
+- `useCardStore.remove(id)` já existe
+
+**Arquivos a modificar:**
+
+- `apps/mobile/app/(tabs)/cards.tsx`
+
+---
+
+#### 1.3 Metas: excluir (edição pode vir depois)
+
+**Situação atual:** `app/(tabs)/goals.tsx` só cria e deposita. Não há exclusão.
+
+**O que fazer:**
+
+- Swipe para esquerda → botão "Excluir" com `confirm`
+- `useGoalStore.remove(id)` já existe
+
+**Arquivos a modificar:**
+
+- `apps/mobile/app/(tabs)/goals.tsx`
+
+---
+
+#### 1.4 Configurações — Bancos: excluir
+
+**Situação atual:** `settings.tsx` tem criar e editar banco, mas não excluir.
+
+**O que fazer:**
+
+- Adicionar botão "Excluir" no `AccountForm` em modo edição (ou swipe na lista)
+- `useAccountStore.remove(id)` já existe
+
+**Arquivos a modificar:**
+
+- `apps/mobile/app/(tabs)/settings.tsx`
+- `apps/mobile/src/components/AccountForm.tsx`
+
+---
+
+#### 1.5 Configurações — Categorias: excluir
+
+**Situação atual:** `settings.tsx` tem criar e editar categoria, mas não excluir.
+
+**O que fazer:**
+
+- Botão "Excluir" no `CategoryForm` em modo edição
+- `useCategoryStore.remove(id)` já existe
+
+**Arquivos a modificar:**
+
+- `apps/mobile/app/(tabs)/settings.tsx`
+- `apps/mobile/src/components/CategoryForm.tsx`
+
+---
+
+### Grupo 2 — Features existentes no web (Média prioridade)
+
+#### 2.1 Tipo Transferência no formulário de transação
+
+**Situação atual:** `TransactionForm` só tem Despesa / Receita. O store e a API suportam `transfer`.
+
+**O que fazer:**
+
+- Adicionar terceiro toggle "Transferência" no seletor de tipo
+- Quando selecionado: mostrar segundo seletor de conta "Banco de destino"
+- `useTransactionStore.add()` já aceita `destinationAccountId`
+
+**Arquivos a modificar:**
+
+- `apps/mobile/src/components/TransactionForm.tsx`
+
+---
+
+#### 2.2 Campo Notas no formulário de transação
+
+**Situação atual:** `TransactionForm` não expõe o campo `notes`. O store e a API suportam.
+
+**O que fazer:**
+
+- Adicionar campo de texto multiline opcional "Observações" no final do form
+- Passar `notes` no payload do `add()` / `update()`
+
+**Arquivos a modificar:**
+
+- `apps/mobile/src/components/TransactionForm.tsx`
+
+---
+
+#### 2.3 Filtros de transação — UI
+
+**Situação atual:** `useTransactionStore` tem `setFilters()` com suporte a tipo, categoria, conta, busca e data — mas não há UI para aplicar esses filtros.
+
+**O que fazer:**
+
+- Botão de filtro no header da tela de Transações
+- Bottom sheet com opções: tipo (chips), categoria (chips), conta (chips), busca (input)
+- Botão "Limpar filtros"
+- Badge no botão de filtro quando há filtro ativo
+
+**Arquivos a modificar:**
+
+- `apps/mobile/app/(tabs)/transactions.tsx`
+- `apps/mobile/src/components/TransactionFilters.tsx` (criar)
+
+---
+
+#### 2.4 Fatura do cartão — statement ao tocar no cartão
+
+**Situação atual:** Nenhum detalhe ao tocar no cartão. API `GET /cards/:id/statement?month=YYYY-MM` já existe (implementada na sessão de hoje).
+
+**O que fazer:**
+
+- Tap no card → abre bottom sheet com: fatura atual, limite disponível, transações do mês
+- Navegação por mês (◄ ►) igual ao web
+- Usar `api.cards.statement(id, month)` — já está no cliente HTTP do web; adicionar no cliente do mobile
+
+**Arquivos a modificar:**
+
+- `apps/mobile/app/(tabs)/cards.tsx`
+- `apps/mobile/src/lib/api.ts` (adicionar `cards.statement`)
+- `apps/mobile/src/components/CardStatement.tsx` (criar)
+
+---
+
+### Grupo 3 — Dashboard melhorado (Média prioridade)
+
+#### 3.1 Hero card de fluxo mensal + donut interativo
+
+**Situação atual:** Dashboard mostra saldo total e resumo mensal em texto simples. Web tem fluxo mensal como hero com donut interativo em 2 níveis.
+
+**O que fazer:**
+
+- Reorganizar o Dashboard: fluxo mensal (Receitas / Despesas / Saldo do mês) vira o hero principal
+- Tap no hero abre `PieChart` de Receitas vs Despesas (nível 1)
+- Tap na fatia de Despesas → `PieChart` por categoria de despesa (nível 2)
+- Tap na fatia de Receitas → `PieChart` por categoria de receita (nível 2)
+- `PieChart` já está em `packages/ui` (Victory Native)
+
+**Arquivos a modificar:**
+
+- `apps/mobile/app/(tabs)/index.tsx`
+
+---
+
+#### 3.2 Saldo nos Bancos expansível
+
+**Situação atual:** Dashboard mostra apenas contador de contas e saldo total.
+
+**O que fazer:**
+
+- Card "Saldo nos Bancos" clicável
+- Expand/collapse: lista cada banco com nome, tipo e saldo individual
+- Saldo negativo em vermelho
+
+**Arquivos a modificar:**
+
+- `apps/mobile/app/(tabs)/index.tsx`
+
+---
+
+### Grupo 4 — Relatórios (Baixa prioridade, porém única aba ausente)
+
+#### 4.1 Nova tela de Relatórios
+
+**Situação atual:** Não existe. Web tem página `/reports` completa.
+
+**O que fazer:**
+
+- Adicionar 6ª aba "Relatórios" no tab bar (`app/(tabs)/reports.tsx`)
+- Ou: tela acessível por botão no Dashboard (sem nova aba, para não poluir o tab bar)
+- Conteúdo:
+  - Seletor de período: Mês atual / 3 / 6 / 12 meses
+  - `BarChart` receitas vs despesas (`packages/ui` já tem)
+  - `LineChart` evolução do saldo (`packages/ui` já tem)
+  - Tabela de evolução mensal (FlatList)
+  - Top 5 categorias de despesa (barras)
+  - Exportar: `Share` nativo do Expo (CSV ou JSON)
+
+**Arquivos a criar/modificar:**
+
+- `apps/mobile/app/(tabs)/reports.tsx` (criar)
+- `apps/mobile/app/(tabs)/_layout.tsx` (adicionar aba)
+
+---
+
+### Resumo e estimativa
+
+| Grupo                       | Itens                                                                                                     | Estimativa | Status |
+| --------------------------- | --------------------------------------------------------------------------------------------------------- | ---------- | ------ |
+| 1 — CRUD completo           | 1.1 editar/excluir tx · 1.2 excluir cartão · 1.3 excluir meta · 1.4 excluir banco · 1.5 excluir categoria | ~3–4h      | ⬜     |
+| 2 — Features web existentes | 2.1 transferência · 2.2 notas · 2.3 filtros · 2.4 fatura cartão                                           | ~3–4h      | ⬜     |
+| 3 — Dashboard melhorado     | 3.1 hero fluxo + donut · 3.2 bancos expansível                                                            | ~2h        | ⬜     |
+| 4 — Relatórios              | 4.1 nova tela completa                                                                                    | ~3h        | ⬜     |
+| **Total**                   | **10 itens**                                                                                              | **~8–12h** |        |
+
+> Ordem de execução recomendada: 1.1 → 1.2 → 1.3 → 1.4+1.5 → 2.1 → 2.2 → 2.3 → 2.4 → 3.1 → 3.2 → 4.1
+
+---
+
 ## Backlog de Melhorias — Feedback de Usuários
 
 ### Feedback — Danilo (PB) — 2026-05-06
