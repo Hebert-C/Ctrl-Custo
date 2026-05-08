@@ -59,13 +59,19 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
 
   addInstallments: async (data, total) => {
     const groupId = crypto.randomUUID();
+    const amountPerInstallment = Math.round(data.amount / total);
+    const baseDate = new Date(data.date);
     const txs = await Promise.all(
-      Array.from({ length: total }, (_, i) =>
-        api.transactions.create({
+      Array.from({ length: total }, (_, i) => {
+        const installmentDate = new Date(baseDate);
+        installmentDate.setMonth(installmentDate.getMonth() + i);
+        return api.transactions.create({
           ...data,
+          amount: amountPerInstallment,
+          date: installmentDate.toISOString().split("T")[0],
           installment: { total, current: i + 1, groupId },
-        })
-      )
+        });
+      })
     );
     set((s) => {
       const all = [...txs, ...s._all];

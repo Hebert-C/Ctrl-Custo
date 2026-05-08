@@ -71,6 +71,7 @@ export function Dashboard() {
     } else {
       await add(data);
     }
+    await loadAccounts();
   }
 
   if (loading) {

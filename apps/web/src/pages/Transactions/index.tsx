@@ -51,6 +51,7 @@ export function Transactions() {
     } else {
       await add(data);
     }
+    await loadAccs();
   }
 
   function handleEdit(tx: Transaction) {
