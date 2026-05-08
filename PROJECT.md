@@ -450,6 +450,86 @@ planning.recurring_payments (
 
 ---
 
+### 5. Assistente Financeiro com IA — Dicas sobre o saldo do mês
+
+**Prioridade:** Média
+**Ideia:** Um assistente de IA analisa o perfil financeiro do usuário e o saldo que sobrou no mês, sugerindo o que pode ser feito com esse dinheiro. O assistente nunca promete retornos garantidos nem cria expectativas irreais — sempre apresenta as sugestões como possibilidades, não verdades. O usuário aceita um termo de ciência antes de usar o recurso pela primeira vez.
+
+#### Perfil do investidor
+
+Antes de usar o assistente, o usuário responde um questionário simples (3–5 perguntas) que classifica seu perfil:
+
+- **Conservador** — prioriza segurança, aceita rendimentos menores (ex: CDB, Tesouro Direto, poupança)
+- **Moderado** — aceita algum risco por retornos maiores (ex: fundos multimercado, FIIs)
+- **Arrojado** — disposto a risco maior (ex: ações, ETFs, criptomoedas)
+
+O perfil fica salvo nas configurações e pode ser alterado a qualquer momento.
+
+#### Disclaimer obrigatório
+
+Na primeira vez que o usuário acessa o assistente, exibe modal com:
+
+> "As sugestões geradas são educativas e não constituem consultoria financeira. O Ctrl+Custo não se responsabiliza por decisões tomadas com base nestas informações. Consulte um profissional habilitado antes de investir."
+
+Botão "Entendi e aceito" registra o aceite com timestamp. Sem aceite, o recurso não está disponível.
+
+#### Contexto enviado à IA
+
+O assistente recebe (nunca dados pessoais identificáveis):
+
+- Saldo disponível no mês (valor em reais)
+- Perfil do investidor (conservador / moderado / arrojado)
+- Resumo das categorias de gasto do mês (% por categoria, sem descrições de transações)
+- Mês/ano de referência
+
+#### Prompt base (instruções para a IA)
+
+```
+Você é um assistente financeiro educativo. Analise o contexto abaixo e sugira 2 a 3 opções do que o usuário pode fazer com o saldo disponível, considerando o perfil informado.
+
+Regras obrigatórias:
+- Nunca prometa retornos garantidos
+- Use linguagem como "pode considerar", "uma possibilidade é", "alguns especialistas recomendam"
+- Mencione sempre que sugestões não são consultoria financeira
+- Seja objetivo: máximo 4 linhas por sugestão
+- Foque em opções acessíveis para o valor disponível
+- Não cite nomes de corretoras ou produtos específicos de terceiros
+```
+
+#### Como implementar
+
+**Banco de dados — `auth.users` + nova coluna (migration 0003 ou 0004):**
+
+```sql
+-- adicionar em auth.users:
+investor_profile   text check (value in ('conservative','moderate','aggressive')),
+ai_terms_accepted_at timestamptz
+```
+
+**API (`apps/api`):**
+
+- `POST /settings/investor-profile` — salva perfil selecionado
+- `POST /settings/ai-terms-accept` — registra aceite do disclaimer com timestamp
+- `POST /ai/financial-tip` — recebe `{ availableBalance, month }`, monta contexto com dados do usuário, chama Claude API (modelo `claude-haiku-4-5-20251001` para custo baixo), retorna sugestão em texto
+
+**Claude API — integração no backend:**
+
+- Usar `@anthropic-ai/sdk` em `apps/api`
+- `ANTHROPIC_API_KEY` como variável de ambiente na VM (GitHub Secret + `ecosystem.config.cjs`)
+- Prompt com system instructions fixas + contexto dinâmico por chamada
+- Sem histórico de conversa — cada dica é stateless (sem memória entre chamadas)
+
+**Web (`apps/web`):**
+
+- Card "Dica do Mês" no Dashboard: aparece quando há saldo positivo no mês e o usuário aceitou o disclaimer
+- Botão "Gerar dica" → loading → exibe sugestão da IA em texto formatado
+- Link "Alterar perfil" nas Configurações abre questionário de reclassificação
+- Modal de disclaimer na primeira vez que o usuário clica em "Gerar dica"
+
+**Complexidade:** Média — o maior cuidado é o prompt (tom correto, sem promessas) e a integração com a Claude API no backend. A UI é simples.
+
+---
+
 ## Bugs e Melhorias — 2026-05-07
 
 ### Bugs
