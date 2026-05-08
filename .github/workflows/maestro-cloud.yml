@@ -1,0 +1,78 @@
+name: Maestro Cloud E2E
+
+on:
+  workflow_dispatch:
+    inputs:
+      apk_url:
+        description: "URL do APK (EAS Build artifact)"
+        required: true
+        type: string
+  workflow_run:
+    workflows: ["EAS Build — Android"]
+    types: [completed]
+    branches: [main]
+
+jobs:
+  e2e:
+    name: Maestro Cloud E2E Tests
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Setup EAS (para baixar artefato)
+        if: github.event_name == 'workflow_run'
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Obter URL do APK (via EAS CLI)
+        if: github.event_name == 'workflow_run'
+        id: eas_apk
+        working-directory: apps/mobile
+        run: |
+          URL=$(eas build:list \
+            --platform android \
+            --status finished \
+            --limit 1 \
+            --non-interactive \
+            --json \
+            | jq -r '.[0].artifacts.buildUrl // empty')
+          echo "apk_url=$URL" >> "$GITHUB_OUTPUT"
+
+      - name: Baixar APK
+        run: |
+          APK_URL="${{ inputs.apk_url || steps.eas_apk.outputs.apk_url }}"
+          if [ -z "$APK_URL" ]; then
+            echo "APK URL não encontrado — abortando."
+            exit 1
+          fi
+          curl -L -o app.apk "$APK_URL"
+
+      - name: Instalar Maestro CLI
+        run: |
+          curl -Ls "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+
+      - name: Executar testes no Maestro Cloud
+        env:
+          MAESTRO_API_KEY: ${{ secrets.MAESTRO_API_KEY }}
+        run: |
+          maestro cloud \
+            --apiKey "$MAESTRO_API_KEY" \
+            --app app.apk \
+            .maestro/

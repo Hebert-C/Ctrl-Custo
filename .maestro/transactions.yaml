@@ -1,0 +1,32 @@
+appId: com.hebert.ctrlcusto
+---
+- runFlow: login.yaml
+
+# Navega para Transações
+- tapOn:
+    text: "Transações"
+- assertVisible:
+    text: "Transações"
+
+# Abre formulário de nova transação
+- tapOn:
+    text: "Nova Transação"
+- assertVisible:
+    text: "Nova Transação"
+
+# Preenche o formulário
+- tapOn:
+    text: "Descrição"
+    optional: true
+- inputText: "Teste Maestro"
+
+# Valor
+- tapOn:
+    text: "0,00"
+- inputText: "5000"
+
+# Fecha o modal (cancela)
+- tapOn:
+    text: "Cancelar"
+    optional: true
+- back

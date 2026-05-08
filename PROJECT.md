@@ -811,6 +811,61 @@ Migration `0003` será aplicada automaticamente pelo CI/CD no próximo push (dep
 
 ## Log de Sessões
 
+### 2026-05-08 — Infraestrutura de testes automatizados para o mobile (Fase 13)
+
+#### O que foi implementado
+
+**Estratégia de testes mobile — dois níveis:**
+
+| Nível                       | Ferramenta    | Quando roda             | O que cobre                                                  |
+| --------------------------- | ------------- | ----------------------- | ------------------------------------------------------------ |
+| 1 — Unitário/Componente     | Jest + RNTL   | A cada push (CI)        | Funções puras, renderização de forms, comportamento sem rede |
+| 2 — E2E em dispositivo real | Maestro Cloud | Após EAS Build (`main`) | Fluxos completos em APK real                                 |
+
+**Pacotes adicionados em `apps/mobile` (devDependencies):**
+
+- `jest-expo ~54.0.0` — preset Jest para Expo SDK 54
+- `@testing-library/react-native ^12.9.0` — renderização de componentes sem emulador
+- `@testing-library/jest-native ^5.4.3` — custom matchers (`toBeTruthy`, etc.)
+- `react-test-renderer 19.1.4` — renderizador para React 19
+- `@types/jest ^29.5.12` — tipos TypeScript
+
+**Arquivos criados:**
+
+- `apps/mobile/jest.config.js` — preset jest-expo, `setupFilesAfterEnv`, `transformIgnorePatterns` para pacotes workspace
+- `apps/mobile/src/__tests__/setup.ts` — mocks de módulos nativos: `@expo/vector-icons`, `expo-secure-store`, `expo-local-authentication`, `@react-native-async-storage`, `react-native-reanimated`
+- `apps/mobile/src/__tests__/useCurrency.test.ts` — 9 testes das funções puras (`parseCurrencyInput`, `formatCurrencyInput`, `formatCurrency`)
+- `apps/mobile/src/__tests__/GoalForm.test.tsx` — 6 testes de renderização do `GoalForm`
+- `apps/mobile/src/__tests__/AccountForm.test.tsx` — 7 testes de renderização do `AccountForm` (modo criação + edição)
+- `.maestro/login.yaml` — flow de login
+- `.maestro/dashboard.yaml` — navegação no dashboard
+- `.maestro/transactions.yaml` — abrir formulário de transação
+- `.maestro/goals.yaml` — criar meta completa
+- `.maestro/settings.yaml` — navegação em configurações
+- `.github/workflows/maestro-cloud.yml` — trigger: manual (`workflow_dispatch` com APK URL) ou automático após EAS Build no `main`
+
+**CI atualizado (`.github/workflows/ci.yml`):**
+
+- Adicionado step `Test (mobile)` — executa `pnpm test` em `apps/mobile` (Jest + RNTL, sem emulador)
+- Total de testes automatizados: 31 (core Vitest) + 22 (mobile Jest) + 38 (web E2E Playwright) = **91 testes**
+
+#### Pendências em aberto
+
+- **Ação do usuário necessária (Maestro Cloud):**
+  1. Criar conta em [cloud.mobile.dev](https://cloud.mobile.dev) (gratuito: 100 runs/mês)
+  2. Obter API Key em Settings → API Keys
+  3. Adicionar secret `MAESTRO_API_KEY` em GitHub → Settings → Secrets → Actions
+  4. Após próximo EAS Build, o workflow `maestro-cloud.yml` dispara automaticamente
+
+- **Próximos testes a adicionar (quando componentes estiverem prontos):**
+  - `TransactionForm.test.tsx` — cobre tipos: income/expense/transfer
+  - `CategoryForm.test.tsx` e `CardForm.test.tsx`
+  - Testes de `DepositForm.tsx`
+
+- **Paridade mobile ↔ web (próxima fase):** ver seção "Paridade Mobile ↔ Web" abaixo
+
+---
+
 ### 2026-05-08 — Backlog web zerado + cobertura E2E completa + deploy
 
 #### O que foi feito

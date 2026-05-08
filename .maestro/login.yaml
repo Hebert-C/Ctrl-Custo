@@ -1,0 +1,29 @@
+appId: com.hebert.ctrlcusto
+---
+- launchApp:
+    clearState: true
+
+# Aguarda a tela de login carregar
+- assertVisible:
+    text: "Ctrl-Custo"
+    optional: true
+- assertVisible:
+    text: "Entrar"
+
+# Preenche credenciais
+- tapOn:
+    text: "E-mail"
+    optional: true
+- inputText: "e2e@ctrl-custo.test"
+- tapOn:
+    text: "Senha"
+    optional: true
+- inputText: "e2e-password-123"
+
+# Entra
+- tapOn:
+    text: "Entrar"
+
+# Verifica que chegou no dashboard
+- assertVisible:
+    text: "Saldo"
