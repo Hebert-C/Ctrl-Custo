@@ -1,9 +1,9 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { db } from "../db/index";
-import { cards } from "../db/schema";
+import { cards, transactions } from "../db/schema";
 import { requireAuth, type AuthEnv } from "../middleware/auth";
 
 const cardBody = z.object({
@@ -52,6 +52,45 @@ cardsRouter.put("/:id", zValidator("json", cardBody.partial()), async (c) => {
     .returning();
   if (!row) return c.json({ error: "Cartão não encontrado." }, 404);
   return c.json(row);
+});
+
+cardsRouter.get("/:id/statement", async (c) => {
+  const userId = c.get("userId");
+  const id = c.req.param("id");
+  const month = c.req.query("month") ?? new Date().toISOString().slice(0, 7);
+
+  if (!/^\d{4}-\d{2}$/.test(month)) {
+    return c.json({ error: "month deve ser YYYY-MM" }, 400);
+  }
+
+  const [card] = await db
+    .select()
+    .from(cards)
+    .where(and(eq(cards.id, id), eq(cards.userId, userId)))
+    .limit(1);
+
+  if (!card) return c.json({ error: "Cartão não encontrado." }, 404);
+
+  const txs = await db
+    .select()
+    .from(transactions)
+    .where(
+      and(
+        eq(transactions.userId, userId),
+        eq(transactions.cardId, id),
+        sql`${transactions.date} LIKE ${month + "-%"}`
+      )
+    )
+    .orderBy(sql`${transactions.date} DESC, ${transactions.createdAt} DESC`);
+
+  const totalSpent = txs.filter((t) => t.type === "expense").reduce((sum, t) => sum + t.amount, 0);
+
+  return c.json({
+    card,
+    transactions: txs,
+    totalSpent,
+    availableLimit: card.creditLimit - totalSpent,
+  });
 });
 
 cardsRouter.delete("/:id", async (c) => {

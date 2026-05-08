@@ -140,6 +140,13 @@ interface ApiCard extends ApiRow {
   isArchived: boolean;
 }
 
+export interface CardStatement {
+  card: Card;
+  transactions: Transaction[];
+  totalSpent: number;
+  availableLimit: number;
+}
+
 interface ApiGoal extends ApiRow {
   id: string;
   name: string;
@@ -356,6 +363,18 @@ export const api = {
         body: JSON.stringify(data),
       }).then(mapCard),
     remove: (id: string) => req<{ ok: boolean }>(`/cards/${id}`, { method: "DELETE" }),
+    statement: (id: string, month: string) =>
+      req<{
+        card: ApiCard;
+        transactions: ApiTransaction[];
+        totalSpent: number;
+        availableLimit: number;
+      }>(`/cards/${id}/statement?month=${month}`).then((r) => ({
+        card: mapCard(r.card),
+        transactions: r.transactions.map(mapTransaction),
+        totalSpent: r.totalSpent,
+        availableLimit: r.availableLimit,
+      })),
   },
 
   goals: {
