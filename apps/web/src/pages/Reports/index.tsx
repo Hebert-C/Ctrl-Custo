@@ -4,9 +4,16 @@ import { BarChart } from "../../components/BarChart";
 import { LineChart } from "../../components/LineChart";
 import { useTransactionStore } from "../../store/useTransactionStore";
 import { useCategoryStore } from "../../store/useCategoryStore";
-import { lastNMonths, formatMonthLabel } from "../../hooks/useReport";
+import { lastNMonths, formatMonthLabel, currentMonth } from "../../hooks/useReport";
 import { formatCurrency } from "../../hooks/useCurrency";
 import { createExportService } from "@ctrl-custo/core";
+
+const MONTH_OPTIONS = [
+  { value: 1, label: "Mês atual" },
+  { value: 3, label: "3 meses" },
+  { value: 6, label: "6 meses" },
+  { value: 12, label: "12 meses" },
+];
 
 export function Reports() {
   const [loading, setLoading] = useState(true);
@@ -86,17 +93,17 @@ export function Reports() {
         {/* Controles */}
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex gap-2">
-            {[3, 6, 12].map((n) => (
+            {MONTH_OPTIONS.map(({ value, label }) => (
               <button
-                key={n}
-                onClick={() => setSelectedMonths(n)}
+                key={value}
+                onClick={() => setSelectedMonths(value)}
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  selectedMonths === n
+                  selectedMonths === value
                     ? "bg-brand-600 text-white"
                     : "bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-600 hover:bg-gray-50"
                 }`}
               >
-                {n} meses
+                {label}
               </button>
             ))}
           </div>
@@ -160,24 +167,35 @@ export function Reports() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50 dark:divide-gray-800/50">
-                  {evolution.map((row) => (
-                    <tr key={row.month} className="hover:bg-gray-50 dark:hover:bg-gray-800/30">
-                      <td className="px-5 py-3 font-medium text-gray-700 dark:text-gray-300 capitalize">
-                        {formatMonthLabel(row.month)}
-                      </td>
-                      <td className="px-5 py-3 text-right text-income font-medium">
-                        {formatCurrency(row.income)}
-                      </td>
-                      <td className="px-5 py-3 text-right text-expense font-medium">
-                        {formatCurrency(row.expense)}
-                      </td>
-                      <td
-                        className={`px-5 py-3 text-right font-semibold ${row.balance >= 0 ? "text-income" : "text-expense"}`}
+                  {evolution.map((row) => {
+                    const isCurrent = row.month === currentMonth();
+                    return (
+                      <tr
+                        key={row.month}
+                        className={`hover:bg-gray-50 dark:hover:bg-gray-800/30 ${isCurrent ? "bg-brand-50 dark:bg-brand-900/10" : ""}`}
                       >
-                        {formatCurrency(row.balance)}
-                      </td>
-                    </tr>
-                  ))}
+                        <td className="px-5 py-3 font-medium text-gray-700 dark:text-gray-300 capitalize">
+                          {formatMonthLabel(row.month)}
+                          {isCurrent && (
+                            <span className="ml-2 text-xs bg-brand-100 dark:bg-brand-800 text-brand-700 dark:text-brand-300 px-1.5 py-0.5 rounded-full">
+                              atual
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-5 py-3 text-right text-income font-medium">
+                          {formatCurrency(row.income)}
+                        </td>
+                        <td className="px-5 py-3 text-right text-expense font-medium">
+                          {formatCurrency(row.expense)}
+                        </td>
+                        <td
+                          className={`px-5 py-3 text-right font-semibold ${row.balance >= 0 ? "text-income" : "text-expense"}`}
+                        >
+                          {formatCurrency(row.balance)}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
