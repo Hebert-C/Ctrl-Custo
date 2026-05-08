@@ -241,24 +241,19 @@ Coletado após primeira sessão de uso real.
 
 ---
 
-#### 3. Detalhamento ao clicar no cartão
+#### 3. Detalhamento ao clicar no cartão ✅
 
 **Prioridade:** Média
 **Origem:** "Tem como clicar no cartão e ver o detalhamento do cartão?"
-**O que fazer:**
-
-- Criar página/modal de detalhe do cartão com: transações do mês, fatura atual, limite disponível
-- Na listagem de cartões, tornar cada card clicável
+**Implementado — `89fe6c3`:** Modal com fatura atual, limite disponível e transações do mês; navegação por mês (◄ ►); API `GET /cards/:id/statement?month=YYYY-MM`.
 
 ---
 
-#### 4. Personalização de cor dos cartões
+#### 4. Personalização de cor dos cartões ✅
 
 **Prioridade:** Baixa
 **Origem:** "Tem como personalizar as cores dos cartões igual personaliza para as contas?"
-**O que fazer:**
-
-- Verificar se o formulário de cartão já expõe o campo `color` — se não, adicionar seletor de cor igual ao de contas
+**Implementado — `89fe6c3`:** Seletor `<input type="color">` adicionado ao formulário de novo cartão.
 
 ---
 
@@ -553,27 +548,17 @@ ai_terms_accepted_at timestamptz
 
 ### Melhorias
 
-#### 3. Detalhamento no card "Saldo nos Bancos"
+#### 3. Detalhamento no card "Saldo nos Bancos" ✅
 
 **Prioridade:** Média
-**Ideia:** Clicar no card "Saldo nos Bancos" abre um detalhamento com cada banco separado — nome, tipo e saldo individual. Padrão igual ao donut do Saldo do Mês, mas aqui é uma lista simples (não gráfico), já que pode haver poucos bancos cadastrados.
-**O que fazer:**
-
-- Toggle ao clicar no card: abre painel abaixo com lista de bancos (nome · tipo · saldo)
-- Saldo de cada banco em vermelho se negativo
-- Fechar clicando novamente no card ou no ✕
+**Implementado — `dececc2`:** Toggle ao clicar no card expande painel com lista de bancos (nome · tipo · saldo); saldo negativo em vermelho; fecha clicando novamente.
 
 ---
 
-#### 4. Relatórios — incluir mês atual
+#### 4. Relatórios — incluir mês atual ✅
 
 **Prioridade:** Média
-**Sintoma:** O seletor de 3/6/12 meses em Relatórios exibe os meses passados mas pode não incluir o mês atual de forma clara.
-**O que fazer:**
-
-- Verificar se `lastNMonths(n)` inclui o mês atual — se não, corrigir
-- Adicionar opção "Mês atual" no seletor para ver apenas o mês em curso isolado
-- Na tabela de evolução, destacar visualmente a linha do mês atual (negrito ou fundo sutil)
+**Implementado — `7e3ff86`:** `lastNMonths(n)` já incluía o mês corrente (confirmado). Adicionado botão "Mês atual" ao seletor; linha do mês atual na tabela recebe fundo sutil e badge "atual".
 
 ---
 
@@ -587,19 +572,40 @@ Migration `0003` será aplicada automaticamente pelo CI/CD no próximo push (dep
 
 ## Log de Sessões
 
-### 2026-05-08 — Backlog web zerado + testes automáticos
+### 2026-05-08 — Backlog web zerado + cobertura E2E completa + deploy
 
 #### O que foi feito
 
-- **feat(cards) — `89fe6c3`:** API `GET /cards/:id/statement?month=YYYY-MM`; modal de detalhamento ao clicar no cartão (fatura, disponível, transações do mês, navegação por mês); seletor de cor no formulário de novo cartão; E2E `cards.spec.ts`
-- **feat(dashboard) — `dececc2`:** `BalanceCard` expandível ao clicar — lista bancos com nome, tipo e saldo (negativo em vermelho); E2E no smoke test
+**Features:**
+
+- **feat(cards) — `89fe6c3`:** API `GET /cards/:id/statement?month=YYYY-MM`; modal de detalhamento ao clicar no cartão (fatura, disponível, transações do mês, navegação por mês); seletor de cor no formulário de novo cartão
+- **feat(dashboard) — `dececc2`:** `BalanceCard` expandível ao clicar — lista bancos com nome, tipo e saldo (negativo em vermelho)
 - **feat(reports) — `7e3ff86`:** botão "Mês atual" adicionado ao seletor de período; linha do mês corrente destacada com badge "atual"
-- **Estratégia de testes adotada:** typecheck + 31 testes unitários core (Vitest/sql.js) rodados a cada item; E2E Playwright em `apps/web/e2e/` cobre fluxos de UI (smoke + cards)
-- **Contas de teste criadas no banco:** `andre@teste.com`, `vitor@teste.com`, `bio@teste.com` (padrão: `nome@teste.com` / `Teste@1234`, e-mail já verificado)
+
+**Testes automatizados — `bc91093`:**
+
+- Estratégia adotada: typecheck + 31 testes unitários core (Vitest/sql.js) a cada mudança + E2E Playwright por feature
+- `smoke.spec.ts` — auth, dashboard (expand bancos), transações básicas
+- `cards.spec.ts` — listar, criar, excluir, modal de detalhamento
+- `goals.spec.ts` — listar, abrir form, criar meta, form de depósito
+- `settings.spec.ts` — abas Bancos/Categorias, criar banco, editar, arquivar
+- `reports.spec.ts` — todos os botões de período, contagem de linhas, badge "atual", exportar
+- `transactions.spec.ts` — contador, form, campos, tipos, editar, filtro
+- **Total: 38 testes E2E + 31 testes unitários = 69 testes automatizados**
+
+**Contas de teste criadas diretamente no banco (PostgreSQL na VM):**
+
+- Padrão: `nome@teste.com` / `Teste@1234` — e-mail já verificado, 15 categorias padrão
+- Contas criadas: `andre@teste.com`, `vitor@teste.com`, `bio@teste.com`
+
+**Deploy:**
+
+- Push para `main` — CI/CD rodou: typecheck + lint + testes Vitest + deploy API + deploy Web
+- Produção atualizada em `https://ctrlcusto.duckdns.org`
 
 #### Pendências em aberto
 
-- **Mobile:** Dashboard mobile com fluxo mensal + donut (branch `feature/mobile-dashboard-improvements`)
+- **Mobile:** Dashboard mobile com fluxo mensal + donut (branch `feature/mobile-dashboard-improvements` a criar)
 - Próximos itens do backlog: Seção de Investimentos, Pagamentos Recorrentes, Visão de Parcelas Futuras
 
 ---
