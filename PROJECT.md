@@ -369,6 +369,64 @@ Coletado após primeira sessão de uso real.
 
 ---
 
+### 3. Pagamentos Recorrentes — aba de contas fixas
+
+**Prioridade:** Média
+**Ideia:** Aba dedicada para cadastrar contas que se repetem todo mês — luz, água, financiamento, fatura do cartão, internet, aluguel, etc. O app notifica no dia do vencimento e, quando o usuário confirma o pagamento, informa o valor e uma transação de saída é criada automaticamente na conta escolhida.
+
+#### Fluxo de uso
+
+1. Usuário cadastra uma conta recorrente: nome, categoria, dia de vencimento, valor estimado (opcional) e banco de débito
+2. No dia do vencimento (ou X dias antes), o app exibe um alerta/badge na aba
+3. Usuário clica em "Confirmar pagamento" → informa o valor real pago → transação `expense` criada automaticamente
+4. Histórico de pagamentos visível por conta recorrente (meses pagos / em aberto)
+
+#### Como implementar
+
+**Banco de dados — nova tabela em `planning` schema (migration 0003):**
+
+```sql
+planning.recurring_bills (
+  id           uuid primary key,
+  user_id      uuid references auth.users,
+  name         text not null,              -- "Conta de Luz", "Financiamento Carro"
+  category_id  uuid references ledger.categories,
+  account_id   uuid references banking.accounts,
+  due_day      integer not null,           -- dia do mês (1–31)
+  amount_cents integer,                    -- valor estimado (nullable — boleto varia)
+  is_active    boolean default true,
+  created_at   timestamptz default now()
+)
+
+planning.recurring_payments (
+  id                  uuid primary key,
+  recurring_bill_id   uuid references planning.recurring_bills,
+  transaction_id      uuid references ledger.transactions,  -- transação gerada
+  due_date            date not null,       -- vencimento daquele mês
+  paid_at             timestamptz,
+  amount_cents        integer not null,    -- valor real pago
+  created_at          timestamptz default now()
+)
+```
+
+**API (`apps/api`):**
+
+- `GET/POST/PUT/DELETE /recurring-bills` — CRUD das contas recorrentes
+- `POST /recurring-bills/:id/pay` — confirma pagamento: cria `ledger.transactions` (expense) + insere em `recurring_payments`
+- `GET /recurring-bills/due` — lista as contas com vencimento nos próximos 7 dias (para notificações/badge)
+
+**Web (`apps/web`):**
+
+- Nova rota `/recurring` na navegação (Sidebar)
+- Lista de contas recorrentes com status do mês atual: `Pendente` / `Pago`
+- Badge com contagem de vencimentos próximos no item do menu
+- Botão "Pagar" abre modal: campo de valor (pré-preenchido com estimativa se houver) + confirmação
+- Histórico expandível por conta: linha do tempo mensal
+
+**Complexidade:** Média — duas tabelas novas, rotas simples na API, página nova no web. A notificação no vencimento pode ser implementada como badge/highlight passivo (sem push notification) em uma primeira versão.
+
+---
+
 ## Bugs e Melhorias — 2026-05-07
 
 ### Bugs
@@ -438,20 +496,21 @@ Coletado após primeira sessão de uso real.
 
 ## Log de Sessões
 
-### 2026-05-08 — Correção dos dois bugs de alta prioridade
+### 2026-05-08 — Correção de bugs e backlog de features
 
 #### O que foi feito
 
 - **fix(store) — commit `0b2a3d9`:** `addInstallments` em web e mobile agora divide `amount` por `total` (usando `Math.round`) e projeta a data +1 mês por parcela — espelha a lógica já existente em `TransactionService.createInstallments` do `packages/core`
 - **fix(web) — mesmo commit:** Dashboard e Transactions chamam `loadAccounts()` após criar qualquer transação (simples ou parcelada), refletindo o novo saldo sem recarregar a página
 - Push feito para `main` — CI + deploy automático trigados
+- **Verificação:** "Editar transação" já estava 100% implementado (botão, form, store, API) — nada a fazer
+- **Verificação:** "Cartão pede conta duas vezes" já estava corrigido — campo "Banco" some quando cartão é selecionado e `accountId` é preenchido automaticamente
+- **Verificação:** "Renomear Contas → Carteiras" — renomeação já feita anteriormente para "Bancos" na UI
+- **fix(web) — `8e8336f`:** depósito de meta agora chama `loadAccs()` após confirmar, refletindo o saldo debitado sem recarregar a página
+- **docs:** adicionado ao backlog item "Pagamentos Recorrentes" (contas fixas mensais com notificação de vencimento e confirmação que gera transação)
 
 #### Pendências em aberto
 
-- **Renomear "Contas" → "Carteiras"** (Danilo — prioridade Alta, só label)
-- **Cartão pede conta duas vezes** (Iramaya — prioridade Alta)
-- **Depósito de meta não gera transação** (Iramaya — prioridade Alta)
-- **Editar transação** (Iramaya — prioridade Alta, `PUT /transactions/:id` já existe na API)
 - **Detalhamento ao clicar em "Saldo nos Bancos"** (Média)
 - **Relatórios incluir mês atual no seletor** (Média)
 - **Transferência — campo "banco de destino"** (Média)
