@@ -423,6 +423,44 @@ planning.recurring_payments (
 
 ---
 
+### 4. Visão de Parcelas Futuras — "Ver o Futuro"
+
+**Prioridade:** Média
+**Ideia:** Mostrar no Dashboard (ou numa seção dedicada) as parcelas que vencem no próximo mês, com indicação clara de progresso (ex: parcela 3/10). O usuário também pode quitar todas as parcelas restantes de uma vez, informando o valor real pago (bancos frequentemente concedem desconto na quitação antecipada).
+
+#### Fluxo de uso
+
+1. No Dashboard ou aba de Transações, um card/seção "Próximo mês" lista as parcelas com vencimento no mês seguinte
+2. Cada item exibe: descrição, valor da parcela, progresso (ex: `3/10`)
+3. Botão **"Quitar antecipado"** abre modal com:
+   - Valor original restante calculado automaticamente (parcelas × valor unitário)
+   - Campo editável para o usuário informar o valor real cobrado pelo banco (com desconto)
+   - Confirmação cria uma transação `expense` com o valor informado e marca todas as parcelas restantes como pagas
+4. As parcelas já pagas somem da listagem; as futuras continuam aparecendo mês a mês
+
+#### Como implementar
+
+**Banco de dados — sem migration nova:**
+
+- As parcelas já existem como transações individuais com `installment: { total, current, groupId }` linkadas por `groupId`
+- Para quitar: buscar todas as transações do grupo com `current > atual` → criar uma transação de quitação + marcar as parcelas restantes como `status: "paid"` ou deletá-las
+
+**API (`apps/api`):**
+
+- `GET /transactions/upcoming?month=YYYY-MM` — retorna transações (incluindo parcelas) com `date` no mês informado; por padrão retorna o próximo mês
+- `POST /transactions/installments/:groupId/settle` — quitação antecipada: recebe `amountCents` (valor real pago), cria transação de quitação, cancela/remove parcelas restantes do grupo
+
+**Web (`apps/web`):**
+
+- Card "Próximo Mês" no Dashboard: lista compacta com as parcelas do mês seguinte (máximo 5, com link "ver todas")
+- Badge com total de parcelas futuras e soma dos valores
+- Modal de quitação: mostra quantas parcelas restam, valor original total, campo para digitar valor com desconto, botão confirmar
+- Na listagem de Transações: filtro/aba "Futuras" para ver todas as parcelas projetadas além do mês atual
+
+**Complexidade:** Média — a lógica de `groupId` já existe; o principal trabalho é a query de `upcoming` e o fluxo de quitação na API + UI do modal.
+
+---
+
 ## Bugs e Melhorias — 2026-05-07
 
 ### Bugs
