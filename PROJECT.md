@@ -438,6 +438,27 @@ Coletado após primeira sessão de uso real.
 
 ## Log de Sessões
 
+### 2026-05-08 — Correção dos dois bugs de alta prioridade
+
+#### O que foi feito
+
+- **fix(store) — commit `0b2a3d9`:** `addInstallments` em web e mobile agora divide `amount` por `total` (usando `Math.round`) e projeta a data +1 mês por parcela — espelha a lógica já existente em `TransactionService.createInstallments` do `packages/core`
+- **fix(web) — mesmo commit:** Dashboard e Transactions chamam `loadAccounts()` após criar qualquer transação (simples ou parcelada), refletindo o novo saldo sem recarregar a página
+- Push feito para `main` — CI + deploy automático trigados
+
+#### Pendências em aberto
+
+- **Renomear "Contas" → "Carteiras"** (Danilo — prioridade Alta, só label)
+- **Cartão pede conta duas vezes** (Iramaya — prioridade Alta)
+- **Depósito de meta não gera transação** (Iramaya — prioridade Alta)
+- **Editar transação** (Iramaya — prioridade Alta, `PUT /transactions/:id` já existe na API)
+- **Detalhamento ao clicar em "Saldo nos Bancos"** (Média)
+- **Relatórios incluir mês atual no seletor** (Média)
+- **Transferência — campo "banco de destino"** (Média)
+- **Mobile:** Dashboard mobile com fluxo mensal + donut (branch `feature/mobile-dashboard-improvements`)
+
+---
+
 ### 2026-05-07 — UX improvements + gráficos + planejamento de features
 
 #### O que foi feito
