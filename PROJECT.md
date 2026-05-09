@@ -409,11 +409,11 @@ Afeta uso diário. Stores já têm `update()` e `remove()` implementados — fal
 
 | Grupo                       | Itens                                                                                                     | Estimativa | Status |
 | --------------------------- | --------------------------------------------------------------------------------------------------------- | ---------- | ------ |
-| 1 — CRUD completo           | 1.1 editar/excluir tx · 1.2 excluir cartão · 1.3 excluir meta · 1.4 excluir banco · 1.5 excluir categoria | ~3–4h      | ⬜     |
-| 2 — Features web existentes | 2.1 transferência · 2.2 notas · 2.3 filtros · 2.4 fatura cartão                                           | ~3–4h      | ⬜     |
-| 3 — Dashboard melhorado     | 3.1 hero fluxo + donut · 3.2 bancos expansível                                                            | ~2h        | ⬜     |
-| 4 — Relatórios              | 4.1 nova tela completa                                                                                    | ~3h        | ⬜     |
-| **Total**                   | **10 itens**                                                                                              | **~8–12h** |        |
+| 1 — CRUD completo           | 1.1 editar/excluir tx · 1.2 excluir cartão · 1.3 excluir meta · 1.4 excluir banco · 1.5 excluir categoria | ~3–4h      | ✅     |
+| 2 — Features web existentes | 2.1 transferência · 2.2 notas · 2.3 filtros · 2.4 fatura cartão                                           | ~3–4h      | ✅     |
+| 3 — Dashboard melhorado     | 3.1 hero fluxo + donut · 3.2 bancos expansível                                                            | ~2h        | ✅     |
+| 4 — Relatórios              | 4.1 nova tela completa                                                                                    | ~3h        | ✅     |
+| **Total**                   | **10 itens**                                                                                              | **~8–12h** | ✅     |
 
 > Ordem de execução recomendada: 1.1 → 1.2 → 1.3 → 1.4+1.5 → 2.1 → 2.2 → 2.3 → 2.4 → 3.1 → 3.2 → 4.1
 
@@ -841,6 +841,52 @@ Migration `0003` será aplicada automaticamente pelo CI/CD no próximo push (dep
 ---
 
 ## Log de Sessões
+
+### 2026-05-09 — Paridade mobile completa (branch feature/mobile-parity)
+
+#### O que foi implementado
+
+**Grupo 1 — CRUD completo (commit `5e33a63`):**
+
+- Transações: tap para editar (TransactionForm modo edição), long-press para excluir com confirmação
+- Cartões: botão lixeira + tap abre CardStatement com fatura mensal e navegação por mês
+- Metas: botão lixeira com confirmação
+- Bancos: botão "Excluir conta" no AccountForm modo edição
+- Categorias: botão "Excluir categoria" no CategoryForm modo edição
+
+**Grupo 2 — Features web (commit `5e33a63` + `5cbd7f6`):**
+
+- 2.1 Transferência: terceiro toggle "Transf." + seletor de banco de destino no TransactionForm
+- 2.2 Notas: campo Observações multiline opcional no TransactionForm
+- 2.3 Filtros: `TransactionFilters.tsx` — bottom sheet com busca, tipo (chips), categoria (chips), banco (chips); badge no botão com contagem de filtros ativos; filtros combinados com range de datas
+- 2.4 Fatura do cartão: `CardStatement.tsx` — fatura atual, limite disponível, transações do mês, navegação por mês
+
+**Grupo 3 — Dashboard melhorado (commit `5cbd7f6`):**
+
+- Hero "Fluxo do Mês": Receitas / Despesas / Saldo do mês — substitui saldo total como hero
+- Tap no hero → donut nível 1 (Receitas vs Despesas)
+- Botões drill-down → donut nível 2 por categoria (income ou expense)
+- Card "Saldo nos Bancos" expansível com lista de bancos (nome, tipo, saldo)
+- Saldo negativo em vermelho
+
+**Grupo 4 — Relatórios (commit `5cbd7f6`):**
+
+- Nova aba "Relatórios" adicionada ao tab bar (6ª aba)
+- Seletor de período: 3m / 6m / 12m
+- BarChart receitas por mês + BarChart despesas por mês
+- LineChart evolução do saldo acumulado
+- Tabela mensal com badge "atual" no mês corrente
+- Exportar via Share nativo (CSV)
+
+**Fix:** Remove `userId` inválido do mock `Account` no test fixture `AccountForm.test.tsx`
+
+#### Pendências em aberto
+
+- **PR:** Abrir PR de `feature/mobile-parity` → `main` e fazer merge
+- **Maestro Cloud:** Ação do usuário pendente — ver seção "Ações Pendentes" acima
+- **Próximas features (backlog):** Investimentos, Pagamentos Recorrentes, Parcelas Futuras
+
+---
 
 ### 2026-05-08 — Infraestrutura de testes automatizados para o mobile (Fase 13)
 
