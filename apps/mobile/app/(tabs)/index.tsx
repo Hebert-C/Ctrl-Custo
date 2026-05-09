@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback } from "react";
+import React, { useEffect, useCallback, useState } from "react";
 import {
   View,
   Text,
@@ -15,9 +15,11 @@ import { useCategoryStore } from "../../src/store/useCategoryStore";
 import { useThemeStore } from "../../src/store/useThemeStore";
 import { useUiStore } from "../../src/store/useUiStore";
 import { formatCurrency } from "../../src/hooks/useCurrency";
-import { lightColors, darkColors } from "@ctrl-custo/ui";
-import type { Colors } from "@ctrl-custo/ui";
-import type { Transaction } from "@ctrl-custo/core";
+import { lightColors, darkColors, categoryColors, PieChart } from "@ctrl-custo/ui";
+import type { Colors, PieChartData } from "@ctrl-custo/ui";
+import type { Transaction, Category } from "@ctrl-custo/core";
+
+type ChartView = null | "main" | "income" | "expense";
 
 const HIDDEN_TEXT = "R$ ••••••";
 
@@ -32,7 +34,9 @@ export default function Dashboard() {
   const { categories, load: loadCategories } = useCategoryStore();
   const loadTransactions = useTransactionStore((s) => s.load);
 
-  const [loading, setLoading] = React.useState(true);
+  const [loading, setLoading] = useState(true);
+  const [chartView, setChartView] = useState<ChartView>(null);
+  const [banksExpanded, setBanksExpanded] = useState(false);
 
   const loadAll = useCallback(async () => {
     await Promise.all([
@@ -47,13 +51,15 @@ export default function Dashboard() {
     loadAll();
   }, [loadAll]);
 
-  const totalIncome = transactions
-    .filter((t) => t.type === "income" && t.status === "confirmed")
-    .reduce((sum, t) => sum + t.amount, 0);
-
-  const totalExpense = transactions
-    .filter((t) => t.type === "expense" && t.status === "confirmed")
-    .reduce((sum, t) => sum + t.amount, 0);
+  const confirmed = transactions.filter((t) => t.status === "confirmed");
+  const totalIncome = confirmed
+    .filter((t) => t.type === "income")
+    .reduce((s, t) => s + t.amount, 0);
+  const totalExpense = confirmed
+    .filter((t) => t.type === "expense")
+    .reduce((s, t) => s + t.amount, 0);
+  const monthNet = totalIncome - totalExpense;
+  const isNegativeNet = monthNet < 0;
 
   const recentTransactions = transactions.slice(0, 5);
 
@@ -65,6 +71,30 @@ export default function Dashboard() {
         <ActivityIndicator color={colors.primary} size="large" />
       </View>
     );
+  }
+
+  const mainChartData: PieChartData[] = [
+    { label: "Receitas", value: totalIncome, color: colors.income },
+    { label: "Despesas", value: totalExpense, color: colors.expense },
+  ].filter((d) => d.value > 0);
+
+  const incomeChartData = groupByCategory(confirmed, "income", categories);
+  const expenseChartData = groupByCategory(confirmed, "expense", categories);
+
+  function toggleChart() {
+    setChartView((v) => (v === null ? "main" : null));
+  }
+
+  function drillIncome() {
+    setChartView("income");
+  }
+
+  function drillExpense() {
+    setChartView("expense");
+  }
+
+  function backToMain() {
+    setChartView("main");
   }
 
   return (
@@ -80,31 +110,149 @@ export default function Dashboard() {
         </TouchableOpacity>
       </View>
 
-      {/* Saldo total */}
-      <View style={s.balanceCard}>
-        <Text style={s.balanceLabel}>Saldo total</Text>
-        <Text style={s.balanceAmount}>{isHidden ? HIDDEN_TEXT : formatCurrency(totalBalance)}</Text>
-        <Text style={s.accountCount}>
-          {accounts.length} {accounts.length === 1 ? "conta" : "contas"}
+      {/* Hero — Fluxo do Mês */}
+      <TouchableOpacity activeOpacity={0.85} onPress={toggleChart} style={s.heroCard}>
+        <View style={s.heroTop}>
+          <Text style={s.heroLabel}>Fluxo do Mês</Text>
+          <Ionicons
+            name={chartView !== null ? "chevron-up" : "chevron-down"}
+            size={16}
+            color="rgba(255,255,255,0.7)"
+          />
+        </View>
+        <Text style={[s.heroNet, isNegativeNet && { color: "#FCA5A5" }]}>
+          {isHidden
+            ? HIDDEN_TEXT
+            : `${isNegativeNet ? "-" : "+"}${formatCurrency(Math.abs(monthNet))}`}
         </Text>
-      </View>
+        <View style={s.heroRow}>
+          <View style={s.heroItem}>
+            <Ionicons name="arrow-up-circle" size={14} color="rgba(255,255,255,0.75)" />
+            <Text style={s.heroItemLabel}>Receitas</Text>
+            <Text style={s.heroItemValue}>{isHidden ? "••••" : formatCurrency(totalIncome)}</Text>
+          </View>
+          <View style={s.heroDivider} />
+          <View style={s.heroItem}>
+            <Ionicons name="arrow-down-circle" size={14} color="rgba(255,255,255,0.75)" />
+            <Text style={s.heroItemLabel}>Despesas</Text>
+            <Text style={s.heroItemValue}>{isHidden ? "••••" : formatCurrency(totalExpense)}</Text>
+          </View>
+        </View>
+      </TouchableOpacity>
 
-      {/* Resumo do mês */}
-      <Text style={s.sectionTitle}>Este mês</Text>
-      <View style={s.summaryRow}>
-        <View style={[s.summaryCard, { borderLeftColor: colors.income }]}>
-          <Text style={s.summaryLabel}>Receitas</Text>
-          <Text style={[s.summaryAmount, { color: colors.income }]}>
-            {isHidden ? HIDDEN_TEXT : formatCurrency(totalIncome)}
-          </Text>
+      {/* Donut — Nível 1: Receitas vs Despesas */}
+      {chartView === "main" && mainChartData.length > 0 && (
+        <View style={s.chartCard}>
+          <Text style={s.chartTitle}>Receitas vs Despesas</Text>
+          <PieChart data={mainChartData} height={200} />
+          <View style={s.drillRow}>
+            {totalIncome > 0 && (
+              <TouchableOpacity
+                style={[
+                  s.drillBtn,
+                  { backgroundColor: `${colors.income}20`, borderColor: colors.income },
+                ]}
+                onPress={drillIncome}
+              >
+                <Text style={[s.drillBtnText, { color: colors.income }]}>
+                  Ver Receitas por categoria
+                </Text>
+              </TouchableOpacity>
+            )}
+            {totalExpense > 0 && (
+              <TouchableOpacity
+                style={[
+                  s.drillBtn,
+                  { backgroundColor: `${colors.expense}20`, borderColor: colors.expense },
+                ]}
+                onPress={drillExpense}
+              >
+                <Text style={[s.drillBtnText, { color: colors.expense }]}>
+                  Ver Despesas por categoria
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
-        <View style={[s.summaryCard, { borderLeftColor: colors.expense }]}>
-          <Text style={s.summaryLabel}>Despesas</Text>
-          <Text style={[s.summaryAmount, { color: colors.expense }]}>
-            {isHidden ? HIDDEN_TEXT : formatCurrency(totalExpense)}
-          </Text>
+      )}
+
+      {/* Donut — Nível 2: por categoria */}
+      {(chartView === "income" || chartView === "expense") && (
+        <View style={s.chartCard}>
+          <View style={s.chartTitleRow}>
+            <TouchableOpacity onPress={backToMain} style={s.backBtn}>
+              <Ionicons name="chevron-back" size={16} color={colors.primary} />
+              <Text style={[s.backBtnText, { color: colors.primary }]}>Voltar</Text>
+            </TouchableOpacity>
+            <Text style={s.chartTitle}>
+              {chartView === "income" ? "Receitas" : "Despesas"} por Categoria
+            </Text>
+          </View>
+          {(chartView === "income" ? incomeChartData : expenseChartData).length > 0 ? (
+            <PieChart
+              data={chartView === "income" ? incomeChartData : expenseChartData}
+              height={200}
+            />
+          ) : (
+            <Text style={s.noData}>Nenhuma transação confirmada neste mês</Text>
+          )}
         </View>
-      </View>
+      )}
+
+      {/* Saldo nos Bancos */}
+      <TouchableOpacity
+        activeOpacity={0.8}
+        style={[s.banksCard, { backgroundColor: colors.surface }]}
+        onPress={() => setBanksExpanded((e) => !e)}
+      >
+        <View style={s.banksHeader}>
+          <View>
+            <Text style={s.banksLabel}>Saldo nos Bancos</Text>
+            <Text
+              style={[
+                s.banksTotal,
+                { color: totalBalance < 0 ? colors.expense : colors.textPrimary },
+              ]}
+            >
+              {isHidden ? HIDDEN_TEXT : formatCurrency(totalBalance)}
+            </Text>
+          </View>
+          <Ionicons
+            name={banksExpanded ? "chevron-up" : "chevron-down"}
+            size={18}
+            color={colors.textSecondary}
+          />
+        </View>
+
+        {banksExpanded && (
+          <View style={s.banksList}>
+            <View style={s.banksDivider} />
+            {accounts.length === 0 ? (
+              <Text style={s.banksEmpty}>Nenhum banco cadastrado</Text>
+            ) : (
+              accounts.map((acc) => (
+                <View key={acc.id} style={s.bankRow}>
+                  <View style={s.bankLeft}>
+                    <View style={[s.bankDot, { backgroundColor: acc.color }]} />
+                    <View>
+                      <Text style={s.bankName}>{acc.name}</Text>
+                      <Text style={s.bankType}>{accountTypeLabel(acc.type)}</Text>
+                    </View>
+                  </View>
+                  <Text
+                    style={[
+                      s.bankBalance,
+                      { color: acc.balance < 0 ? colors.expense : colors.textPrimary },
+                    ]}
+                  >
+                    {isHidden ? "••••" : formatCurrency(acc.balance)}
+                  </Text>
+                </View>
+              ))
+            )}
+          </View>
+        )}
+      </TouchableOpacity>
 
       {/* Últimas transações */}
       <Text style={s.sectionTitle}>Últimas transações</Text>
@@ -128,6 +276,38 @@ export default function Dashboard() {
   );
 }
 
+function groupByCategory(
+  txs: Transaction[],
+  type: "income" | "expense",
+  categories: Category[]
+): PieChartData[] {
+  const groups: Record<string, number> = {};
+  txs
+    .filter((t) => t.type === type)
+    .forEach((t) => {
+      groups[t.categoryId] = (groups[t.categoryId] ?? 0) + t.amount;
+    });
+  return Object.entries(groups)
+    .map(([catId, value], index) => ({
+      label: categories.find((c) => c.id === catId)?.name ?? "Outro",
+      value,
+      color: categoryColors[index % categoryColors.length],
+    }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 8);
+}
+
+function accountTypeLabel(type: string): string {
+  const map: Record<string, string> = {
+    checking: "Conta corrente",
+    savings: "Poupança",
+    investment: "Investimento",
+    wallet: "Carteira",
+    other: "Outro",
+  };
+  return map[type] ?? type;
+}
+
 function TransactionRow({
   tx,
   categoryName,
@@ -140,8 +320,13 @@ function TransactionRow({
   colors: Colors;
 }) {
   const s = styles(colors);
-  const amountColor = tx.type === "income" ? colors.income : colors.expense;
-  const sign = tx.type === "income" ? "+" : "-";
+  const amountColor =
+    tx.type === "income"
+      ? colors.income
+      : tx.type === "transfer"
+        ? colors.transfer
+        : colors.expense;
+  const sign = tx.type === "income" ? "+" : tx.type === "transfer" ? "↔" : "-";
 
   return (
     <View style={s.txRow}>
@@ -193,26 +378,80 @@ const styles = (colors: Colors) =>
     },
     greeting: { fontSize: 22, fontWeight: "700", color: colors.textPrimary },
     hideBtn: { padding: 4 },
-    balanceCard: {
+
+    // Hero card
+    heroCard: {
       backgroundColor: colors.primary,
       borderRadius: 16,
       padding: 20,
+      marginBottom: 12,
+    },
+    heroTop: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 4,
+    },
+    heroLabel: { fontSize: 13, color: "rgba(255,255,255,0.75)" },
+    heroNet: { fontSize: 34, fontWeight: "800", color: "#fff", marginBottom: 16 },
+    heroRow: { flexDirection: "row", alignItems: "center" },
+    heroItem: { flex: 1, flexDirection: "column", alignItems: "center", gap: 2 },
+    heroItemLabel: { fontSize: 11, color: "rgba(255,255,255,0.7)" },
+    heroItemValue: { fontSize: 14, fontWeight: "700", color: "#fff" },
+    heroDivider: {
+      width: 1,
+      height: 32,
+      backgroundColor: "rgba(255,255,255,0.2)",
+      marginHorizontal: 12,
+    },
+
+    // Chart card
+    chartCard: {
+      backgroundColor: colors.surface,
+      borderRadius: 14,
+      padding: 16,
+      marginBottom: 12,
+    },
+    chartTitleRow: { flexDirection: "row", alignItems: "center", marginBottom: 12, gap: 8 },
+    chartTitle: { fontSize: 15, fontWeight: "600", color: colors.textPrimary, marginBottom: 12 },
+    drillRow: { gap: 8, marginTop: 12 },
+    drillBtn: {
+      borderRadius: 10,
+      borderWidth: 1,
+      paddingVertical: 10,
+      paddingHorizontal: 14,
+      alignItems: "center",
+    },
+    drillBtnText: { fontSize: 13, fontWeight: "600" },
+    backBtn: { flexDirection: "row", alignItems: "center", gap: 2 },
+    backBtnText: { fontSize: 13, fontWeight: "600" },
+    noData: { fontSize: 13, color: colors.textDisabled, textAlign: "center", paddingVertical: 20 },
+
+    // Bancos card
+    banksCard: {
+      borderRadius: 14,
+      padding: 16,
       marginBottom: 20,
     },
-    balanceLabel: { fontSize: 13, color: "rgba(255,255,255,0.75)", marginBottom: 4 },
-    balanceAmount: { fontSize: 32, fontWeight: "800", color: "#fff", marginBottom: 4 },
-    accountCount: { fontSize: 12, color: "rgba(255,255,255,0.65)" },
-    sectionTitle: { fontSize: 16, fontWeight: "600", color: colors.textPrimary, marginBottom: 10 },
-    summaryRow: { flexDirection: "row", gap: 12, marginBottom: 20 },
-    summaryCard: {
-      flex: 1,
-      backgroundColor: colors.surface,
-      borderRadius: 12,
-      padding: 14,
-      borderLeftWidth: 3,
+    banksHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+    banksLabel: { fontSize: 13, color: colors.textSecondary, marginBottom: 2 },
+    banksTotal: { fontSize: 22, fontWeight: "700" },
+    banksList: { marginTop: 4 },
+    banksDivider: { height: 1, backgroundColor: colors.border, marginVertical: 12 },
+    bankRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingVertical: 6,
     },
-    summaryLabel: { fontSize: 12, color: colors.textSecondary, marginBottom: 4 },
-    summaryAmount: { fontSize: 16, fontWeight: "700" },
+    bankLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
+    bankDot: { width: 10, height: 10, borderRadius: 5 },
+    bankName: { fontSize: 14, fontWeight: "500", color: colors.textPrimary },
+    bankType: { fontSize: 11, color: colors.textSecondary },
+    bankBalance: { fontSize: 14, fontWeight: "700" },
+    banksEmpty: { fontSize: 13, color: colors.textDisabled, paddingVertical: 8 },
+
+    sectionTitle: { fontSize: 16, fontWeight: "600", color: colors.textPrimary, marginBottom: 10 },
     txRow: {
       flexDirection: "row",
       justifyContent: "space-between",

@@ -20,7 +20,6 @@ const defaultProps = {
 
 const mockAccount: Account = {
   id: "acc-1",
-  userId: "user-1",
   name: "Nubank",
   type: "checking",
   balance: 50000,

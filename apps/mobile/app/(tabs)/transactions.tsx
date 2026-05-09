@@ -17,6 +17,8 @@ import { useThemeStore } from "../../src/store/useThemeStore";
 import { useUiStore } from "../../src/store/useUiStore";
 import { formatCurrency } from "../../src/hooks/useCurrency";
 import { TransactionForm } from "../../src/components/TransactionForm";
+import { TransactionFilters, countActiveFilters } from "../../src/components/TransactionFilters";
+import type { ActiveFilters } from "../../src/components/TransactionFilters";
 import { lightColors, darkColors } from "@ctrl-custo/ui";
 import type { Colors } from "@ctrl-custo/ui";
 import type { Transaction } from "@ctrl-custo/core";
@@ -46,7 +48,9 @@ export default function Transactions() {
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [formVisible, setFormVisible] = useState(false);
+  const [filterVisible, setFilterVisible] = useState(false);
   const [editingTx, setEditingTx] = useState<Transaction | undefined>(undefined);
+  const [activeFilters, setActiveFilters] = useState<ActiveFilters>({});
   const [loading, setLoading] = useState(true);
 
   const transactions = useTransactionStore((s) => s.transactions);
@@ -55,13 +59,18 @@ export default function Transactions() {
   const { categories, load: loadCategories } = useCategoryStore();
   const loadTransactions = useTransactionStore((s) => s.load);
 
+  function dateRange(y: number, m: number) {
+    const startDate = `${y}-${String(m).padStart(2, "0")}-01`;
+    const lastDay = new Date(y, m, 0).getDate();
+    const endDate = `${y}-${String(m).padStart(2, "0")}-${lastDay}`;
+    return { startDate, endDate };
+  }
+
   const loadAll = useCallback(async () => {
-    const startDate = `${year}-${String(month).padStart(2, "0")}-01`;
-    const lastDay = new Date(year, month, 0).getDate();
-    const endDate = `${year}-${String(month).padStart(2, "0")}-${lastDay}`;
-    await Promise.all([loadAccounts(), loadCategories(), loadTransactions({ startDate, endDate })]);
+    await Promise.all([loadAccounts(), loadCategories()]);
+    await loadTransactions({ ...dateRange(year, month), ...activeFilters });
     setLoading(false);
-  }, [year, month]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [year, month, activeFilters]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     setLoading(true);
@@ -108,12 +117,20 @@ export default function Transactions() {
 
   async function handleSaved() {
     await loadAccounts();
-    const startDate = `${year}-${String(month).padStart(2, "0")}-01`;
-    const lastDay = new Date(year, month, 0).getDate();
-    const endDate = `${year}-${String(month).padStart(2, "0")}-${lastDay}`;
-    await loadTransactions({ startDate, endDate });
+    await loadTransactions({ ...dateRange(year, month), ...activeFilters });
   }
 
+  async function handleApplyFilters(filters: ActiveFilters) {
+    setActiveFilters(filters);
+    await loadTransactions({ ...dateRange(year, month), ...filters });
+  }
+
+  async function handleClearFilters() {
+    setActiveFilters({});
+    await loadTransactions(dateRange(year, month));
+  }
+
+  const filterCount = countActiveFilters(activeFilters);
   const s = styles(colors);
 
   return (
@@ -129,6 +146,17 @@ export default function Transactions() {
         <TouchableOpacity onPress={nextMonth} style={s.navBtn}>
           <Ionicons name="chevron-forward" size={20} color={colors.textPrimary} />
         </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => setFilterVisible(true)}
+          style={[s.filterBtn, filterCount > 0 && { backgroundColor: colors.primary }]}
+        >
+          <Ionicons
+            name="options-outline"
+            size={18}
+            color={filterCount > 0 ? "#fff" : colors.textSecondary}
+          />
+          {filterCount > 0 && <Text style={s.filterBadge}>{filterCount}</Text>}
+        </TouchableOpacity>
       </View>
 
       {loading ? (
@@ -143,7 +171,11 @@ export default function Transactions() {
           ListEmptyComponent={
             <View style={s.empty}>
               <Ionicons name="receipt-outline" size={40} color={colors.textDisabled} />
-              <Text style={s.emptyText}>Nenhuma transação neste mês</Text>
+              <Text style={s.emptyText}>
+                {filterCount > 0
+                  ? "Nenhuma transação com esses filtros"
+                  : "Nenhuma transação neste mês"}
+              </Text>
             </View>
           }
           renderItem={({ item }) => (
@@ -172,6 +204,17 @@ export default function Transactions() {
         isDark={isDark}
         editing={editingTx}
         onSaved={handleSaved}
+      />
+
+      <TransactionFilters
+        visible={filterVisible}
+        onClose={() => setFilterVisible(false)}
+        onApply={handleApplyFilters}
+        onClear={handleClearFilters}
+        categories={categories}
+        accounts={accounts}
+        current={activeFilters}
+        isDark={isDark}
       />
     </View>
   );
@@ -252,10 +295,26 @@ const styles = (colors: Colors) =>
       paddingVertical: 12,
     },
     navBtn: { padding: 4 },
-    monthLabel: { fontSize: 17, fontWeight: "600", color: colors.textPrimary },
+    monthLabel: {
+      fontSize: 17,
+      fontWeight: "600",
+      color: colors.textPrimary,
+      flex: 1,
+      textAlign: "center",
+    },
+    filterBtn: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderRadius: 20,
+      backgroundColor: colors.surface,
+    },
+    filterBadge: { fontSize: 12, fontWeight: "700", color: "#fff" },
     center: { flex: 1, justifyContent: "center", alignItems: "center" },
     empty: { alignItems: "center", paddingTop: 60, gap: 10 },
-    emptyText: { fontSize: 15, color: colors.textDisabled },
+    emptyText: { fontSize: 15, color: colors.textDisabled, textAlign: "center" },
     txRow: {
       flexDirection: "row",
       justifyContent: "space-between",
