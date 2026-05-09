@@ -8,12 +8,12 @@
 
 ## Conta de teste
 
-| Campo  | Valor             |
-| ------ | ----------------- |
-| E-mail | `andre@teste.com` |
-| Senha  | `Teste@1234`      |
+| Campo  | Valor               |
+| ------ | ------------------- |
+| E-mail | `seunome@teste.com` |
+| Senha  | `Teste@1234`        |
 
-> Outros testers disponíveis: `vitor@teste.com` e `bio@teste.com` (mesma senha).
+> Substitua `seunome` pelo seu nome. Cada tester tem sua conta individual com os dados já cadastrados.
 
 ---
 
