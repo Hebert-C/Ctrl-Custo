@@ -9,6 +9,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { lightColors, darkColors } from "@ctrl-custo/ui";
@@ -69,6 +70,7 @@ export function CategoryForm({ visible, onClose, isDark, category }: Props) {
   const colors = isDark ? darkColors : lightColors;
   const add = useCategoryStore((s) => s.add);
   const update = useCategoryStore((s) => s.update);
+  const remove = useCategoryStore((s) => s.remove);
 
   const [name, setName] = useState("");
   const [type, setType] = useState<CategoryType>("expense");
@@ -119,6 +121,21 @@ export function CategoryForm({ visible, onClose, isDark, category }: Props) {
   function handleClose() {
     resetFields();
     onClose();
+  }
+
+  function handleDelete() {
+    if (!category) return;
+    Alert.alert("Excluir categoria", `"${category.name}" será removida permanentemente.`, [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Excluir",
+        style: "destructive",
+        onPress: async () => {
+          await remove(category.id);
+          handleClose();
+        },
+      },
+    ]);
   }
 
   const isEditing = !!category;
@@ -203,6 +220,12 @@ export function CategoryForm({ visible, onClose, isDark, category }: Props) {
                 {saving ? "Salvando..." : isEditing ? "Atualizar" : "Salvar"}
               </Text>
             </TouchableOpacity>
+
+            {isEditing && (
+              <TouchableOpacity style={s.deleteBtn} onPress={handleDelete}>
+                <Text style={s.deleteBtnText}>Excluir categoria</Text>
+              </TouchableOpacity>
+            )}
           </ScrollView>
         </View>
       </KeyboardAvoidingView>
@@ -281,4 +304,13 @@ const styles = (colors: Colors) =>
       marginBottom: 8,
     },
     saveBtnText: { color: "#fff", fontSize: 16, fontWeight: "700" },
+    deleteBtn: {
+      borderRadius: 12,
+      padding: 14,
+      alignItems: "center",
+      marginBottom: 8,
+      borderWidth: 1,
+      borderColor: colors.danger,
+    },
+    deleteBtnText: { color: colors.danger, fontSize: 16, fontWeight: "600" },
   });

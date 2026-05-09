@@ -112,10 +112,18 @@ interface ApiTransaction extends ApiRow {
   categoryId: string;
   accountId: string;
   cardId: string | null;
+  destinationAccountId: string | null;
   installmentTotal: number | null;
   installmentCurrent: number | null;
   installmentGroupId: string | null;
   notes: string | null;
+}
+
+interface ApiCardStatement {
+  month: string;
+  totalAmount: number;
+  availableLimit: number;
+  transactions: ApiTransaction[];
 }
 
 interface ApiAccount extends ApiRow {
@@ -176,6 +184,7 @@ function mapTransaction(row: ApiTransaction): Transaction {
     categoryId: row.categoryId,
     accountId: row.accountId,
     cardId: row.cardId ?? undefined,
+    destinationAccountId: row.destinationAccountId ?? undefined,
     notes: row.notes ?? undefined,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -338,6 +347,13 @@ export const api = {
     update: (id: string, data: Partial<NewCard>) =>
       req<ApiCard>(`/cards/${id}`, { method: "PUT", body: JSON.stringify(data) }).then(mapCard),
     remove: (id: string) => req<{ ok: boolean }>(`/cards/${id}`, { method: "DELETE" }),
+    statement: (id: string, month: string) =>
+      req<ApiCardStatement>(`/cards/${id}/statement?month=${month}`).then((data) => ({
+        month: data.month,
+        totalAmount: data.totalAmount,
+        availableLimit: data.availableLimit,
+        transactions: data.transactions.map(mapTransaction),
+      })),
   },
 
   goals: {

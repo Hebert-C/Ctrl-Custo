@@ -6,6 +6,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   TouchableOpacity,
+  Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -27,7 +28,7 @@ export default function Goals() {
   const colors = isDark ? darkColors : lightColors;
   const isHidden = useUiStore((s) => s.isHidden);
 
-  const { goals, load: loadGoals } = useGoalStore();
+  const { goals, load: loadGoals, remove } = useGoalStore();
   const { accounts, load: loadAccounts } = useAccountStore();
   const { categories, load: loadCategories } = useCategoryStore();
 
@@ -39,6 +40,17 @@ export default function Goals() {
     await Promise.all([loadGoals(), loadAccounts(), loadCategories()]);
     setLoading(false);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function confirmDelete(goal: Goal) {
+    Alert.alert("Excluir meta", `"${goal.name}" será removida permanentemente.`, [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Excluir",
+        style: "destructive",
+        onPress: () => remove(goal.id),
+      },
+    ]);
+  }
 
   useEffect(() => {
     loadAll();
@@ -73,6 +85,7 @@ export default function Goals() {
               isHidden={isHidden}
               colors={colors}
               onDeposit={() => setDepositingGoal(item)}
+              onDelete={() => confirmDelete(item)}
             />
           )}
         />
@@ -108,11 +121,13 @@ function GoalItem({
   isHidden,
   colors,
   onDeposit,
+  onDelete,
 }: {
   goal: Goal;
   isHidden: boolean;
   colors: Colors;
   onDeposit: () => void;
+  onDelete: () => void;
 }) {
   const s = styles(colors);
   const progress = goal.targetAmount > 0 ? Math.min(goal.currentAmount / goal.targetAmount, 1) : 0;
@@ -126,17 +141,26 @@ function GoalItem({
           <Text style={s.goalName}>{goal.name}</Text>
           {goal.deadline && <Text style={s.goalDeadline}>Prazo: {formatDate(goal.deadline)}</Text>}
         </View>
-        {isCompleted ? (
-          <Ionicons name="checkmark-circle" size={22} color={colors.success} />
-        ) : (
+        <View style={s.goalActions}>
+          {isCompleted ? (
+            <Ionicons name="checkmark-circle" size={22} color={colors.success} />
+          ) : (
+            <TouchableOpacity
+              style={[s.depositBtn, { borderColor: colors.primary }]}
+              onPress={onDeposit}
+            >
+              <Ionicons name="add-circle-outline" size={14} color={colors.primary} />
+              <Text style={[s.depositBtnText, { color: colors.primary }]}>Depositar</Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity
-            style={[s.depositBtn, { borderColor: colors.primary }]}
-            onPress={onDeposit}
+            onPress={onDelete}
+            style={s.deleteBtn}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Ionicons name="add-circle-outline" size={14} color={colors.primary} />
-            <Text style={[s.depositBtnText, { color: colors.primary }]}>Depositar</Text>
+            <Ionicons name="trash-outline" size={18} color={colors.danger} />
           </TouchableOpacity>
-        )}
+        </View>
       </View>
 
       <View style={s.progressBg}>
@@ -185,6 +209,8 @@ const styles = (colors: Colors) =>
     goalHeader: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
     goalIcon: { fontSize: 24, marginRight: 10 },
     goalInfo: { flex: 1 },
+    goalActions: { flexDirection: "row", alignItems: "center", gap: 8 },
+    deleteBtn: { padding: 2 },
     goalName: { fontSize: 16, fontWeight: "600", color: colors.textPrimary },
     goalDeadline: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
     depositBtn: {

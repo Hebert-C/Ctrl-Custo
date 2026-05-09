@@ -6,6 +6,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -45,9 +46,11 @@ export default function Transactions() {
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [formVisible, setFormVisible] = useState(false);
+  const [editingTx, setEditingTx] = useState<Transaction | undefined>(undefined);
   const [loading, setLoading] = useState(true);
 
   const transactions = useTransactionStore((s) => s.transactions);
+  const remove = useTransactionStore((s) => s.remove);
   const { accounts, load: loadAccounts } = useAccountStore();
   const { categories, load: loadCategories } = useCategoryStore();
   const loadTransactions = useTransactionStore((s) => s.load);
@@ -77,6 +80,38 @@ export default function Transactions() {
       setMonth(1);
       setYear((y) => y + 1);
     } else setMonth((m) => m + 1);
+  }
+
+  function openCreate() {
+    setEditingTx(undefined);
+    setFormVisible(true);
+  }
+
+  function openEdit(tx: Transaction) {
+    setEditingTx(tx);
+    setFormVisible(true);
+  }
+
+  function confirmDelete(tx: Transaction) {
+    Alert.alert("Excluir transação", `"${tx.description}" será removida permanentemente.`, [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Excluir",
+        style: "destructive",
+        onPress: async () => {
+          await remove(tx.id);
+          await loadAccounts();
+        },
+      },
+    ]);
+  }
+
+  async function handleSaved() {
+    await loadAccounts();
+    const startDate = `${year}-${String(month).padStart(2, "0")}-01`;
+    const lastDay = new Date(year, month, 0).getDate();
+    const endDate = `${year}-${String(month).padStart(2, "0")}-${lastDay}`;
+    await loadTransactions({ startDate, endDate });
   }
 
   const s = styles(colors);
@@ -117,16 +152,15 @@ export default function Transactions() {
               categoryName={categories.find((c) => c.id === item.categoryId)?.name ?? ""}
               isHidden={isHidden}
               colors={colors}
+              onPress={() => openEdit(item)}
+              onLongPress={() => confirmDelete(item)}
             />
           )}
         />
       )}
 
       {/* FAB */}
-      <TouchableOpacity
-        style={[s.fab, { bottom: insets.bottom + 16 }]}
-        onPress={() => setFormVisible(true)}
-      >
+      <TouchableOpacity style={[s.fab, { bottom: insets.bottom + 16 }]} onPress={openCreate}>
         <Ionicons name="add" size={28} color="#fff" />
       </TouchableOpacity>
 
@@ -136,6 +170,8 @@ export default function Transactions() {
         accounts={accounts}
         categories={categories}
         isDark={isDark}
+        editing={editingTx}
+        onSaved={handleSaved}
       />
     </View>
   );
@@ -146,19 +182,33 @@ function TxItem({
   categoryName,
   isHidden,
   colors,
+  onPress,
+  onLongPress,
 }: {
   tx: Transaction;
   categoryName: string;
   isHidden: boolean;
   colors: Colors;
+  onPress: () => void;
+  onLongPress: () => void;
 }) {
   const s = styles(colors);
-  const amountColor = tx.type === "income" ? colors.income : colors.expense;
-  const sign = tx.type === "income" ? "+" : "-";
+  const amountColor =
+    tx.type === "income"
+      ? colors.income
+      : tx.type === "transfer"
+        ? colors.transfer
+        : colors.expense;
+  const sign = tx.type === "income" ? "+" : tx.type === "transfer" ? "↔" : "-";
   const statusColor = tx.status === "pending" ? colors.pending : colors.textDisabled;
 
   return (
-    <View style={s.txRow}>
+    <TouchableOpacity
+      style={s.txRow}
+      onPress={onPress}
+      onLongPress={onLongPress}
+      activeOpacity={0.7}
+    >
       <View style={s.txLeft}>
         <Text style={s.txDesc} numberOfLines={1}>
           {tx.description}
@@ -182,7 +232,7 @@ function TxItem({
         </Text>
         <Text style={s.txDate}>{formatDate(tx.date)}</Text>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 

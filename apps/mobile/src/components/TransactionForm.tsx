@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -13,7 +13,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { lightColors, darkColors } from "@ctrl-custo/ui";
 import type { Colors } from "@ctrl-custo/ui";
-import type { Account, Category, NewTransaction } from "@ctrl-custo/core";
+import type { Account, Category, NewTransaction, Transaction } from "@ctrl-custo/core";
 import { formatCurrencyInput, parseCurrencyInput } from "../hooks/useCurrency";
 import { useTransactionStore } from "../store/useTransactionStore";
 
@@ -23,29 +23,74 @@ interface Props {
   accounts: Account[];
   categories: Category[];
   isDark: boolean;
+  editing?: Transaction;
+  onSaved?: () => void;
 }
 
-type TxType = "income" | "expense";
+type TxType = "income" | "expense" | "transfer";
 
-export function TransactionForm({ visible, onClose, accounts, categories, isDark }: Props) {
+export function TransactionForm({
+  visible,
+  onClose,
+  accounts,
+  categories,
+  isDark,
+  editing,
+  onSaved,
+}: Props) {
   const colors = isDark ? darkColors : lightColors;
   const add = useTransactionStore((s) => s.add);
   const addInstallments = useTransactionStore((s) => s.addInstallments);
+  const update = useTransactionStore((s) => s.update);
 
   const [type, setType] = useState<TxType>("expense");
   const [description, setDescription] = useState("");
   const [amountRaw, setAmountRaw] = useState("");
   const [selectedAccountId, setSelectedAccountId] = useState(accounts[0]?.id ?? "");
+  const [destinationAccountId, setDestinationAccountId] = useState("");
   const [selectedCategoryId, setSelectedCategoryId] = useState("");
   const [date, setDate] = useState(today());
+  const [notes, setNotes] = useState("");
   const [installments, setInstallments] = useState("1");
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!visible) return;
+    if (editing) {
+      setType(editing.type as TxType);
+      setDescription(editing.description);
+      setAmountRaw(formatCurrencyInput(editing.amount));
+      setSelectedAccountId(editing.accountId);
+      setSelectedCategoryId(editing.categoryId ?? "");
+      setDate(editing.date);
+      setNotes(editing.notes ?? "");
+      setDestinationAccountId(
+        (editing as Transaction & { destinationAccountId?: string }).destinationAccountId ?? ""
+      );
+      setInstallments("1");
+    } else {
+      resetFields();
+    }
+  }, [visible, editing]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function resetFields() {
+    setType("expense");
+    setDescription("");
+    setAmountRaw("");
+    setSelectedAccountId(accounts[0]?.id ?? "");
+    setDestinationAccountId("");
+    setSelectedCategoryId("");
+    setDate(today());
+    setNotes("");
+    setInstallments("1");
+  }
 
   const filteredCategories = categories.filter((c) => c.type === type || c.type === "both");
 
   async function handleSave() {
     const amount = parseCurrencyInput(amountRaw);
     if (!description.trim() || amount === 0 || !selectedAccountId || !selectedCategoryId) return;
+    if (type === "transfer" && !destinationAccountId) return;
 
     setSaving(true);
     try {
@@ -57,14 +102,21 @@ export function TransactionForm({ visible, onClose, accounts, categories, isDark
         date,
         categoryId: selectedCategoryId,
         accountId: selectedAccountId,
+        notes: notes.trim() || undefined,
+        ...(type === "transfer" && { destinationAccountId }),
       };
 
-      const total = parseInt(installments, 10) || 1;
-      if (total > 1) {
-        await addInstallments(data, total);
+      if (editing) {
+        await update(editing.id, data);
       } else {
-        await add({ ...data });
+        const total = parseInt(installments, 10) || 1;
+        if (total > 1) {
+          await addInstallments(data, total);
+        } else {
+          await add(data);
+        }
       }
+      onSaved?.();
       handleClose();
     } finally {
       setSaving(false);
@@ -72,13 +124,11 @@ export function TransactionForm({ visible, onClose, accounts, categories, isDark
   }
 
   function handleClose() {
-    setDescription("");
-    setAmountRaw("");
-    setInstallments("1");
-    setSelectedCategoryId("");
+    resetFields();
     onClose();
   }
 
+  const isEditing = !!editing;
   const s = styles(colors);
 
   return (
@@ -88,12 +138,10 @@ export function TransactionForm({ visible, onClose, accounts, categories, isDark
         style={s.overlay}
       >
         <View style={s.sheet}>
-          {/* Handle */}
           <View style={s.handle} />
 
-          {/* Header */}
           <View style={s.sheetHeader}>
-            <Text style={s.sheetTitle}>Nova Transação</Text>
+            <Text style={s.sheetTitle}>{isEditing ? "Editar Transação" : "Nova Transação"}</Text>
             <TouchableOpacity onPress={handleClose}>
               <Ionicons name="close" size={22} color={colors.textSecondary} />
             </TouchableOpacity>
@@ -115,6 +163,14 @@ export function TransactionForm({ visible, onClose, accounts, categories, isDark
                 onPress={() => setType("income")}
               >
                 <Text style={[s.typeBtnText, type === "income" && { color: "#fff" }]}>Receita</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[s.typeBtn, type === "transfer" && { backgroundColor: colors.transfer }]}
+                onPress={() => setType("transfer")}
+              >
+                <Text style={[s.typeBtnText, type === "transfer" && { color: "#fff" }]}>
+                  Transf.
+                </Text>
               </TouchableOpacity>
             </View>
 
@@ -152,8 +208,8 @@ export function TransactionForm({ visible, onClose, accounts, categories, isDark
               placeholderTextColor={colors.textDisabled}
             />
 
-            {/* Conta */}
-            <Text style={s.label}>Conta</Text>
+            {/* Banco de origem */}
+            <Text style={s.label}>{type === "transfer" ? "Banco de origem" : "Conta"}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.chipScroll}>
               {accounts.map((a) => (
                 <TouchableOpacity
@@ -170,6 +226,33 @@ export function TransactionForm({ visible, onClose, accounts, categories, isDark
                 </TouchableOpacity>
               ))}
             </ScrollView>
+
+            {/* Banco de destino (só para transferência) */}
+            {type === "transfer" && (
+              <>
+                <Text style={s.label}>Banco de destino</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.chipScroll}>
+                  {accounts
+                    .filter((a) => a.id !== selectedAccountId)
+                    .map((a) => (
+                      <TouchableOpacity
+                        key={a.id}
+                        style={[
+                          s.chip,
+                          destinationAccountId === a.id && { backgroundColor: colors.transfer },
+                        ]}
+                        onPress={() => setDestinationAccountId(a.id)}
+                      >
+                        <Text
+                          style={[s.chipText, destinationAccountId === a.id && { color: "#fff" }]}
+                        >
+                          {a.name}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                </ScrollView>
+              </>
+            )}
 
             {/* Categoria */}
             <Text style={s.label}>Categoria</Text>
@@ -190,8 +273,8 @@ export function TransactionForm({ visible, onClose, accounts, categories, isDark
               ))}
             </ScrollView>
 
-            {/* Parcelas (só para despesa) */}
-            {type === "expense" && (
+            {/* Parcelas (só despesa, só na criação) */}
+            {type === "expense" && !isEditing && (
               <>
                 <Text style={s.label}>Parcelas</Text>
                 <TextInput
@@ -205,13 +288,27 @@ export function TransactionForm({ visible, onClose, accounts, categories, isDark
               </>
             )}
 
+            {/* Observações */}
+            <Text style={s.label}>Observações (opcional)</Text>
+            <TextInput
+              style={[s.input, s.notesInput]}
+              value={notes}
+              onChangeText={setNotes}
+              placeholder="Alguma observação..."
+              placeholderTextColor={colors.textDisabled}
+              multiline
+              textAlignVertical="top"
+            />
+
             {/* Botão salvar */}
             <TouchableOpacity
               style={[s.saveBtn, saving && { opacity: 0.6 }]}
               onPress={handleSave}
               disabled={saving}
             >
-              <Text style={s.saveBtnText}>{saving ? "Salvando..." : "Salvar"}</Text>
+              <Text style={s.saveBtnText}>
+                {saving ? "Salvando..." : isEditing ? "Atualizar" : "Salvar"}
+              </Text>
             </TouchableOpacity>
           </ScrollView>
         </View>
@@ -259,7 +356,7 @@ const styles = (colors: Colors) =>
       borderWidth: 1,
       borderColor: colors.border,
     },
-    typeBtnText: { fontSize: 14, fontWeight: "600", color: colors.textSecondary },
+    typeBtnText: { fontSize: 13, fontWeight: "600", color: colors.textSecondary },
     label: { fontSize: 13, color: colors.textSecondary, marginBottom: 6, marginTop: 12 },
     amountRow: {
       flexDirection: "row",
@@ -288,6 +385,7 @@ const styles = (colors: Colors) =>
       fontSize: 15,
       color: colors.textPrimary,
     },
+    notesInput: { height: 72 },
     chipScroll: { marginBottom: 4 },
     chip: {
       paddingHorizontal: 12,
