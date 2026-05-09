@@ -1,24 +1,45 @@
 appId: com.hebert.ctrlcusto
 ---
-# Pressupõe que o usuário já está logado (fluxo: login.yaml)
 - runFlow: login.yaml
 
-# Verifica componentes do dashboard
+# Verifica hero card "Fluxo do Mês"
 - assertVisible:
-    text: "Saldo"
+    text: "Fluxo do Mês"
 - assertVisible:
     text: "Receitas"
 - assertVisible:
     text: "Despesas"
 
-# Aba "Transações" na tab bar
+# Expande o hero card para ver o donut
+- tapOn:
+    text: "Fluxo do Mês"
+- assertVisible:
+    text: "Receitas vs Despesas"
+
+# Fecha o donut tocando novamente
+- tapOn:
+    text: "Fluxo do Mês"
+
+# Verifica card "Saldo nos Bancos"
+- assertVisible:
+    text: "Saldo nos Bancos"
+
+# Expande o card de bancos
+- tapOn:
+    text: "Saldo nos Bancos"
+
+# Verifica seção de últimas transações
+- assertVisible:
+    text: "Últimas transações"
+
+# Navega para aba Transações
 - tapOn:
     text: "Transações"
 - assertVisible:
     text: "Transações"
 
-# Volta para o dashboard
+# Volta para o Dashboard
 - tapOn:
-    text: "Início"
+    text: "Dashboard"
 - assertVisible:
-    text: "Saldo"
+    text: "Fluxo do Mês"
