@@ -40,6 +40,15 @@ const MONTHS = [
   "Dezembro",
 ];
 
+function monthStart(y: number, m: number) {
+  return `${y}-${String(m).padStart(2, "0")}-01`;
+}
+
+function monthEnd(y: number, m: number) {
+  const lastDay = new Date(y, m, 0).getDate();
+  return `${y}-${String(m).padStart(2, "0")}-${lastDay}`;
+}
+
 export default function Dashboard() {
   const insets = useSafeAreaInsets();
   const isDark = useThemeStore((s) => s.isDark);
@@ -434,15 +443,6 @@ function TransactionRow({
       </Text>
     </View>
   );
-}
-
-function monthStart(y: number, m: number) {
-  return `${y}-${String(m).padStart(2, "0")}-01`;
-}
-
-function monthEnd(y: number, m: number) {
-  const lastDay = new Date(y, m, 0).getDate();
-  return `${y}-${String(m).padStart(2, "0")}-${lastDay}`;
 }
 
 function formatDate(iso: string) {
