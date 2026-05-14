@@ -26,6 +26,35 @@
 | —    | Security fixes + verificação de e-mail      | `feature/security-fixes-email-verification` | ✅ mergeado |
 | 12   | Reorganização DB em 7 schemas de domínio    | `feature/phase-12-db-schemas`               | ✅ mergeado |
 
+| 13 | Testes automatizados mobile (Jest+RNTL+Maestro) | `main` | ✅ |
+
+---
+
+## ⚠️ Ações Pendentes do Usuário
+
+> Tarefas que não podem ser feitas via código — requerem ação manual no browser ou terminal.
+
+### 🔑 Maestro Cloud — ativar E2E em dispositivo real
+
+**Por que:** O workflow `.github/workflows/maestro-cloud.yml` já está criado e os flows `.maestro/*.yaml` estão prontos. Falta apenas configurar a conta e o secret para que os testes rodem automaticamente após cada EAS Build.
+
+**Como fazer (uma vez):**
+
+1. Acesse [cloud.mobile.dev](https://cloud.mobile.dev) → criar conta gratuita (100 runs/mês)
+2. Em **Settings → API Keys**, gere uma nova chave
+3. No GitHub, vá em **Settings → Secrets → Actions** e adicione:
+   - Nome: `MAESTRO_API_KEY`
+   - Valor: a chave gerada no passo 2
+4. Pronto — após o próximo `eas.yml` no `main`, o `maestro-cloud.yml` dispara automaticamente
+
+**O que vai rodar (flows `.maestro/`):**
+
+- `login.yaml` → login na conta E2E
+- `dashboard.yaml` → verifica dashboard + navegação por abas
+- `transactions.yaml` → abre formulário de transação
+- `goals.yaml` → cria uma meta completa
+- `settings.yaml` → verifica tela de configurações
+
 ---
 
 ## Convenção de Branches
@@ -104,23 +133,25 @@ packages/config/ — tsconfig bases
 
 ### CI/CD — GitHub Actions
 
-| Workflow         | Trigger               | O que faz                           |
-| ---------------- | --------------------- | ----------------------------------- |
-| `ci.yml`         | Todo push/PR          | typecheck + lint + testes Vitest    |
-| `deploy-api.yml` | CI verde na `main`    | SSH na VM → `deploy/deploy.sh`      |
-| `deploy-web.yml` | CI verde na `main`    | Build React + rsync `dist/` para VM |
-| `eas.yml`        | Manual / tag `v*.*.*` | Build Android APK/AAB via EAS       |
-| `tauri.yml`      | Manual / tag `v*.*.*` | Build Windows `.msi`/`.exe`         |
+| Workflow            | Trigger                                     | O que faz                                                             |
+| ------------------- | ------------------------------------------- | --------------------------------------------------------------------- |
+| `ci.yml`            | Todo push/PR                                | typecheck + lint + testes Vitest (core) + Jest (mobile)               |
+| `deploy-api.yml`    | CI verde na `main`                          | SSH na VM → `deploy/deploy.sh`                                        |
+| `deploy-web.yml`    | CI verde na `main`                          | Build React + rsync `dist/` para VM                                   |
+| `eas.yml`           | Manual / tag `v*.*.*`                       | Build Android APK/AAB via EAS                                         |
+| `maestro-cloud.yml` | Após `eas.yml` na `main` / manual (APK URL) | E2E em dispositivo real via Maestro Cloud ⚠️ requer `MAESTRO_API_KEY` |
+| `tauri.yml`         | Manual / tag `v*.*.*`                       | Build Windows `.msi`/`.exe`                                           |
 
 ### GitHub Secrets necessários
 
-| Secret           | Valor                              | Status         |
-| ---------------- | ---------------------------------- | -------------- |
-| `VITE_API_URL`   | `http://ctrlcusto.duckdns.org/api` | ✅ configurado |
-| `ORACLE_HOST`    | `163.176.42.49`                    | ✅ configurado |
-| `ORACLE_USER`    | `deploy`                           | ✅ configurado |
-| `ORACLE_SSH_KEY` | chave privada ed25519              | ✅ configurado |
-| `EXPO_TOKEN`     | token expo.dev                     | ✅ configurado |
+| Secret            | Valor                              | Status                                              |
+| ----------------- | ---------------------------------- | --------------------------------------------------- |
+| `VITE_API_URL`    | `http://ctrlcusto.duckdns.org/api` | ✅ configurado                                      |
+| `ORACLE_HOST`     | `163.176.42.49`                    | ✅ configurado                                      |
+| `ORACLE_USER`     | `deploy`                           | ✅ configurado                                      |
+| `ORACLE_SSH_KEY`  | chave privada ed25519              | ✅ configurado                                      |
+| `EXPO_TOKEN`      | token expo.dev                     | ✅ configurado                                      |
+| `MAESTRO_API_KEY` | API key do cloud.mobile.dev        | ⚠️ **PENDENTE** — ver seção "Ações Pendentes" acima |
 
 ---
 
@@ -378,11 +409,11 @@ Afeta uso diário. Stores já têm `update()` e `remove()` implementados — fal
 
 | Grupo                       | Itens                                                                                                     | Estimativa | Status |
 | --------------------------- | --------------------------------------------------------------------------------------------------------- | ---------- | ------ |
-| 1 — CRUD completo           | 1.1 editar/excluir tx · 1.2 excluir cartão · 1.3 excluir meta · 1.4 excluir banco · 1.5 excluir categoria | ~3–4h      | ⬜     |
-| 2 — Features web existentes | 2.1 transferência · 2.2 notas · 2.3 filtros · 2.4 fatura cartão                                           | ~3–4h      | ⬜     |
-| 3 — Dashboard melhorado     | 3.1 hero fluxo + donut · 3.2 bancos expansível                                                            | ~2h        | ⬜     |
-| 4 — Relatórios              | 4.1 nova tela completa                                                                                    | ~3h        | ⬜     |
-| **Total**                   | **10 itens**                                                                                              | **~8–12h** |        |
+| 1 — CRUD completo           | 1.1 editar/excluir tx · 1.2 excluir cartão · 1.3 excluir meta · 1.4 excluir banco · 1.5 excluir categoria | ~3–4h      | ✅     |
+| 2 — Features web existentes | 2.1 transferência · 2.2 notas · 2.3 filtros · 2.4 fatura cartão                                           | ~3–4h      | ✅     |
+| 3 — Dashboard melhorado     | 3.1 hero fluxo + donut · 3.2 bancos expansível                                                            | ~2h        | ✅     |
+| 4 — Relatórios              | 4.1 nova tela completa                                                                                    | ~3h        | ✅     |
+| **Total**                   | **10 itens**                                                                                              | **~8–12h** | ✅     |
 
 > Ordem de execução recomendada: 1.1 → 1.2 → 1.3 → 1.4+1.5 → 2.1 → 2.2 → 2.3 → 2.4 → 3.1 → 3.2 → 4.1
 
@@ -809,7 +840,282 @@ Migration `0003` será aplicada automaticamente pelo CI/CD no próximo push (dep
 
 ---
 
+## Guia de Testes — Mobile
+
+### Arquitetura do ambiente local
+
+```
+Celular (Expo Go)
+    ↓ HTTP  192.168.1.69:3000
+API local  (pnpm dev:api  — roda no PC)
+    ↓ TCP  localhost:5432
+SSH tunnel  (Terminal 1 — mantém porta aberta)
+    ↓ SSH
+PostgreSQL na VM Oracle  (banco compartilhado — mesmo de produção)
+```
+
+> **Importante:** a API local **não tem banco próprio** — ela usa o PostgreSQL da VM via tunnel. Isso significa:
+>
+> - O tunnel (Terminal 1) deve estar aberto **antes** de subir a API (Terminal 2)
+> - `pnpm db:migrate` só aplica no banco certo se o tunnel estiver ativo. Com tunnel fechado e sem PostgreSQL local, o comando falha; com PostgreSQL local na porta 5432, aplica no lugar errado (bug silencioso)
+> - Migrations novas chegam ao banco da VM automaticamente pelo CI/CD quando o código vai para `main` — prefira o merge a rodar `db:migrate` manualmente
+
+### Pré-requisitos
+
+- **Expo Go 54** instalado no celular (Android ou iOS)
+- Celular na **mesma rede Wi-Fi** que o PC
+- `apps/mobile/.env` com `EXPO_PUBLIC_API_URL=http://192.168.1.69:3000` (já criado)
+- `apps/api/.env` com `DATABASE_URL=postgresql://ctrl_custo_user:...@localhost:5432/ctrl_custo` (tunnel mapeia para VM)
+
+### Passo a passo
+
+**Terminal 1 — SSH tunnel para o banco na VM (abrir primeiro):**
+
+```
+ssh -L 5432:localhost:5432 oracle-ctrl-custos -N
+```
+
+Deixar aberto enquanto testar. Sem output é o comportamento normal.
+
+**Terminal 2 — API local (abrir depois do tunnel):**
+
+```
+pnpm dev:api
+```
+
+Aguardar: `[api] running on port 3000`
+
+**Terminal 3 — Mobile:**
+
+```
+pnpm dev:mobile
+```
+
+Aguardar o QR code no terminal.
+
+**No celular:**
+
+1. Abrir o **Expo Go**
+2. Escanear o QR code exibido no terminal
+3. Aguardar o build (primeira vez demora ~1–2 min; depois é instantâneo)
+
+### Contas de teste
+
+| E-mail            | Senha        |
+| ----------------- | ------------ |
+| `andre@teste.com` | `Teste@1234` |
+| `vitor@teste.com` | `Teste@1234` |
+| `bio@teste.com`   | `Teste@1234` |
+
+> Novas contas: cadastro está desabilitado em produção (`REGISTRATION_ENABLED = false`). Para criar via SQL: ver sessão 2026-05-08 no log.
+
+### Comandos úteis
+
+```bash
+# Rodar só os testes automatizados do mobile
+pnpm --filter mobile test
+
+# Rodar todos os testes (core + mobile)
+pnpm test
+
+# Rodar com saída detalhada
+pnpm --filter mobile test --verbose
+```
+
+### Observações de performance
+
+- Primeira abertura no celular é lenta (~1–2 min) — é o Metro bundlando ~2600 módulos
+- Após o primeiro bundle, hot reload é rápido
+- Login pode levar 1–2s — é o `refresh()` + carregamento inicial de dados
+
+---
+
 ## Log de Sessões
+
+### 2026-05-14 — Paridade mobile: fixes de UX, export e migração 0004
+
+#### O que foi feito
+
+- **fix(categories):** Emoji de categoria agora é opcional — `icon: z.string()` aceita string vazia; ícone em branco renderiza `×` no grid de seleção; padrão ao criar é sem emoji
+- **feat(categories):** Exclusão com transferência — ao tentar excluir categoria com transações vinculadas, app oferece picker inline para migrar as transações para outra categoria antes de deletar; API `DELETE /categories/:id?transferTo=uuid` executa a transferência atomicamente
+- **feat(goals):** Exclusão com reembolso — ao excluir meta com depósitos, app exige escolha de conta destino; API calcula o total depositado, credita na conta escolhida, deleta as transações de depósito e depois deleta a meta; contas arquivadas não aparecem no picker (evita dinheiro "sumindo")
+- **feat(mobile):** Aba Cartões ocultada do tab bar (`href: null`) — cartões existem no banco mas UI mobile não está pronta
+- **feat(reports):** Exportar transações em CSV e Excel (`.xlsx`) — `exportUtils.ts` usa SheetJS + expo-file-system + expo-sharing; CSV com 8 colunas; XLSX com 2 abas (Transações + Resumo Mensal); botão "Exportar" no header de Relatórios
+- **fix(api/schema):** `goalId` em `transactions` removeu `.references(() => goals.id)` — Drizzle avaliava o callback no momento do import, causando `ReferenceError` (temporal dead zone) pois `goals` é definido após `transactions` no mesmo arquivo → toda request retornava 500; FK preservada via migration SQL
+- **chore(migrations):** `0004_goal_id_on_transactions.sql` — adiciona coluna `goal_id uuid REFERENCES planning.goals(id) ON DELETE SET NULL`; entrada registrada no `meta/_journal.json`
+
+#### Causa raiz do 500 persistente
+
+A migration 0004 não foi aplicada no PostgreSQL da VM (`column "goal_id" does not exist`). O `pnpm db:migrate` anterior retornou `done` mas provavelmente conectou em contexto sem tunnel ativo. Solução: merge para `main` → CI/CD aplica a migration automaticamente via `deploy.sh`.
+
+#### Pendências em aberto
+
+- **PR aberto:** `feature/mobile-parity` → `main` — aguardar CI verde e fazer merge
+- **Após merge:** testar roteiro mobile completo com migration aplicada (Relatórios, Metas, exportação)
+- **Maestro Cloud:** ação do usuário pendente (ver seção "Ações Pendentes")
+
+---
+
+### 2026-05-13 — Correções mobile: validação de formulário, Dashboard e testes
+
+#### O que foi feito
+
+- **feat(mobile/dashboard):** Botão `+` pequeno adicionado ao lado do título "Últimas transações" — abre o `TransactionForm` diretamente do Dashboard. Callback `onSaved` recarrega contas e transações do mês atual.
+- **feat(mobile/form):** Validação com mensagens de erro no `TransactionForm` — em vez de retornar silenciosamente, `handleSave()` agora exibe erros inline em cada campo obrigatório (valor, descrição, banco, categoria, banco de destino em transferências). Campos inválidos recebem borda vermelha.
+- **fix(mobile/store):** `load()` do `useTransactionStore` agora tem `try/catch` — erros de rede não sobrescrevem o estado existente com dados vazios.
+- **test(mobile):** `TransactionForm.test.tsx` expandido de 12 para 18 testes — novos testes cobrem validação de campos obrigatórios: erro de valor, erro de descrição, erro de categoria, erro de banco de destino em transferências, verificação de que `add()` não é chamado com erros, e limpeza de erros após salvar com sucesso.
+- **docs:** `PROJECT.md` — seção "Guia de Testes — Mobile" adicionada com passo a passo para abrir o app no celular, contas de teste e comandos úteis.
+
+#### Bug investigado — Transferência zera o Dashboard
+
+**Sintoma relatado:** Após criar uma transferência, todas as outras transações e o histórico sumiram; Dashboard zerado.
+
+**Análise:** Causa mais provável é comportamento esperado que parece bug:
+
+- O Dashboard calcula `totalIncome`/`totalExpense` excluindo `type === "transfer"`. Se o único movimento do mês for uma transferência, o fluxo mensal aparece zerado — isso é **correto** (transferência não é receita nem despesa).
+- A tela de Transações mostra apenas o mês selecionado. Se o usuário estava em um mês diferente do da transferência, histórico anterior "some" porque está no outro mês.
+- O `load()` sem `try/catch` (corrigido agora) poderia deixar estado em branco em caso de erro de rede.
+
+**Próxima verificação:** Reproduzir criando transferência com o app rodando e verificar nos logs da API se o `GET /transactions` retorna os dados corretos após o POST.
+
+#### Falsos positivos identificados nos testes
+
+- Testes anteriores verificavam apenas presença de elementos na tela (`toBeTruthy()`), sem testar comportamento real (cliques, callbacks). Não são falsos positivos no sentido estrito — eles falhariam se o componente não renderizasse — mas têm cobertura baixa.
+- Novos testes usam `fireEvent` + `act` para verificar efeitos reais: erros aparecem, callbacks são chamados ou não.
+
+---
+
+### 2026-05-09 — Infraestrutura VM + testes mobile local (sessão 2)
+
+#### O que foi feito
+
+- **chore(infra):** Script `scripts/vm-keep-alive.sh` + `scripts/setup-vm-keep-alive.ps1` — gera carga de CPU por 5 min a cada 3 dias via cron para evitar desativação da VM Oracle (limiar: CPU < 10% por 7 dias). Instalado e testado na VM. Commit `a97b209`.
+- **fix(vscode):** `keybindings.json` do VS Code — removidos conflitos de `Ctrl+Shift+C` (abria terminal nativo) e `Ctrl+Shift+V` (abria preview Markdown) no terminal integrado.
+- **chore(mobile):** `.env` criado em `apps/mobile/` com `EXPO_PUBLIC_API_URL=http://192.168.1.69:3000` para testes locais no celular.
+
+#### Pendências para próxima sessão — Testes mobile local
+
+Para rodar o app no celular com Expo Go 54 apontando para a API local:
+
+1. **Criar `apps/api/.env`** a partir de `apps/api/.env.example`:
+   - `DATABASE_URL` — usar banco local (PostgreSQL local) ou apontar para a VM
+   - `JWT_SECRET` e `JWT_REFRESH_SECRET` — gerar com `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
+   - `PORT=3000`
+   - `ALLOWED_ORIGINS=http://localhost:5173`
+   - `NODE_ENV=development`
+   - SMTP pode ficar com valores falsos para testes locais
+
+2. **Rodar API local:** `pnpm dev:api` (terminal 1)
+3. **Rodar mobile:** `pnpm --filter mobile start -- --clear` (terminal 2)
+4. **Celular** na mesma rede Wi-Fi que o PC — escanear QR code no Expo Go 54
+
+#### Observações de performance (anotar para futura otimização)
+
+- Abertura lenta no celular — parte é overhead do Expo Go em dev (bundle de ~2600 módulos), parte pode ser bloqueio de render pelo `tryRestore()` antes de mostrar qualquer tela
+- Login lento — `api.auth.refresh()` + carga inicial de accounts/categories/transactions bloqueiam a UI no startup
+
+---
+
+### 2026-05-09 — Paridade mobile completa (branch feature/mobile-parity)
+
+#### O que foi implementado
+
+**Grupo 1 — CRUD completo (commit `5e33a63`):**
+
+- Transações: tap para editar (TransactionForm modo edição), long-press para excluir com confirmação
+- Cartões: botão lixeira + tap abre CardStatement com fatura mensal e navegação por mês
+- Metas: botão lixeira com confirmação
+- Bancos: botão "Excluir conta" no AccountForm modo edição
+- Categorias: botão "Excluir categoria" no CategoryForm modo edição
+
+**Grupo 2 — Features web (commit `5e33a63` + `5cbd7f6`):**
+
+- 2.1 Transferência: terceiro toggle "Transf." + seletor de banco de destino no TransactionForm
+- 2.2 Notas: campo Observações multiline opcional no TransactionForm
+- 2.3 Filtros: `TransactionFilters.tsx` — bottom sheet com busca, tipo (chips), categoria (chips), banco (chips); badge no botão com contagem de filtros ativos; filtros combinados com range de datas
+- 2.4 Fatura do cartão: `CardStatement.tsx` — fatura atual, limite disponível, transações do mês, navegação por mês
+
+**Grupo 3 — Dashboard melhorado (commit `5cbd7f6`):**
+
+- Hero "Fluxo do Mês": Receitas / Despesas / Saldo do mês — substitui saldo total como hero
+- Tap no hero → donut nível 1 (Receitas vs Despesas)
+- Botões drill-down → donut nível 2 por categoria (income ou expense)
+- Card "Saldo nos Bancos" expansível com lista de bancos (nome, tipo, saldo)
+- Saldo negativo em vermelho
+
+**Grupo 4 — Relatórios (commit `5cbd7f6`):**
+
+- Nova aba "Relatórios" adicionada ao tab bar (6ª aba)
+- Seletor de período: 3m / 6m / 12m
+- BarChart receitas por mês + BarChart despesas por mês
+- LineChart evolução do saldo acumulado
+- Tabela mensal com badge "atual" no mês corrente
+- Exportar via Share nativo (CSV)
+
+**Fix:** Remove `userId` inválido do mock `Account` no test fixture `AccountForm.test.tsx`
+
+#### Pendências em aberto
+
+- **PR:** Abrir PR de `feature/mobile-parity` → `main` e fazer merge
+- **Maestro Cloud:** Ação do usuário pendente — ver seção "Ações Pendentes" acima
+- **Próximas features (backlog):** Investimentos, Pagamentos Recorrentes, Parcelas Futuras
+
+---
+
+### 2026-05-08 — Infraestrutura de testes automatizados para o mobile (Fase 13)
+
+#### O que foi implementado
+
+**Estratégia de testes mobile — dois níveis:**
+
+| Nível                       | Ferramenta    | Quando roda             | O que cobre                                                  |
+| --------------------------- | ------------- | ----------------------- | ------------------------------------------------------------ |
+| 1 — Unitário/Componente     | Jest + RNTL   | A cada push (CI)        | Funções puras, renderização de forms, comportamento sem rede |
+| 2 — E2E em dispositivo real | Maestro Cloud | Após EAS Build (`main`) | Fluxos completos em APK real                                 |
+
+**Pacotes adicionados em `apps/mobile` (devDependencies):**
+
+- `jest-expo ~54.0.0` — preset Jest para Expo SDK 54
+- `@testing-library/react-native ^12.9.0` — renderização de componentes sem emulador
+- `@testing-library/jest-native ^5.4.3` — custom matchers (`toBeTruthy`, etc.)
+- `react-test-renderer 19.1.4` — renderizador para React 19
+- `@types/jest ^29.5.12` — tipos TypeScript
+
+**Arquivos criados:**
+
+- `apps/mobile/jest.config.js` — preset jest-expo, `setupFilesAfterEnv`, `transformIgnorePatterns` para pacotes workspace
+- `apps/mobile/src/__tests__/setup.ts` — mocks de módulos nativos: `@expo/vector-icons`, `expo-secure-store`, `expo-local-authentication`, `@react-native-async-storage`, `react-native-reanimated`
+- `apps/mobile/src/__tests__/useCurrency.test.ts` — 9 testes das funções puras (`parseCurrencyInput`, `formatCurrencyInput`, `formatCurrency`)
+- `apps/mobile/src/__tests__/GoalForm.test.tsx` — 6 testes de renderização do `GoalForm`
+- `apps/mobile/src/__tests__/AccountForm.test.tsx` — 7 testes de renderização do `AccountForm` (modo criação + edição)
+- `.maestro/login.yaml` — flow de login
+- `.maestro/dashboard.yaml` — navegação no dashboard
+- `.maestro/transactions.yaml` — abrir formulário de transação
+- `.maestro/goals.yaml` — criar meta completa
+- `.maestro/settings.yaml` — navegação em configurações
+- `.github/workflows/maestro-cloud.yml` — trigger: manual (`workflow_dispatch` com APK URL) ou automático após EAS Build no `main`
+
+**CI atualizado (`.github/workflows/ci.yml`):**
+
+- Adicionado step `Test (mobile)` — executa `pnpm test` em `apps/mobile` (Jest + RNTL, sem emulador)
+- Total de testes automatizados: 31 (core Vitest) + 22 (mobile Jest) + 38 (web E2E Playwright) = **91 testes**
+
+#### Pendências em aberto
+
+- **Ação do usuário necessária (Maestro Cloud):**
+  1. Criar conta em [cloud.mobile.dev](https://cloud.mobile.dev) (gratuito: 100 runs/mês)
+  2. Obter API Key em Settings → API Keys
+  3. Adicionar secret `MAESTRO_API_KEY` em GitHub → Settings → Secrets → Actions
+  4. Após próximo EAS Build, o workflow `maestro-cloud.yml` dispara automaticamente
+
+- **Próximos testes a adicionar (quando componentes estiverem prontos):**
+  - `TransactionForm.test.tsx` — cobre tipos: income/expense/transfer
+  - `CategoryForm.test.tsx` e `CardForm.test.tsx`
+  - Testes de `DepositForm.tsx`
+
+- **Paridade mobile ↔ web (próxima fase):** ver seção "Paridade Mobile ↔ Web" abaixo
+
+---
 
 ### 2026-05-08 — Backlog web zerado + cobertura E2E completa + deploy
 

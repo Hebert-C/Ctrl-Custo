@@ -9,6 +9,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { lightColors, darkColors } from "@ctrl-custo/ui";
@@ -51,6 +52,7 @@ export function AccountForm({ visible, onClose, isDark, account }: Props) {
   const colors = isDark ? darkColors : lightColors;
   const add = useAccountStore((s) => s.add);
   const update = useAccountStore((s) => s.update);
+  const remove = useAccountStore((s) => s.remove);
 
   const [name, setName] = useState("");
   const [type, setType] = useState<AccountType>("checking");
@@ -110,6 +112,43 @@ export function AccountForm({ visible, onClose, isDark, account }: Props) {
   function handleClose() {
     resetFields();
     onClose();
+  }
+
+  function handleDelete() {
+    if (!account) return;
+    Alert.alert("Excluir conta", `"${account.name}" será removida permanentemente.`, [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Excluir",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await remove(account.id);
+            handleClose();
+          } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : "";
+            if (msg.includes("vinculadas")) {
+              Alert.alert(
+                "Não é possível excluir",
+                "Esta conta possui transações vinculadas.\n\nDeseja arquivá-la? Ela ficará oculta mas os dados serão preservados.",
+                [
+                  { text: "Cancelar", style: "cancel" },
+                  {
+                    text: "Arquivar",
+                    onPress: async () => {
+                      await update(account.id, { isArchived: true });
+                      handleClose();
+                    },
+                  },
+                ]
+              );
+            } else {
+              Alert.alert("Erro", "Não foi possível excluir a conta.");
+            }
+          }
+        },
+      },
+    ]);
   }
 
   const isEditing = !!account;
@@ -214,6 +253,12 @@ export function AccountForm({ visible, onClose, isDark, account }: Props) {
                 {saving ? "Salvando..." : isEditing ? "Atualizar" : "Salvar"}
               </Text>
             </TouchableOpacity>
+
+            {isEditing && (
+              <TouchableOpacity style={s.deleteBtn} onPress={handleDelete}>
+                <Text style={s.deleteBtnText}>Excluir conta</Text>
+              </TouchableOpacity>
+            )}
           </ScrollView>
         </View>
       </KeyboardAvoidingView>
@@ -309,4 +354,13 @@ const styles = (colors: Colors) =>
       marginBottom: 8,
     },
     saveBtnText: { color: "#fff", fontSize: 16, fontWeight: "700" },
+    deleteBtn: {
+      borderRadius: 12,
+      padding: 14,
+      alignItems: "center",
+      marginBottom: 8,
+      borderWidth: 1,
+      borderColor: colors.danger,
+    },
+    deleteBtnText: { color: colors.danger, fontSize: 16, fontWeight: "600" },
   });

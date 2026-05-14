@@ -167,7 +167,7 @@ export function DepositForm({ visible, onClose, isDark, goal, accounts, categori
                     onPress={() => setCategoryId(c.id)}
                   >
                     <Text style={[s.chipText, categoryId === c.id && { color: "#fff" }]}>
-                      {c.icon} {c.name}
+                      {c.name}
                     </Text>
                   </TouchableOpacity>
                 ))}

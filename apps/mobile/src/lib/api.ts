@@ -112,10 +112,18 @@ interface ApiTransaction extends ApiRow {
   categoryId: string;
   accountId: string;
   cardId: string | null;
+  destinationAccountId: string | null;
   installmentTotal: number | null;
   installmentCurrent: number | null;
   installmentGroupId: string | null;
   notes: string | null;
+}
+
+interface ApiCardStatement {
+  month: string;
+  totalAmount: number;
+  availableLimit: number;
+  transactions: ApiTransaction[];
 }
 
 interface ApiAccount extends ApiRow {
@@ -176,6 +184,7 @@ function mapTransaction(row: ApiTransaction): Transaction {
     categoryId: row.categoryId,
     accountId: row.accountId,
     cardId: row.cardId ?? undefined,
+    destinationAccountId: row.destinationAccountId ?? undefined,
     notes: row.notes ?? undefined,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -328,7 +337,10 @@ export const api = {
         method: "PUT",
         body: JSON.stringify(data),
       }).then(mapCategory),
-    remove: (id: string) => req<{ ok: boolean }>(`/categories/${id}`, { method: "DELETE" }),
+    remove: (id: string, transferTo?: string) =>
+      req<{ ok: boolean }>(`/categories/${id}${transferTo ? `?transferTo=${transferTo}` : ""}`, {
+        method: "DELETE",
+      }),
   },
 
   cards: {
@@ -338,6 +350,13 @@ export const api = {
     update: (id: string, data: Partial<NewCard>) =>
       req<ApiCard>(`/cards/${id}`, { method: "PUT", body: JSON.stringify(data) }).then(mapCard),
     remove: (id: string) => req<{ ok: boolean }>(`/cards/${id}`, { method: "DELETE" }),
+    statement: (id: string, month: string) =>
+      req<ApiCardStatement>(`/cards/${id}/statement?month=${month}`).then((data) => ({
+        month: data.month,
+        totalAmount: data.totalAmount,
+        availableLimit: data.availableLimit,
+        transactions: data.transactions.map(mapTransaction),
+      })),
   },
 
   goals: {
@@ -346,7 +365,11 @@ export const api = {
       req<ApiGoal>("/goals", { method: "POST", body: JSON.stringify(data) }).then(mapGoal),
     update: (id: string, data: Partial<NewGoal>) =>
       req<ApiGoal>(`/goals/${id}`, { method: "PUT", body: JSON.stringify(data) }).then(mapGoal),
-    remove: (id: string) => req<{ ok: boolean }>(`/goals/${id}`, { method: "DELETE" }),
+    remove: (id: string, refundAccountId?: string) =>
+      req<{ ok: boolean }>(
+        `/goals/${id}${refundAccountId ? `?refundAccountId=${refundAccountId}` : ""}`,
+        { method: "DELETE" }
+      ),
     deposit: (id: string, amount: number) =>
       req<ApiGoal>(`/goals/${id}/deposit`, {
         method: "POST",

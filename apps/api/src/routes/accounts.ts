@@ -55,10 +55,24 @@ accountsRouter.put("/:id", zValidator("json", accountBody.partial()), async (c) 
 accountsRouter.delete("/:id", async (c) => {
   const userId = c.get("userId");
   const id = c.req.param("id");
-  const [row] = await db
-    .delete(accounts)
-    .where(and(eq(accounts.id, id), eq(accounts.userId, userId)))
-    .returning({ id: accounts.id });
-  if (!row) return c.json({ error: "Conta não encontrada." }, 404);
-  return c.json({ ok: true });
+  try {
+    const [row] = await db
+      .delete(accounts)
+      .where(and(eq(accounts.id, id), eq(accounts.userId, userId)))
+      .returning({ id: accounts.id });
+    if (!row) return c.json({ error: "Conta não encontrada." }, 404);
+    return c.json({ ok: true });
+  } catch (err: unknown) {
+    const code = (err as { code?: string })?.code;
+    if (code === "23503") {
+      return c.json(
+        {
+          error:
+            "Esta conta possui transações vinculadas e não pode ser excluída. Arquive-a para ocultá-la.",
+        },
+        409
+      );
+    }
+    throw err;
+  }
 });

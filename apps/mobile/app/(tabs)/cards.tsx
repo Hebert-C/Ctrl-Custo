@@ -6,6 +6,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   TouchableOpacity,
+  Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -15,6 +16,7 @@ import { useThemeStore } from "../../src/store/useThemeStore";
 import { useUiStore } from "../../src/store/useUiStore";
 import { formatCurrency } from "../../src/hooks/useCurrency";
 import { CardForm } from "../../src/components/CardForm";
+import { CardStatement } from "../../src/components/CardStatement";
 import { lightColors, darkColors } from "@ctrl-custo/ui";
 import type { Colors } from "@ctrl-custo/ui";
 import type { Card } from "@ctrl-custo/core";
@@ -34,10 +36,11 @@ export default function Cards() {
   const colors = isDark ? darkColors : lightColors;
   const isHidden = useUiStore((s) => s.isHidden);
 
-  const { cards, load: loadCards } = useCardStore();
+  const { cards, load: loadCards, remove } = useCardStore();
   const { accounts, load: loadAccounts } = useAccountStore();
   const [loading, setLoading] = useState(true);
   const [formVisible, setFormVisible] = useState(false);
+  const [selectedCard, setSelectedCard] = useState<Card | undefined>(undefined);
 
   const loadAll = useCallback(async () => {
     await Promise.all([loadCards(), loadAccounts()]);
@@ -47,6 +50,17 @@ export default function Cards() {
   useEffect(() => {
     loadAll();
   }, [loadAll]);
+
+  function confirmDelete(card: Card) {
+    Alert.alert("Excluir cartão", `"${card.name}" será removido permanentemente.`, [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Excluir",
+        style: "destructive",
+        onPress: () => remove(card.id),
+      },
+    ]);
+  }
 
   const s = styles(colors);
 
@@ -75,6 +89,8 @@ export default function Cards() {
               accountName={accounts.find((a) => a.id === item.accountId)?.name ?? ""}
               isHidden={isHidden}
               colors={colors}
+              onPress={() => setSelectedCard(item)}
+              onDelete={() => confirmDelete(item)}
             />
           )}
         />
@@ -93,6 +109,15 @@ export default function Cards() {
         accounts={accounts}
         isDark={isDark}
       />
+
+      {selectedCard && (
+        <CardStatement
+          visible={selectedCard !== undefined}
+          onClose={() => setSelectedCard(undefined)}
+          card={selectedCard}
+          isDark={isDark}
+        />
+      )}
     </View>
   );
 }
@@ -102,20 +127,37 @@ function CardItem({
   accountName,
   isHidden,
   colors,
+  onPress,
+  onDelete,
 }: {
   card: Card;
   accountName: string;
   isHidden: boolean;
   colors: Colors;
+  onPress: () => void;
+  onDelete: () => void;
 }) {
   const s = styles(colors);
   return (
-    <View style={[s.cardItem, { backgroundColor: card.color }]}>
+    <TouchableOpacity
+      style={[s.cardItem, { backgroundColor: card.color }]}
+      onPress={onPress}
+      activeOpacity={0.85}
+    >
       <View style={s.cardHeader}>
         <Text style={s.cardBrand}>
           {BRAND_ICONS[card.brand]} {card.brand.toUpperCase()}
         </Text>
-        {card.lastFourDigits && <Text style={s.cardDigits}>•••• {card.lastFourDigits}</Text>}
+        <View style={s.cardHeaderRight}>
+          {card.lastFourDigits && <Text style={s.cardDigits}>•••• {card.lastFourDigits}</Text>}
+          <TouchableOpacity
+            onPress={onDelete}
+            style={s.deleteBtn}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons name="trash-outline" size={16} color="rgba(255,255,255,0.8)" />
+          </TouchableOpacity>
+        </View>
       </View>
       <Text style={s.cardName}>{card.name}</Text>
       <View style={s.cardFooter}>
@@ -134,7 +176,7 @@ function CardItem({
         <Text style={s.cardDateText}>Fechamento: dia {card.billingDay}</Text>
         <Text style={s.cardDateText}>Vencimento: dia {card.dueDay}</Text>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -156,9 +198,16 @@ const styles = (colors: Colors) =>
       padding: 18,
       marginBottom: 16,
     },
-    cardHeader: { flexDirection: "row", justifyContent: "space-between", marginBottom: 8 },
+    cardHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 8,
+    },
+    cardHeaderRight: { flexDirection: "row", alignItems: "center", gap: 10 },
     cardBrand: { fontSize: 13, fontWeight: "700", color: "rgba(255,255,255,0.9)" },
     cardDigits: { fontSize: 13, color: "rgba(255,255,255,0.8)" },
+    deleteBtn: { padding: 2 },
     cardName: { fontSize: 18, fontWeight: "700", color: "#fff", marginBottom: 16 },
     cardFooter: { flexDirection: "row", justifyContent: "space-between", marginBottom: 8 },
     cardMetaLabel: { fontSize: 11, color: "rgba(255,255,255,0.7)" },

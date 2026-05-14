@@ -157,6 +157,7 @@ export const transactions = ledgerSchema.table("transactions", {
   installmentTotal: integer("installment_total"),
   installmentCurrent: integer("installment_current"),
   installmentGroupId: uuid("installment_group_id"),
+  goalId: uuid("goal_id"),
   notes: text("notes"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

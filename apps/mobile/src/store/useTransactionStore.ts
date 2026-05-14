@@ -22,9 +22,13 @@ export const useTransactionStore = create<TransactionStore>((set, get) => ({
   filters: {},
 
   load: async (filters = {}) => {
-    const all = await api.transactions.list();
-    const filtered = applyFilters(all, filters);
-    set({ transactions: filtered, filters });
+    try {
+      const all = await api.transactions.list();
+      const filtered = applyFilters(all, filters);
+      set({ transactions: filtered, filters });
+    } catch {
+      // mantém estado anterior em caso de erro de rede
+    }
   },
 
   add: async (data) => {

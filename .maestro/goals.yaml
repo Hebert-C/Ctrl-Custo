@@ -1,0 +1,33 @@
+appId: com.hebert.ctrlcusto
+---
+- runFlow: login.yaml
+
+# Navega para Metas
+- tapOn:
+    text: "Metas"
+- assertVisible:
+    text: "Metas"
+
+# Abre formulário de nova meta
+- tapOn:
+    text: "Nova Meta"
+- assertVisible:
+    text: "Nova Meta"
+
+# Preenche nome
+- tapOn:
+    placeholder: "Ex: Viagem para Europa"
+- inputText: "Meta Maestro E2E"
+
+# Preenche valor
+- tapOn:
+    placeholder: "0,00"
+- inputText: "100000"
+
+# Salva
+- tapOn:
+    text: "Salvar"
+
+# Verifica que a meta apareceu na lista
+- assertVisible:
+    text: "Meta Maestro E2E"

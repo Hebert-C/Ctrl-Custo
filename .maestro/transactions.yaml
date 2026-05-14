@@ -1,0 +1,64 @@
+appId: com.hebert.ctrlcusto
+---
+- runFlow: login.yaml
+
+# Navega para Transações
+- tapOn:
+    text: "Transações"
+- assertVisible:
+    text: "Transações"
+
+# Abre formulário de nova transação via FAB
+- tapOn:
+    id: "fab-add"
+    optional: true
+- tapOn:
+    text: "+"
+    optional: true
+- assertVisible:
+    text: "Nova Transação"
+
+# Verifica os três toggles de tipo
+- assertVisible:
+    text: "Despesa"
+- assertVisible:
+    text: "Receita"
+- assertVisible:
+    text: "Transf."
+
+# Verifica campo Observações
+- assertVisible:
+    text: "Observações (opcional)"
+
+# Testa toggle Transferência → campo banco de destino
+- tapOn:
+    text: "Transf."
+- assertVisible:
+    text: "Banco de destino"
+
+# Fecha o formulário
+- tapOn:
+    text: "Cancelar"
+    optional: true
+- back
+
+# Abre painel de filtros
+- tapOn:
+    description: "Filtrar transações"
+    optional: true
+- assertVisible:
+    text: "Filtros"
+    optional: true
+
+# Verifica chips de tipo no painel de filtros
+- assertVisible:
+    text: "Receita"
+    optional: true
+- assertVisible:
+    text: "Despesa"
+    optional: true
+
+# Fecha o painel de filtros
+- tapOn:
+    text: "Aplicar filtros"
+    optional: true

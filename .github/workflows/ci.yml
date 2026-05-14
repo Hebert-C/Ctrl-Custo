@@ -30,5 +30,9 @@ jobs:
       - name: Lint
         run: pnpm lint
 
-      - name: Test
+      - name: Test (core)
+        run: pnpm test
+
+      - name: Test (mobile)
+        working-directory: apps/mobile
         run: pnpm test
