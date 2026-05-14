@@ -8,7 +8,7 @@ interface GoalStore {
   add: (data: NewGoal) => Promise<Goal>;
   deposit: (id: string, amountCents: number) => Promise<void>;
   update: (id: string, data: Partial<NewGoal>) => Promise<void>;
-  remove: (id: string) => Promise<void>;
+  remove: (id: string, refundAccountId?: string) => Promise<void>;
 }
 
 export const useGoalStore = create<GoalStore>((set) => ({
@@ -35,8 +35,8 @@ export const useGoalStore = create<GoalStore>((set) => ({
     set((s) => ({ goals: s.goals.map((g) => (g.id === id ? updated : g)) }));
   },
 
-  remove: async (id) => {
-    await api.goals.remove(id);
+  remove: async (id, refundAccountId) => {
+    await api.goals.remove(id, refundAccountId);
     set((s) => ({ goals: s.goals.filter((g) => g.id !== id) }));
   },
 }));

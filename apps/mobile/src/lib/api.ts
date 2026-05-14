@@ -365,7 +365,11 @@ export const api = {
       req<ApiGoal>("/goals", { method: "POST", body: JSON.stringify(data) }).then(mapGoal),
     update: (id: string, data: Partial<NewGoal>) =>
       req<ApiGoal>(`/goals/${id}`, { method: "PUT", body: JSON.stringify(data) }).then(mapGoal),
-    remove: (id: string) => req<{ ok: boolean }>(`/goals/${id}`, { method: "DELETE" }),
+    remove: (id: string, refundAccountId?: string) =>
+      req<{ ok: boolean }>(
+        `/goals/${id}${refundAccountId ? `?refundAccountId=${refundAccountId}` : ""}`,
+        { method: "DELETE" }
+      ),
     deposit: (id: string, amount: number) =>
       req<ApiGoal>(`/goals/${id}/deposit`, {
         method: "POST",

@@ -7,6 +7,10 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Alert,
+  Modal,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -35,6 +39,9 @@ export default function Goals() {
   const [loading, setLoading] = useState(true);
   const [goalFormVisible, setGoalFormVisible] = useState(false);
   const [depositingGoal, setDepositingGoal] = useState<Goal | undefined>(undefined);
+  const [refundingGoal, setRefundingGoal] = useState<Goal | null>(null);
+  const [refundAccountId, setRefundAccountId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const loadAll = useCallback(async () => {
     await Promise.all([loadGoals(), loadAccounts(), loadCategories()]);
@@ -42,21 +49,33 @@ export default function Goals() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   function confirmDelete(goal: Goal) {
-    const hasDeposits = goal.currentAmount > 0;
-    const msg = hasDeposits
-      ? `"${goal.name}" será removida e os ${formatCurrency(goal.currentAmount)} depositados serão devolvidos às contas de origem.`
-      : `"${goal.name}" será removida permanentemente.`;
-    Alert.alert("Excluir meta", msg, [
+    if (goal.currentAmount > 0) {
+      setRefundingGoal(goal);
+      setRefundAccountId(null);
+      return;
+    }
+    Alert.alert("Excluir meta", `"${goal.name}" será removida permanentemente.`, [
       { text: "Cancelar", style: "cancel" },
       {
         text: "Excluir",
         style: "destructive",
-        onPress: async () => {
-          await remove(goal.id);
-          if (hasDeposits) await loadAccounts();
-        },
+        onPress: async () => remove(goal.id),
       },
     ]);
+  }
+
+  async function handleRefundAndDelete() {
+    if (!refundingGoal || !refundAccountId) return;
+    setDeleting(true);
+    try {
+      await remove(refundingGoal.id, refundAccountId);
+      await loadAccounts();
+      setRefundingGoal(null);
+    } catch {
+      Alert.alert("Erro", "Não foi possível excluir a meta.");
+    } finally {
+      setDeleting(false);
+    }
   }
 
   useEffect(() => {
@@ -119,6 +138,62 @@ export default function Goals() {
         accounts={accounts}
         categories={categories}
       />
+
+      <Modal
+        visible={refundingGoal !== null}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setRefundingGoal(null)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={s.overlay}
+        >
+          <View style={s.refundSheet}>
+            <View style={s.handle} />
+            <View style={s.refundHeader}>
+              <Text style={s.refundTitle}>Devolver depósitos</Text>
+              <TouchableOpacity onPress={() => setRefundingGoal(null)}>
+                <Ionicons name="close" size={22} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+            <Text style={s.refundSubtitle}>
+              {refundingGoal
+                ? `${formatCurrency(refundingGoal.currentAmount)} serão creditados em:`
+                : ""}
+            </Text>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {accounts
+                .filter((a) => !a.isArchived)
+                .map((acc) => (
+                  <TouchableOpacity
+                    key={acc.id}
+                    style={[s.refundOption, refundAccountId === acc.id && s.refundOptionSelected]}
+                    onPress={() => setRefundAccountId(acc.id)}
+                  >
+                    <View style={[s.refundDot, { backgroundColor: acc.color }]} />
+                    <Text style={s.refundOptionText}>{acc.name}</Text>
+                    {refundAccountId === acc.id && (
+                      <Ionicons name="checkmark" size={16} color={colors.primary} />
+                    )}
+                  </TouchableOpacity>
+                ))}
+              <TouchableOpacity
+                style={[s.refundConfirmBtn, (!refundAccountId || deleting) && { opacity: 0.5 }]}
+                onPress={handleRefundAndDelete}
+                disabled={!refundAccountId || deleting}
+              >
+                <Text style={s.refundConfirmText}>
+                  {deleting ? "Excluindo..." : "Confirmar e excluir"}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={s.refundCancelBtn} onPress={() => setRefundingGoal(null)}>
+                <Text style={s.refundCancelText}>Cancelar</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 }
@@ -257,4 +332,56 @@ const styles = (colors: Colors) =>
       shadowOpacity: 0.25,
       shadowRadius: 4,
     },
+    overlay: { flex: 1, justifyContent: "flex-end", backgroundColor: colors.overlay },
+    refundSheet: {
+      backgroundColor: colors.surface,
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      padding: 16,
+      maxHeight: "80%",
+    },
+    handle: {
+      width: 36,
+      height: 4,
+      backgroundColor: colors.border,
+      borderRadius: 2,
+      alignSelf: "center",
+      marginBottom: 12,
+    },
+    refundHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 8,
+    },
+    refundTitle: { fontSize: 18, fontWeight: "700", color: colors.textPrimary },
+    refundSubtitle: { fontSize: 14, color: colors.textSecondary, marginBottom: 12 },
+    refundOption: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      padding: 12,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surfaceRaised,
+      marginBottom: 8,
+    },
+    refundOptionSelected: {
+      borderColor: colors.primary,
+      backgroundColor: colors.primary + "18",
+    },
+    refundDot: { width: 14, height: 14, borderRadius: 7 },
+    refundOptionText: { flex: 1, fontSize: 15, color: colors.textPrimary },
+    refundConfirmBtn: {
+      backgroundColor: colors.danger,
+      borderRadius: 12,
+      padding: 14,
+      alignItems: "center",
+      marginTop: 8,
+      marginBottom: 8,
+    },
+    refundConfirmText: { color: "#fff", fontSize: 16, fontWeight: "700" },
+    refundCancelBtn: { padding: 14, alignItems: "center", marginBottom: 8 },
+    refundCancelText: { fontSize: 15, color: colors.textSecondary },
   });
