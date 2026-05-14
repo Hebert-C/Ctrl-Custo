@@ -122,8 +122,30 @@ export function AccountForm({ visible, onClose, isDark, account }: Props) {
         text: "Excluir",
         style: "destructive",
         onPress: async () => {
-          await remove(account.id);
-          handleClose();
+          try {
+            await remove(account.id);
+            handleClose();
+          } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : "";
+            if (msg.includes("vinculadas")) {
+              Alert.alert(
+                "Não é possível excluir",
+                "Esta conta possui transações vinculadas.\n\nDeseja arquivá-la? Ela ficará oculta mas os dados serão preservados.",
+                [
+                  { text: "Cancelar", style: "cancel" },
+                  {
+                    text: "Arquivar",
+                    onPress: async () => {
+                      await update(account.id, { isArchived: true });
+                      handleClose();
+                    },
+                  },
+                ]
+              );
+            } else {
+              Alert.alert("Erro", "Não foi possível excluir a conta.");
+            }
+          }
         },
       },
     ]);
