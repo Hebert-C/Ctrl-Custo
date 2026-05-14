@@ -842,29 +842,48 @@ Migration `0003` será aplicada automaticamente pelo CI/CD no próximo push (dep
 
 ## Guia de Testes — Mobile
 
+### Arquitetura do ambiente local
+
+```
+Celular (Expo Go)
+    ↓ HTTP  192.168.1.69:3000
+API local  (pnpm dev:api  — roda no PC)
+    ↓ TCP  localhost:5432
+SSH tunnel  (Terminal 1 — mantém porta aberta)
+    ↓ SSH
+PostgreSQL na VM Oracle  (banco compartilhado — mesmo de produção)
+```
+
+> **Importante:** a API local **não tem banco próprio** — ela usa o PostgreSQL da VM via tunnel. Isso significa:
+>
+> - O tunnel (Terminal 1) deve estar aberto **antes** de subir a API (Terminal 2)
+> - `pnpm db:migrate` só aplica no banco certo se o tunnel estiver ativo. Com tunnel fechado e sem PostgreSQL local, o comando falha; com PostgreSQL local na porta 5432, aplica no lugar errado (bug silencioso)
+> - Migrations novas chegam ao banco da VM automaticamente pelo CI/CD quando o código vai para `main` — prefira o merge a rodar `db:migrate` manualmente
+
 ### Pré-requisitos
 
 - **Expo Go 54** instalado no celular (Android ou iOS)
 - Celular na **mesma rede Wi-Fi** que o PC
-- PostgreSQL da VM Oracle acessível via SSH tunnel
+- `apps/mobile/.env` com `EXPO_PUBLIC_API_URL=http://192.168.1.69:3000` (já criado)
+- `apps/api/.env` com `DATABASE_URL=postgresql://ctrl_custo_user:...@localhost:5432/ctrl_custo` (tunnel mapeia para VM)
 
 ### Passo a passo
 
-**Terminal 1 — SSH tunnel para o banco na VM:**
+**Terminal 1 — SSH tunnel para o banco na VM (abrir primeiro):**
 
 ```
 ssh -L 5432:localhost:5432 oracle-ctrl-custos -N
 ```
 
-Deixar esse terminal aberto enquanto testar.
+Deixar aberto enquanto testar. Sem output é o comportamento normal.
 
-**Terminal 2 — API local:**
+**Terminal 2 — API local (abrir depois do tunnel):**
 
 ```
 pnpm dev:api
 ```
 
-Aguardar aparecer: `[api] running on port 3000`
+Aguardar: `[api] running on port 3000`
 
 **Terminal 3 — Mobile:**
 
@@ -872,7 +891,7 @@ Aguardar aparecer: `[api] running on port 3000`
 pnpm dev:mobile
 ```
 
-Aguardar aparecer o QR code no terminal.
+Aguardar o QR code no terminal.
 
 **No celular:**
 
