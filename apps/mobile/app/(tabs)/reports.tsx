@@ -6,14 +6,17 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
-  Share,
+  Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useThemeStore } from "../../src/store/useThemeStore";
+import { useCategoryStore } from "../../src/store/useCategoryStore";
+import { useAccountStore } from "../../src/store/useAccountStore";
 import { lightColors, darkColors, BarChart, LineChart } from "@ctrl-custo/ui";
 import type { Colors, BarChartData, LineChartData } from "@ctrl-custo/ui";
 import { api } from "../../src/lib/api";
+import { exportCSV, exportXLSX } from "../../src/lib/exportUtils";
 import {
   lastNMonths,
   aggregateMonths,
@@ -30,10 +33,13 @@ export default function Reports() {
   const insets = useSafeAreaInsets();
   const isDark = useThemeStore((s) => s.isDark);
   const colors = isDark ? darkColors : lightColors;
+  const categories = useCategoryStore((s) => s.categories);
+  const accounts = useAccountStore((s) => s.accounts);
 
   const [period, setPeriod] = useState<Period>(6);
   const [allTxs, setAllTxs] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
 
   const load = useCallback(async () => {
     const txs = await api.transactions.list();
@@ -49,6 +55,10 @@ export default function Reports() {
   const now = new Date();
 
   const months = lastNMonths(period);
+  const periodStart = `${months[0].year}-${String(months[0].month).padStart(2, "0")}-01`;
+  const lastM = months[months.length - 1];
+  const periodEnd = `${lastM.year}-${String(lastM.month).padStart(2, "0")}-${new Date(lastM.year, lastM.month, 0).getDate()}`;
+  const periodTxs = allTxs.filter((tx) => tx.date >= periodStart && tx.date <= periodEnd);
   const monthData = aggregateMonths(allTxs, months);
   const dayData = isCurrentPeriod
     ? aggregateDays(allTxs, now.getFullYear(), now.getMonth() + 1)
@@ -68,14 +78,28 @@ export default function Reports() {
     : monthData.reduce((s, m) => s + m.expense, 0);
   const totalNet = totalIncome - totalExpense;
 
-  async function handleExport() {
-    const header = "Mês;Receitas;Despesas;Saldo";
-    const rows = monthData.map(
-      (m) =>
-        `${m.label} ${m.year};${(m.income / 100).toFixed(2)};${(m.expense / 100).toFixed(2)};${(m.net / 100).toFixed(2)}`
-    );
-    const csv = [header, ...rows].join("\n");
-    await Share.share({ message: csv, title: "Relatório Ctrl+Custo" });
+  function handleExportPress() {
+    Alert.alert("Exportar", `${periodTxs.length} transações no período`, [
+      { text: "Cancelar", style: "cancel" },
+      { text: "CSV", onPress: () => runExport("csv") },
+      { text: "Excel (.xlsx)", onPress: () => runExport("xlsx") },
+    ]);
+  }
+
+  async function runExport(format: "csv" | "xlsx") {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      if (format === "csv") {
+        await exportCSV(periodTxs, categories, accounts);
+      } else {
+        await exportXLSX(periodTxs, categories, accounts, monthData);
+      }
+    } catch {
+      Alert.alert("Erro", "Não foi possível exportar.");
+    } finally {
+      setExporting(false);
+    }
   }
 
   const s = styles(colors);
@@ -85,9 +109,11 @@ export default function Reports() {
       {/* Header */}
       <View style={s.header}>
         <Text style={s.title}>Relatórios</Text>
-        <TouchableOpacity onPress={handleExport} style={s.exportBtn}>
+        <TouchableOpacity onPress={handleExportPress} style={s.exportBtn} disabled={exporting}>
           <Ionicons name="share-outline" size={18} color={colors.primary} />
-          <Text style={[s.exportText, { color: colors.primary }]}>CSV</Text>
+          <Text style={[s.exportText, { color: colors.primary }]}>
+            {exporting ? "..." : "Exportar"}
+          </Text>
         </TouchableOpacity>
       </View>
 
