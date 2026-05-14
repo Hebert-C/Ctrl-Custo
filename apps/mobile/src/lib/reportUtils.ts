@@ -64,3 +64,42 @@ export function isCurrentMonth(year: number, month: number): boolean {
   const now = new Date();
   return year === now.getFullYear() && month === now.getMonth() + 1;
 }
+
+export interface DayData {
+  date: string;
+  label: string;
+  income: number;
+  expense: number;
+  net: number;
+}
+
+export function aggregateDays(txs: Transaction[], year: number, month: number): DayData[] {
+  const mm = String(month).padStart(2, "0");
+  const start = `${year}-${mm}-01`;
+  const lastDay = new Date(year, month, 0).getDate();
+  const end = `${year}-${mm}-${lastDay}`;
+
+  const monthTxs = txs.filter((t) => t.date >= start && t.date <= end && t.status === "confirmed");
+
+  const dayMap: Record<string, { income: number; expense: number }> = {};
+  monthTxs.forEach((t) => {
+    if (!dayMap[t.date]) dayMap[t.date] = { income: 0, expense: 0 };
+    if (t.type === "income") dayMap[t.date].income += t.amount;
+    if (t.type === "expense") dayMap[t.date].expense += t.amount;
+  });
+
+  return Object.entries(dayMap)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([date, { income, expense }]) => {
+      const [, , day] = date.split("-");
+      return { date, label: `${day}/${mm}`, income, expense, net: income - expense };
+    });
+}
+
+export function buildDailyCumulativeLine(dayData: DayData[]): { x: string; y: number }[] {
+  let cumulative = 0;
+  return dayData.map((d) => {
+    cumulative += d.net;
+    return { x: d.label, y: cumulative };
+  });
+}

@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useTransactionStore } from "../../src/store/useTransactionStore";
 import { useAccountStore } from "../../src/store/useAccountStore";
@@ -15,6 +16,7 @@ import { useCategoryStore } from "../../src/store/useCategoryStore";
 import { useThemeStore } from "../../src/store/useThemeStore";
 import { useUiStore } from "../../src/store/useUiStore";
 import { formatCurrency } from "../../src/hooks/useCurrency";
+import { TransactionForm } from "../../src/components/TransactionForm";
 import { lightColors, darkColors, categoryColors, PieChart } from "@ctrl-custo/ui";
 import type { Colors, PieChartData } from "@ctrl-custo/ui";
 import type { Transaction, Category } from "@ctrl-custo/core";
@@ -23,10 +25,25 @@ type ChartView = null | "main" | "income" | "expense";
 
 const HIDDEN_TEXT = "R$ ••••••";
 
+const MONTHS = [
+  "Janeiro",
+  "Fevereiro",
+  "Março",
+  "Abril",
+  "Maio",
+  "Junho",
+  "Julho",
+  "Agosto",
+  "Setembro",
+  "Outubro",
+  "Novembro",
+  "Dezembro",
+];
+
 export default function Dashboard() {
   const insets = useSafeAreaInsets();
   const isDark = useThemeStore((s) => s.isDark);
-  const colors = isDark ? darkColors : lightColors;
+  const colors: Colors = isDark ? darkColors : lightColors;
   const { isHidden, toggleHidden } = useUiStore();
 
   const transactions = useTransactionStore((s) => s.transactions);
@@ -37,19 +54,46 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [chartView, setChartView] = useState<ChartView>(null);
   const [banksExpanded, setBanksExpanded] = useState(false);
+  const [formVisible, setFormVisible] = useState(false);
+
+  const now = new Date();
+  const [year, setYear] = useState(now.getFullYear());
+  const [month, setMonth] = useState(now.getMonth() + 1);
 
   const loadAll = useCallback(async () => {
     await Promise.all([
       loadAccounts(),
       loadCategories(),
-      loadTransactions({ startDate: currentMonthStart(), endDate: currentMonthEnd() }),
+      loadTransactions({ startDate: monthStart(year, month), endDate: monthEnd(year, month) }),
     ]);
     setLoading(false);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [year, month]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
+    setLoading(true);
     loadAll();
   }, [loadAll]);
+
+  useFocusEffect(
+    useCallback(() => {
+      setLoading(true);
+      loadAll();
+    }, [loadAll])
+  );
+
+  function prevMonth() {
+    if (month === 1) {
+      setMonth(12);
+      setYear((y) => y - 1);
+    } else setMonth((m) => m - 1);
+  }
+
+  function nextMonth() {
+    if (month === 12) {
+      setMonth(1);
+      setYear((y) => y + 1);
+    } else setMonth((m) => m + 1);
+  }
 
   const confirmed = transactions.filter((t) => t.status === "confirmed");
   const totalIncome = confirmed
@@ -111,7 +155,11 @@ export default function Dashboard() {
       </View>
 
       {/* Hero — Fluxo do Mês */}
-      <TouchableOpacity activeOpacity={0.85} onPress={toggleChart} style={s.heroCard}>
+      <TouchableOpacity
+        activeOpacity={0.85}
+        onPress={toggleChart}
+        style={[s.heroCard, isNegativeNet && { backgroundColor: colors.expense }]}
+      >
         <View style={s.heroTop}>
           <Text style={s.heroLabel}>Fluxo do Mês</Text>
           <Ionicons
@@ -120,7 +168,24 @@ export default function Dashboard() {
             color="rgba(255,255,255,0.7)"
           />
         </View>
-        <Text style={[s.heroNet, isNegativeNet && { color: "#FCA5A5" }]}>
+        <View style={s.heroMonthRow}>
+          <TouchableOpacity
+            onPress={prevMonth}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Ionicons name="chevron-back" size={14} color="rgba(255,255,255,0.8)" />
+          </TouchableOpacity>
+          <Text style={s.heroMonthText}>
+            {MONTHS[month - 1]} {year}
+          </Text>
+          <TouchableOpacity
+            onPress={nextMonth}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.8)" />
+          </TouchableOpacity>
+        </View>
+        <Text style={s.heroNet}>
           {isHidden
             ? HIDDEN_TEXT
             : `${isNegativeNet ? "-" : "+"}${formatCurrency(Math.abs(monthNet))}`}
@@ -255,7 +320,16 @@ export default function Dashboard() {
       </TouchableOpacity>
 
       {/* Últimas transações */}
-      <Text style={s.sectionTitle}>Últimas transações</Text>
+      <View style={s.sectionHeader}>
+        <Text style={s.sectionTitle}>Últimas transações</Text>
+        <TouchableOpacity
+          onPress={() => setFormVisible(true)}
+          style={[s.addBtn, { backgroundColor: colors.primary }]}
+          accessibilityLabel="Adicionar transação"
+        >
+          <Ionicons name="add" size={16} color="#fff" />
+        </TouchableOpacity>
+      </View>
       {recentTransactions.length === 0 ? (
         <View style={s.emptyCard}>
           <Ionicons name="receipt-outline" size={32} color={colors.textDisabled} />
@@ -272,6 +346,23 @@ export default function Dashboard() {
           />
         ))
       )}
+
+      <TransactionForm
+        visible={formVisible}
+        onClose={() => setFormVisible(false)}
+        accounts={accounts}
+        categories={categories}
+        isDark={isDark}
+        onSaved={async () => {
+          await Promise.all([
+            loadAccounts(),
+            loadTransactions({
+              startDate: monthStart(year, month),
+              endDate: monthEnd(year, month),
+            }),
+          ]);
+        }}
+      />
     </ScrollView>
   );
 }
@@ -345,15 +436,13 @@ function TransactionRow({
   );
 }
 
-function currentMonthStart() {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+function monthStart(y: number, m: number) {
+  return `${y}-${String(m).padStart(2, "0")}-01`;
 }
 
-function currentMonthEnd() {
-  const now = new Date();
-  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${lastDay}`;
+function monthEnd(y: number, m: number) {
+  const lastDay = new Date(y, m, 0).getDate();
+  return `${y}-${String(m).padStart(2, "0")}-${lastDay}`;
 }
 
 function formatDate(iso: string) {
@@ -393,6 +482,14 @@ const styles = (colors: Colors) =>
       marginBottom: 4,
     },
     heroLabel: { fontSize: 13, color: "rgba(255,255,255,0.75)" },
+    heroMonthRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      marginTop: 4,
+      marginBottom: 14,
+    },
+    heroMonthText: { fontSize: 13, fontWeight: "600", color: "rgba(255,255,255,0.95)" },
     heroNet: { fontSize: 34, fontWeight: "800", color: "#fff", marginBottom: 16 },
     heroRow: { flexDirection: "row", alignItems: "center" },
     heroItem: { flex: 1, flexDirection: "column", alignItems: "center", gap: 2 },
@@ -451,7 +548,20 @@ const styles = (colors: Colors) =>
     bankBalance: { fontSize: 14, fontWeight: "700" },
     banksEmpty: { fontSize: 13, color: colors.textDisabled, paddingVertical: 8 },
 
-    sectionTitle: { fontSize: 16, fontWeight: "600", color: colors.textPrimary, marginBottom: 10 },
+    sectionHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 10,
+    },
+    sectionTitle: { fontSize: 16, fontWeight: "600", color: colors.textPrimary },
+    addBtn: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      justifyContent: "center",
+      alignItems: "center",
+    },
     txRow: {
       flexDirection: "row",
       justifyContent: "space-between",

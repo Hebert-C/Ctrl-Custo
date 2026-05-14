@@ -19,10 +19,12 @@ import {
   aggregateMonths,
   buildCumulativeLine,
   isCurrentMonth,
+  aggregateDays,
+  buildDailyCumulativeLine,
 } from "../../src/lib/reportUtils";
 import type { Transaction } from "@ctrl-custo/core";
 
-type Period = 3 | 6 | 12;
+type Period = 1 | 3 | 6 | 12;
 
 export default function Reports() {
   const insets = useSafeAreaInsets();
@@ -43,15 +45,27 @@ export default function Reports() {
     load();
   }, [load]);
 
+  const isCurrentPeriod = period === 1;
+  const now = new Date();
+
   const months = lastNMonths(period);
   const monthData = aggregateMonths(allTxs, months);
+  const dayData = isCurrentPeriod
+    ? aggregateDays(allTxs, now.getFullYear(), now.getMonth() + 1)
+    : [];
 
   const incomeBarData: BarChartData[] = monthData.map((m) => ({ x: m.label, y: m.income }));
   const expenseBarData: BarChartData[] = monthData.map((m) => ({ x: m.label, y: m.expense }));
-  const netLineData: LineChartData[] = buildCumulativeLine(monthData);
+  const netLineData: LineChartData[] = isCurrentPeriod
+    ? buildDailyCumulativeLine(dayData)
+    : buildCumulativeLine(monthData);
 
-  const totalIncome = monthData.reduce((s, m) => s + m.income, 0);
-  const totalExpense = monthData.reduce((s, m) => s + m.expense, 0);
+  const totalIncome = isCurrentPeriod
+    ? dayData.reduce((s, d) => s + d.income, 0)
+    : monthData.reduce((s, m) => s + m.income, 0);
+  const totalExpense = isCurrentPeriod
+    ? dayData.reduce((s, d) => s + d.expense, 0)
+    : monthData.reduce((s, m) => s + m.expense, 0);
   const totalNet = totalIncome - totalExpense;
 
   async function handleExport() {
@@ -79,7 +93,7 @@ export default function Reports() {
 
       {/* Seletor de período */}
       <View style={s.periodRow}>
-        {([3, 6, 12] as Period[]).map((p) => (
+        {([1, 3, 6, 12] as Period[]).map((p) => (
           <TouchableOpacity
             key={p}
             style={[
@@ -90,7 +104,7 @@ export default function Reports() {
             onPress={() => setPeriod(p)}
           >
             <Text style={[s.periodText, { color: period === p ? "#fff" : colors.textSecondary }]}>
-              {p}m
+              {p === 1 ? "atual" : `${p}m`}
             </Text>
           </TouchableOpacity>
         ))}
@@ -135,29 +149,34 @@ export default function Reports() {
             </View>
           </View>
 
-          {/* Gráfico — Receitas */}
-          <View style={s.chartCard}>
-            <Text style={s.chartTitle}>Receitas por mês</Text>
-            {incomeBarData.some((d) => d.y > 0) ? (
-              <BarChart data={incomeBarData} color={colors.income} height={200} />
-            ) : (
-              <Text style={s.noData}>Nenhuma receita no período</Text>
-            )}
-          </View>
+          {/* Gráficos mensais — apenas para períodos > 1 mês */}
+          {!isCurrentPeriod && (
+            <>
+              <View style={s.chartCard}>
+                <Text style={s.chartTitle}>Receitas por mês</Text>
+                {incomeBarData.some((d) => d.y > 0) ? (
+                  <BarChart data={incomeBarData} color={colors.income} height={200} />
+                ) : (
+                  <Text style={s.noData}>Nenhuma receita no período</Text>
+                )}
+              </View>
 
-          {/* Gráfico — Despesas */}
-          <View style={s.chartCard}>
-            <Text style={s.chartTitle}>Despesas por mês</Text>
-            {expenseBarData.some((d) => d.y > 0) ? (
-              <BarChart data={expenseBarData} color={colors.expense} height={200} />
-            ) : (
-              <Text style={s.noData}>Nenhuma despesa no período</Text>
-            )}
-          </View>
+              <View style={s.chartCard}>
+                <Text style={s.chartTitle}>Despesas por mês</Text>
+                {expenseBarData.some((d) => d.y > 0) ? (
+                  <BarChart data={expenseBarData} color={colors.expense} height={200} />
+                ) : (
+                  <Text style={s.noData}>Nenhuma despesa no período</Text>
+                )}
+              </View>
+            </>
+          )}
 
           {/* Gráfico — Evolução do saldo */}
           <View style={s.chartCard}>
-            <Text style={s.chartTitle}>Evolução do saldo acumulado</Text>
+            <Text style={s.chartTitle}>
+              {isCurrentPeriod ? "Evolução do saldo no mês" : "Evolução do saldo acumulado"}
+            </Text>
             {netLineData.some((d) => d.y !== 0) ? (
               <LineChart data={netLineData} color={colors.primary} height={200} />
             ) : (
@@ -165,61 +184,109 @@ export default function Reports() {
             )}
           </View>
 
-          {/* Tabela mensal */}
-          <View style={s.tableCard}>
-            <Text style={s.chartTitle}>Detalhamento mensal</Text>
-            <View style={s.tableHeader}>
-              <Text style={[s.tableCell, s.tableHeadText, { flex: 1.2 }]}>Mês</Text>
-              <Text style={[s.tableCell, s.tableHeadText, { color: colors.income }]}>Receitas</Text>
-              <Text style={[s.tableCell, s.tableHeadText, { color: colors.expense }]}>
-                Despesas
-              </Text>
-              <Text style={[s.tableCell, s.tableHeadText]}>Saldo</Text>
-            </View>
-            {monthData.map((m, i) => {
-              const isCurrent = isCurrentMonth(m.year, m.month);
-              return (
-                <View
-                  key={i}
-                  style={[
-                    s.tableRow,
-                    { borderTopColor: colors.border },
-                    isCurrent && { backgroundColor: `${colors.primary}10` },
-                  ]}
-                >
-                  <View
-                    style={[
-                      s.tableCell,
-                      { flex: 1.2, flexDirection: "row", alignItems: "center", gap: 4 },
-                    ]}
-                  >
-                    <Text style={s.tableCellText}>{m.label}</Text>
-                    {isCurrent && (
-                      <View style={[s.currentBadge, { backgroundColor: colors.primary }]}>
-                        <Text style={s.currentBadgeText}>atual</Text>
-                      </View>
-                    )}
+          {/* Tabela diária — apenas mês atual */}
+          {isCurrentPeriod && (
+            <View style={s.tableCard}>
+              <Text style={s.chartTitle}>Detalhamento por dia</Text>
+              {dayData.length === 0 ? (
+                <Text style={s.noData}>Nenhuma transação confirmada este mês</Text>
+              ) : (
+                <>
+                  <View style={s.tableHeader}>
+                    <Text style={[s.tableCell, s.tableHeadText, { flex: 1.2 }]}>Dia</Text>
+                    <Text style={[s.tableCell, s.tableHeadText, { color: colors.income }]}>
+                      Receitas
+                    </Text>
+                    <Text style={[s.tableCell, s.tableHeadText, { color: colors.expense }]}>
+                      Despesas
+                    </Text>
+                    <Text style={[s.tableCell, s.tableHeadText]}>Saldo</Text>
                   </View>
-                  <Text style={[s.tableCell, s.tableCellText, { color: colors.income }]}>
-                    {formatCurrency(m.income)}
-                  </Text>
-                  <Text style={[s.tableCell, s.tableCellText, { color: colors.expense }]}>
-                    {formatCurrency(m.expense)}
-                  </Text>
-                  <Text
+                  {dayData.map((d) => (
+                    <View key={d.date} style={[s.tableRow, { borderTopColor: colors.border }]}>
+                      <Text style={[s.tableCell, s.tableCellText, { flex: 1.2 }]}>{d.label}</Text>
+                      <Text style={[s.tableCell, s.tableCellText, { color: colors.income }]}>
+                        {d.income > 0 ? formatCurrency(d.income) : "—"}
+                      </Text>
+                      <Text style={[s.tableCell, s.tableCellText, { color: colors.expense }]}>
+                        {d.expense > 0 ? formatCurrency(d.expense) : "—"}
+                      </Text>
+                      <Text
+                        style={[
+                          s.tableCell,
+                          s.tableCellText,
+                          { color: d.net >= 0 ? colors.income : colors.expense },
+                        ]}
+                      >
+                        {d.net >= 0 ? "+" : ""}
+                        {formatCurrency(d.net)}
+                      </Text>
+                    </View>
+                  ))}
+                </>
+              )}
+            </View>
+          )}
+
+          {/* Tabela mensal — apenas períodos > 1 mês */}
+          {!isCurrentPeriod && (
+            <View style={s.tableCard}>
+              <Text style={s.chartTitle}>Detalhamento mensal</Text>
+              <View style={s.tableHeader}>
+                <Text style={[s.tableCell, s.tableHeadText, { flex: 1.2 }]}>Mês</Text>
+                <Text style={[s.tableCell, s.tableHeadText, { color: colors.income }]}>
+                  Receitas
+                </Text>
+                <Text style={[s.tableCell, s.tableHeadText, { color: colors.expense }]}>
+                  Despesas
+                </Text>
+                <Text style={[s.tableCell, s.tableHeadText]}>Saldo</Text>
+              </View>
+              {monthData.map((m, i) => {
+                const isCurrent = isCurrentMonth(m.year, m.month);
+                return (
+                  <View
+                    key={i}
                     style={[
-                      s.tableCell,
-                      s.tableCellText,
-                      { color: m.net >= 0 ? colors.income : colors.expense },
+                      s.tableRow,
+                      { borderTopColor: colors.border },
+                      isCurrent && { backgroundColor: `${colors.primary}10` },
                     ]}
                   >
-                    {m.net >= 0 ? "+" : ""}
-                    {formatCurrency(m.net)}
-                  </Text>
-                </View>
-              );
-            })}
-          </View>
+                    <View
+                      style={[
+                        s.tableCell,
+                        { flex: 1.2, flexDirection: "row", alignItems: "center", gap: 4 },
+                      ]}
+                    >
+                      <Text style={s.tableCellText}>{m.label}</Text>
+                      {isCurrent && (
+                        <View style={[s.currentBadge, { backgroundColor: colors.primary }]}>
+                          <Text style={s.currentBadgeText}>atual</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={[s.tableCell, s.tableCellText, { color: colors.income }]}>
+                      {formatCurrency(m.income)}
+                    </Text>
+                    <Text style={[s.tableCell, s.tableCellText, { color: colors.expense }]}>
+                      {formatCurrency(m.expense)}
+                    </Text>
+                    <Text
+                      style={[
+                        s.tableCell,
+                        s.tableCellText,
+                        { color: m.net >= 0 ? colors.income : colors.expense },
+                      ]}
+                    >
+                      {m.net >= 0 ? "+" : ""}
+                      {formatCurrency(m.net)}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+          )}
         </ScrollView>
       )}
     </View>
@@ -254,7 +321,8 @@ const styles = (colors: Colors) =>
       marginBottom: 16,
     },
     periodBtn: {
-      paddingHorizontal: 20,
+      flex: 1,
+      alignItems: "center",
       paddingVertical: 8,
       borderRadius: 20,
       borderWidth: 1,

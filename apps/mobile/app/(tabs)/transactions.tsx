@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useState } from "react";
+import React, { useEffect, useCallback, useState, useRef } from "react";
 import {
   View,
   Text,
@@ -19,6 +19,7 @@ import { formatCurrency } from "../../src/hooks/useCurrency";
 import { TransactionForm } from "../../src/components/TransactionForm";
 import { TransactionFilters, countActiveFilters } from "../../src/components/TransactionFilters";
 import type { ActiveFilters } from "../../src/components/TransactionFilters";
+import { useFocusEffect } from "expo-router";
 import { lightColors, darkColors } from "@ctrl-custo/ui";
 import type { Colors } from "@ctrl-custo/ui";
 import type { Transaction } from "@ctrl-custo/core";
@@ -76,6 +77,17 @@ export default function Transactions() {
     setLoading(true);
     loadAll();
   }, [loadAll]);
+
+  const isMounted = useRef(false);
+  useFocusEffect(
+    useCallback(() => {
+      if (isMounted.current) {
+        setLoading(true);
+        loadAll();
+      }
+      isMounted.current = true;
+    }, [loadAll])
+  );
 
   function prevMonth() {
     if (month === 1) {
