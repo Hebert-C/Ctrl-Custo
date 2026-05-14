@@ -56,15 +56,7 @@ export default function TabLayout() {
           ),
         }}
       />
-      <Tabs.Screen
-        name="cards"
-        options={{
-          title: "Cartões",
-          tabBarIcon: ({ focused, color }) => (
-            <TabIcon name="card" focused={focused} color={color} />
-          ),
-        }}
-      />
+      <Tabs.Screen name="cards" options={{ href: null }} />
       <Tabs.Screen
         name="goals"
         options={{
