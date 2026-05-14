@@ -840,7 +840,162 @@ Migration `0003` será aplicada automaticamente pelo CI/CD no próximo push (dep
 
 ---
 
+## Guia de Testes — Mobile
+
+### Pré-requisitos
+
+- **Expo Go 54** instalado no celular (Android ou iOS)
+- Celular na **mesma rede Wi-Fi** que o PC
+- PostgreSQL da VM Oracle acessível via SSH tunnel
+
+### Passo a passo
+
+**Terminal 1 — SSH tunnel para o banco na VM:**
+
+```
+ssh -L 5432:localhost:5432 oracle-ctrl-custos -N
+```
+
+Deixar esse terminal aberto enquanto testar.
+
+**Terminal 2 — API local:**
+
+```
+pnpm dev:api
+```
+
+Aguardar aparecer: `[api] running on port 3000`
+
+**Terminal 3 — Mobile:**
+
+```
+pnpm dev:mobile
+```
+
+Aguardar aparecer o QR code no terminal.
+
+**No celular:**
+
+1. Abrir o **Expo Go**
+2. Escanear o QR code exibido no terminal
+3. Aguardar o build (primeira vez demora ~1–2 min; depois é instantâneo)
+
+### Contas de teste
+
+| E-mail            | Senha        |
+| ----------------- | ------------ |
+| `andre@teste.com` | `Teste@1234` |
+| `vitor@teste.com` | `Teste@1234` |
+| `bio@teste.com`   | `Teste@1234` |
+
+> Novas contas: cadastro está desabilitado em produção (`REGISTRATION_ENABLED = false`). Para criar via SQL: ver sessão 2026-05-08 no log.
+
+### Comandos úteis
+
+```bash
+# Rodar só os testes automatizados do mobile
+pnpm --filter mobile test
+
+# Rodar todos os testes (core + mobile)
+pnpm test
+
+# Rodar com saída detalhada
+pnpm --filter mobile test --verbose
+```
+
+### Observações de performance
+
+- Primeira abertura no celular é lenta (~1–2 min) — é o Metro bundlando ~2600 módulos
+- Após o primeiro bundle, hot reload é rápido
+- Login pode levar 1–2s — é o `refresh()` + carregamento inicial de dados
+
+---
+
 ## Log de Sessões
+
+### 2026-05-14 — Paridade mobile: fixes de UX, export e migração 0004
+
+#### O que foi feito
+
+- **fix(categories):** Emoji de categoria agora é opcional — `icon: z.string()` aceita string vazia; ícone em branco renderiza `×` no grid de seleção; padrão ao criar é sem emoji
+- **feat(categories):** Exclusão com transferência — ao tentar excluir categoria com transações vinculadas, app oferece picker inline para migrar as transações para outra categoria antes de deletar; API `DELETE /categories/:id?transferTo=uuid` executa a transferência atomicamente
+- **feat(goals):** Exclusão com reembolso — ao excluir meta com depósitos, app exige escolha de conta destino; API calcula o total depositado, credita na conta escolhida, deleta as transações de depósito e depois deleta a meta; contas arquivadas não aparecem no picker (evita dinheiro "sumindo")
+- **feat(mobile):** Aba Cartões ocultada do tab bar (`href: null`) — cartões existem no banco mas UI mobile não está pronta
+- **feat(reports):** Exportar transações em CSV e Excel (`.xlsx`) — `exportUtils.ts` usa SheetJS + expo-file-system + expo-sharing; CSV com 8 colunas; XLSX com 2 abas (Transações + Resumo Mensal); botão "Exportar" no header de Relatórios
+- **fix(api/schema):** `goalId` em `transactions` removeu `.references(() => goals.id)` — Drizzle avaliava o callback no momento do import, causando `ReferenceError` (temporal dead zone) pois `goals` é definido após `transactions` no mesmo arquivo → toda request retornava 500; FK preservada via migration SQL
+- **chore(migrations):** `0004_goal_id_on_transactions.sql` — adiciona coluna `goal_id uuid REFERENCES planning.goals(id) ON DELETE SET NULL`; entrada registrada no `meta/_journal.json`
+
+#### Causa raiz do 500 persistente
+
+A migration 0004 não foi aplicada no PostgreSQL da VM (`column "goal_id" does not exist`). O `pnpm db:migrate` anterior retornou `done` mas provavelmente conectou em contexto sem tunnel ativo. Solução: merge para `main` → CI/CD aplica a migration automaticamente via `deploy.sh`.
+
+#### Pendências em aberto
+
+- **PR aberto:** `feature/mobile-parity` → `main` — aguardar CI verde e fazer merge
+- **Após merge:** testar roteiro mobile completo com migration aplicada (Relatórios, Metas, exportação)
+- **Maestro Cloud:** ação do usuário pendente (ver seção "Ações Pendentes")
+
+---
+
+### 2026-05-13 — Correções mobile: validação de formulário, Dashboard e testes
+
+#### O que foi feito
+
+- **feat(mobile/dashboard):** Botão `+` pequeno adicionado ao lado do título "Últimas transações" — abre o `TransactionForm` diretamente do Dashboard. Callback `onSaved` recarrega contas e transações do mês atual.
+- **feat(mobile/form):** Validação com mensagens de erro no `TransactionForm` — em vez de retornar silenciosamente, `handleSave()` agora exibe erros inline em cada campo obrigatório (valor, descrição, banco, categoria, banco de destino em transferências). Campos inválidos recebem borda vermelha.
+- **fix(mobile/store):** `load()` do `useTransactionStore` agora tem `try/catch` — erros de rede não sobrescrevem o estado existente com dados vazios.
+- **test(mobile):** `TransactionForm.test.tsx` expandido de 12 para 18 testes — novos testes cobrem validação de campos obrigatórios: erro de valor, erro de descrição, erro de categoria, erro de banco de destino em transferências, verificação de que `add()` não é chamado com erros, e limpeza de erros após salvar com sucesso.
+- **docs:** `PROJECT.md` — seção "Guia de Testes — Mobile" adicionada com passo a passo para abrir o app no celular, contas de teste e comandos úteis.
+
+#### Bug investigado — Transferência zera o Dashboard
+
+**Sintoma relatado:** Após criar uma transferência, todas as outras transações e o histórico sumiram; Dashboard zerado.
+
+**Análise:** Causa mais provável é comportamento esperado que parece bug:
+
+- O Dashboard calcula `totalIncome`/`totalExpense` excluindo `type === "transfer"`. Se o único movimento do mês for uma transferência, o fluxo mensal aparece zerado — isso é **correto** (transferência não é receita nem despesa).
+- A tela de Transações mostra apenas o mês selecionado. Se o usuário estava em um mês diferente do da transferência, histórico anterior "some" porque está no outro mês.
+- O `load()` sem `try/catch` (corrigido agora) poderia deixar estado em branco em caso de erro de rede.
+
+**Próxima verificação:** Reproduzir criando transferência com o app rodando e verificar nos logs da API se o `GET /transactions` retorna os dados corretos após o POST.
+
+#### Falsos positivos identificados nos testes
+
+- Testes anteriores verificavam apenas presença de elementos na tela (`toBeTruthy()`), sem testar comportamento real (cliques, callbacks). Não são falsos positivos no sentido estrito — eles falhariam se o componente não renderizasse — mas têm cobertura baixa.
+- Novos testes usam `fireEvent` + `act` para verificar efeitos reais: erros aparecem, callbacks são chamados ou não.
+
+---
+
+### 2026-05-09 — Infraestrutura VM + testes mobile local (sessão 2)
+
+#### O que foi feito
+
+- **chore(infra):** Script `scripts/vm-keep-alive.sh` + `scripts/setup-vm-keep-alive.ps1` — gera carga de CPU por 5 min a cada 3 dias via cron para evitar desativação da VM Oracle (limiar: CPU < 10% por 7 dias). Instalado e testado na VM. Commit `a97b209`.
+- **fix(vscode):** `keybindings.json` do VS Code — removidos conflitos de `Ctrl+Shift+C` (abria terminal nativo) e `Ctrl+Shift+V` (abria preview Markdown) no terminal integrado.
+- **chore(mobile):** `.env` criado em `apps/mobile/` com `EXPO_PUBLIC_API_URL=http://192.168.1.69:3000` para testes locais no celular.
+
+#### Pendências para próxima sessão — Testes mobile local
+
+Para rodar o app no celular com Expo Go 54 apontando para a API local:
+
+1. **Criar `apps/api/.env`** a partir de `apps/api/.env.example`:
+   - `DATABASE_URL` — usar banco local (PostgreSQL local) ou apontar para a VM
+   - `JWT_SECRET` e `JWT_REFRESH_SECRET` — gerar com `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
+   - `PORT=3000`
+   - `ALLOWED_ORIGINS=http://localhost:5173`
+   - `NODE_ENV=development`
+   - SMTP pode ficar com valores falsos para testes locais
+
+2. **Rodar API local:** `pnpm dev:api` (terminal 1)
+3. **Rodar mobile:** `pnpm --filter mobile start -- --clear` (terminal 2)
+4. **Celular** na mesma rede Wi-Fi que o PC — escanear QR code no Expo Go 54
+
+#### Observações de performance (anotar para futura otimização)
+
+- Abertura lenta no celular — parte é overhead do Expo Go em dev (bundle de ~2600 módulos), parte pode ser bloqueio de render pelo `tryRestore()` antes de mostrar qualquer tela
+- Login lento — `api.auth.refresh()` + carga inicial de accounts/categories/transactions bloqueiam a UI no startup
+
+---
 
 ### 2026-05-09 — Paridade mobile completa (branch feature/mobile-parity)
 
