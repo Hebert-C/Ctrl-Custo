@@ -337,7 +337,10 @@ export const api = {
         method: "PUT",
         body: JSON.stringify(data),
       }).then(mapCategory),
-    remove: (id: string) => req<{ ok: boolean }>(`/categories/${id}`, { method: "DELETE" }),
+    remove: (id: string, transferTo?: string) =>
+      req<{ ok: boolean }>(`/categories/${id}${transferTo ? `?transferTo=${transferTo}` : ""}`, {
+        method: "DELETE",
+      }),
   },
 
   cards: {

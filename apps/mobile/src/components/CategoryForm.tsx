@@ -37,6 +37,7 @@ const PRESET_COLORS = [
 ];
 
 const PRESET_ICONS = [
+  "",
   "🍔",
   "🚗",
   "🏠",
@@ -68,15 +69,18 @@ interface Props {
 
 export function CategoryForm({ visible, onClose, isDark, category }: Props) {
   const colors = isDark ? darkColors : lightColors;
+  const allCategories = useCategoryStore((s) => s.categories);
   const add = useCategoryStore((s) => s.add);
   const update = useCategoryStore((s) => s.update);
   const remove = useCategoryStore((s) => s.remove);
 
   const [name, setName] = useState("");
   const [type, setType] = useState<CategoryType>("expense");
-  const [icon, setIcon] = useState("🍔");
+  const [icon, setIcon] = useState("");
   const [color, setColor] = useState(PRESET_COLORS[3]);
   const [saving, setSaving] = useState(false);
+  const [showTransfer, setShowTransfer] = useState(false);
+  const [transferTargetId, setTransferTargetId] = useState<string | null>(null);
 
   // Preenche o formulário quando abre em modo edição
   useEffect(() => {
@@ -93,8 +97,10 @@ export function CategoryForm({ visible, onClose, isDark, category }: Props) {
   function resetFields() {
     setName("");
     setType("expense");
-    setIcon("🍔");
+    setIcon("");
     setColor(PRESET_COLORS[3]);
+    setShowTransfer(false);
+    setTransferTargetId(null);
   }
 
   async function handleSave() {
@@ -131,14 +137,37 @@ export function CategoryForm({ visible, onClose, isDark, category }: Props) {
         text: "Excluir",
         style: "destructive",
         onPress: async () => {
-          await remove(category.id);
-          handleClose();
+          try {
+            await remove(category.id);
+            handleClose();
+          } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : "";
+            if (msg.includes("vinculadas")) {
+              setShowTransfer(true);
+            } else {
+              Alert.alert("Erro", "Não foi possível excluir a categoria.");
+            }
+          }
         },
       },
     ]);
   }
 
+  async function handleTransferAndDelete() {
+    if (!category || !transferTargetId) return;
+    setSaving(true);
+    try {
+      await remove(category.id, transferTargetId);
+      handleClose();
+    } catch {
+      Alert.alert("Erro", "Não foi possível transferir as transações.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   const isEditing = !!category;
+  const otherCategories = allCategories.filter((c) => c.id !== category?.id);
   const s = styles(colors);
 
   return (
@@ -185,7 +214,7 @@ export function CategoryForm({ visible, onClose, isDark, category }: Props) {
             <View style={s.iconGrid}>
               {PRESET_ICONS.map((ic) => (
                 <TouchableOpacity
-                  key={ic}
+                  key={ic === "" ? "__blank__" : ic}
                   style={[
                     s.iconBtn,
                     icon === ic && {
@@ -195,7 +224,11 @@ export function CategoryForm({ visible, onClose, isDark, category }: Props) {
                   ]}
                   onPress={() => setIcon(ic)}
                 >
-                  <Text style={s.iconBtnText}>{ic}</Text>
+                  {ic === "" ? (
+                    <Ionicons name="close" size={18} color={colors.textDisabled} />
+                  ) : (
+                    <Text style={s.iconBtnText}>{ic}</Text>
+                  )}
                 </TouchableOpacity>
               ))}
             </View>
@@ -221,10 +254,51 @@ export function CategoryForm({ visible, onClose, isDark, category }: Props) {
               </Text>
             </TouchableOpacity>
 
-            {isEditing && (
+            {isEditing && !showTransfer && (
               <TouchableOpacity style={s.deleteBtn} onPress={handleDelete}>
                 <Text style={s.deleteBtnText}>Excluir categoria</Text>
               </TouchableOpacity>
+            )}
+
+            {isEditing && showTransfer && (
+              <View style={s.transferSection}>
+                <Text style={s.transferTitle}>Categoria com transações vinculadas</Text>
+                <Text style={s.transferSubtitle}>
+                  Selecione uma categoria para receber as transações antes de excluir:
+                </Text>
+                {otherCategories.map((cat) => (
+                  <TouchableOpacity
+                    key={cat.id}
+                    style={[
+                      s.transferOption,
+                      transferTargetId === cat.id && s.transferOptionSelected,
+                    ]}
+                    onPress={() => setTransferTargetId(cat.id)}
+                  >
+                    <View style={[s.transferDot, { backgroundColor: cat.color }]} />
+                    {cat.icon ? <Text style={s.transferIcon}>{cat.icon}</Text> : null}
+                    <Text style={s.transferOptionText}>{cat.name}</Text>
+                    {transferTargetId === cat.id && (
+                      <Ionicons name="checkmark" size={16} color={colors.primary} />
+                    )}
+                  </TouchableOpacity>
+                ))}
+                <TouchableOpacity
+                  style={[s.saveBtn, (!transferTargetId || saving) && { opacity: 0.5 }]}
+                  onPress={handleTransferAndDelete}
+                  disabled={!transferTargetId || saving}
+                >
+                  <Text style={s.saveBtnText}>
+                    {saving ? "Transferindo..." : "Transferir e excluir"}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={s.cancelTransferBtn}
+                  onPress={() => setShowTransfer(false)}
+                >
+                  <Text style={s.cancelTransferText}>Cancelar</Text>
+                </TouchableOpacity>
+              </View>
             )}
           </ScrollView>
         </View>
@@ -313,4 +387,27 @@ const styles = (colors: Colors) =>
       borderColor: colors.danger,
     },
     deleteBtnText: { color: colors.danger, fontSize: 16, fontWeight: "600" },
+    transferSection: { marginTop: 8 },
+    transferTitle: { fontSize: 14, fontWeight: "700", color: colors.textPrimary, marginBottom: 4 },
+    transferSubtitle: { fontSize: 13, color: colors.textSecondary, marginBottom: 10 },
+    transferOption: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      padding: 10,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surfaceRaised,
+      marginBottom: 6,
+    },
+    transferOptionSelected: {
+      borderColor: colors.primary,
+      backgroundColor: colors.primary + "18",
+    },
+    transferDot: { width: 12, height: 12, borderRadius: 6 },
+    transferIcon: { fontSize: 16 },
+    transferOptionText: { flex: 1, fontSize: 14, color: colors.textPrimary },
+    cancelTransferBtn: { padding: 14, alignItems: "center", marginBottom: 8 },
+    cancelTransferText: { fontSize: 15, color: colors.textSecondary },
   });
