@@ -42,12 +42,19 @@ export default function Goals() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   function confirmDelete(goal: Goal) {
-    Alert.alert("Excluir meta", `"${goal.name}" será removida permanentemente.`, [
+    const hasDeposits = goal.currentAmount > 0;
+    const msg = hasDeposits
+      ? `"${goal.name}" será removida e os ${formatCurrency(goal.currentAmount)} depositados serão devolvidos às contas de origem.`
+      : `"${goal.name}" será removida permanentemente.`;
+    Alert.alert("Excluir meta", msg, [
       { text: "Cancelar", style: "cancel" },
       {
         text: "Excluir",
         style: "destructive",
-        onPress: () => remove(goal.id),
+        onPress: async () => {
+          await remove(goal.id);
+          if (hasDeposits) await loadAccounts();
+        },
       },
     ]);
   }

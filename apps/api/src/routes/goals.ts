@@ -61,12 +61,38 @@ goalsRouter.put("/:id", zValidator("json", goalBody.partial()), async (c) => {
 goalsRouter.delete("/:id", async (c) => {
   const userId = c.get("userId");
   const id = c.req.param("id");
-  const [row] = await db
-    .delete(goals)
-    .where(and(eq(goals.id, id), eq(goals.userId, userId)))
-    .returning({ id: goals.id });
-  if (!row) return c.json({ error: "Meta não encontrada." }, 404);
-  return c.json({ ok: true });
+
+  const result = await db.transaction(async (trx) => {
+    const deposits = await trx
+      .select({
+        txId: transactions.id,
+        amount: transactions.amount,
+        accountId: transactions.accountId,
+      })
+      .from(transactions)
+      .where(and(eq(transactions.goalId, id), eq(transactions.userId, userId)));
+
+    for (const dep of deposits) {
+      await trx
+        .update(accounts)
+        .set({ balance: sql`${accounts.balance} + ${dep.amount}`, updatedAt: new Date() })
+        .where(eq(accounts.id, dep.accountId));
+    }
+
+    if (deposits.length > 0) {
+      await trx.delete(transactions).where(eq(transactions.goalId, id));
+    }
+
+    const [row] = await trx
+      .delete(goals)
+      .where(and(eq(goals.id, id), eq(goals.userId, userId)))
+      .returning({ id: goals.id });
+
+    return { row, reversedCount: deposits.length };
+  });
+
+  if (!result.row) return c.json({ error: "Meta não encontrada." }, 404);
+  return c.json({ ok: true, reversedDeposits: result.reversedCount });
 });
 
 goalsRouter.post("/:id/deposit", zValidator("json", depositBody), async (c) => {
@@ -110,6 +136,7 @@ goalsRouter.post("/:id/deposit", zValidator("json", depositBody), async (c) => {
       date: new Date().toISOString().split("T")[0],
       categoryId: metasCategory.id,
       accountId,
+      goalId: id,
     });
 
     await trx
