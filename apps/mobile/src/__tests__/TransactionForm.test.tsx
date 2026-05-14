@@ -1,15 +1,19 @@
 import React from "react";
-import { render, screen, fireEvent } from "@testing-library/react-native";
+import { render, screen, fireEvent, act } from "@testing-library/react-native";
 import { TransactionForm } from "../components/TransactionForm";
-import type { Transaction, Account } from "@ctrl-custo/core";
+import type { Transaction, Account, Category } from "@ctrl-custo/core";
+
+const mockAdd = jest.fn().mockResolvedValue({ id: "tx-new" });
+const mockUpdate = jest.fn().mockResolvedValue(undefined);
+const mockAddInstallments = jest.fn().mockResolvedValue([]);
 
 jest.mock("../store/useTransactionStore", () => ({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   useTransactionStore: (selector: (s: Record<string, unknown>) => unknown) =>
     selector({
-      add: jest.fn().mockResolvedValue(undefined),
-      addInstallments: jest.fn().mockResolvedValue(undefined),
-      update: jest.fn().mockResolvedValue(undefined),
+      add: mockAdd,
+      addInstallments: mockAddInstallments,
+      update: mockUpdate,
     }),
 }));
 
@@ -29,6 +33,16 @@ const mockAccount2: Account = {
   ...mockAccount,
   id: "acc-2",
   name: "Itaú",
+};
+
+const mockCategory: Category = {
+  id: "cat-1",
+  name: "Alimentação",
+  type: "expense",
+  color: "#EF4444",
+  icon: "🍔",
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
 };
 
 const mockTransaction: Transaction = {
@@ -51,6 +65,10 @@ const defaultProps = {
   categories: [],
   isDark: false,
 };
+
+beforeEach(() => {
+  jest.clearAllMocks();
+});
 
 describe("TransactionForm — modo criação", () => {
   it("exibe título 'Nova Transação'", () => {
@@ -123,5 +141,85 @@ describe("TransactionForm — modo edição", () => {
   it("exibe campo 'Observações' em modo edição", () => {
     render(<TransactionForm {...defaultProps} editing={mockTransaction} />);
     expect(screen.getByText("Observações (opcional)")).toBeTruthy();
+  });
+});
+
+describe("TransactionForm — validação de campos obrigatórios", () => {
+  it("exibe erro de valor ao salvar sem preencher o valor", async () => {
+    render(<TransactionForm {...defaultProps} />);
+    await act(async () => {
+      fireEvent.press(screen.getByText("Salvar"));
+    });
+    expect(screen.getByText("Informe um valor maior que zero.")).toBeTruthy();
+  });
+
+  it("exibe erro de descrição ao salvar sem preencher a descrição", async () => {
+    render(<TransactionForm {...defaultProps} />);
+    await act(async () => {
+      fireEvent.press(screen.getByText("Salvar"));
+    });
+    expect(screen.getByText("Descrição é obrigatória.")).toBeTruthy();
+  });
+
+  it("exibe erro de categoria ao salvar sem selecionar categoria", async () => {
+    render(<TransactionForm {...defaultProps} categories={[mockCategory]} />);
+    // preenche valor e descrição mas não seleciona categoria
+    fireEvent.changeText(screen.getByPlaceholderText("Ex: Supermercado"), "Teste");
+    fireEvent.changeText(screen.getByPlaceholderText("0,00"), "50");
+    await act(async () => {
+      fireEvent.press(screen.getByText("Salvar"));
+    });
+    expect(screen.getByText("Selecione uma categoria.")).toBeTruthy();
+  });
+
+  it("exibe erro de banco de destino ao salvar transferência sem banco destino", async () => {
+    render(<TransactionForm {...defaultProps} />);
+    fireEvent.press(screen.getByText("Transf."));
+    fireEvent.changeText(screen.getByPlaceholderText("Ex: Supermercado"), "Transferência");
+    fireEvent.changeText(screen.getByPlaceholderText("0,00"), "100");
+    await act(async () => {
+      fireEvent.press(screen.getByText("Salvar"));
+    });
+    expect(screen.getByText("Selecione o banco de destino.")).toBeTruthy();
+  });
+
+  it("não chama add() quando há erros de validação", async () => {
+    render(<TransactionForm {...defaultProps} />);
+    await act(async () => {
+      fireEvent.press(screen.getByText("Salvar"));
+    });
+    expect(mockAdd).not.toHaveBeenCalled();
+  });
+
+  it("limpa os erros após corrigir e salvar com sucesso", async () => {
+    const onClose = jest.fn();
+    const onSaved = jest.fn();
+    render(
+      <TransactionForm
+        {...defaultProps}
+        categories={[mockCategory]}
+        onClose={onClose}
+        onSaved={onSaved}
+      />
+    );
+
+    // tentativa falha — sem preencher nada
+    await act(async () => {
+      fireEvent.press(screen.getByText("Salvar"));
+    });
+    expect(screen.getByText("Informe um valor maior que zero.")).toBeTruthy();
+
+    // preenche todos os campos obrigatórios
+    fireEvent.changeText(screen.getByPlaceholderText("0,00"), "100");
+    fireEvent.changeText(screen.getByPlaceholderText("Ex: Supermercado"), "Almoço");
+    fireEvent.press(screen.getByText("Alimentação")); // chip sem emoji
+
+    // salva com sucesso
+    await act(async () => {
+      fireEvent.press(screen.getByText("Salvar"));
+    });
+
+    expect(mockAdd).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText("Informe um valor maior que zero.")).toBeNull();
   });
 });
