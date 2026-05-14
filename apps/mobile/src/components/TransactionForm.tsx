@@ -53,6 +53,7 @@ export function TransactionForm({
   const [notes, setNotes] = useState("");
   const [installments, setInstallments] = useState("1");
   const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!visible) return;
@@ -83,15 +84,28 @@ export function TransactionForm({
     setDate(today());
     setNotes("");
     setInstallments("1");
+    setErrors({});
   }
 
   const filteredCategories = categories.filter((c) => c.type === type || c.type === "both");
 
   async function handleSave() {
     const amount = parseCurrencyInput(amountRaw);
-    if (!description.trim() || amount === 0 || !selectedAccountId || !selectedCategoryId) return;
-    if (type === "transfer" && !destinationAccountId) return;
+    const newErrors: Record<string, string> = {};
 
+    if (amount === 0) newErrors.amount = "Informe um valor maior que zero.";
+    if (!description.trim()) newErrors.description = "Descrição é obrigatória.";
+    if (!selectedAccountId) newErrors.account = "Selecione um banco.";
+    if (!selectedCategoryId) newErrors.category = "Selecione uma categoria.";
+    if (type === "transfer" && !destinationAccountId)
+      newErrors.destinationAccount = "Selecione o banco de destino.";
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    setErrors({});
     setSaving(true);
     try {
       const data: Omit<NewTransaction, "installment"> = {
@@ -176,7 +190,7 @@ export function TransactionForm({
 
             {/* Valor */}
             <Text style={s.label}>Valor</Text>
-            <View style={s.amountRow}>
+            <View style={[s.amountRow, !!errors.amount && s.inputError]}>
               <Text style={s.currencyPrefix}>R$</Text>
               <TextInput
                 style={s.amountInput}
@@ -187,16 +201,18 @@ export function TransactionForm({
                 placeholderTextColor={colors.textDisabled}
               />
             </View>
+            {!!errors.amount && <Text style={s.errorText}>{errors.amount}</Text>}
 
             {/* Descrição */}
             <Text style={s.label}>Descrição</Text>
             <TextInput
-              style={s.input}
+              style={[s.input, !!errors.description && s.inputError]}
               value={description}
               onChangeText={setDescription}
               placeholder="Ex: Supermercado"
               placeholderTextColor={colors.textDisabled}
             />
+            {!!errors.description && <Text style={s.errorText}>{errors.description}</Text>}
 
             {/* Data */}
             <Text style={s.label}>Data</Text>
@@ -226,6 +242,7 @@ export function TransactionForm({
                 </TouchableOpacity>
               ))}
             </ScrollView>
+            {!!errors.account && <Text style={s.errorText}>{errors.account}</Text>}
 
             {/* Banco de destino (só para transferência) */}
             {type === "transfer" && (
@@ -251,6 +268,9 @@ export function TransactionForm({
                       </TouchableOpacity>
                     ))}
                 </ScrollView>
+                {!!errors.destinationAccount && (
+                  <Text style={s.errorText}>{errors.destinationAccount}</Text>
+                )}
               </>
             )}
 
@@ -267,11 +287,12 @@ export function TransactionForm({
                   onPress={() => setSelectedCategoryId(c.id)}
                 >
                   <Text style={[s.chipText, selectedCategoryId === c.id && { color: "#fff" }]}>
-                    {c.icon} {c.name}
+                    {c.name}
                   </Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
+            {!!errors.category && <Text style={s.errorText}>{errors.category}</Text>}
 
             {/* Parcelas (só despesa, só na criação) */}
             {type === "expense" && !isEditing && (
@@ -406,4 +427,6 @@ const styles = (colors: Colors) =>
       marginBottom: 8,
     },
     saveBtnText: { color: "#fff", fontSize: 16, fontWeight: "700" },
+    inputError: { borderColor: colors.expense },
+    errorText: { fontSize: 12, color: colors.expense, marginTop: 4 },
   });
