@@ -83,9 +83,9 @@ Tentativa de DELETE com transações vinculadas retorna 409. A ação correta é
 
 Transações, depósitos de meta e transferências não verificam `isArchived` antes de debitar/creditar. **Deve retornar 422.**
 
-### RN-ACC-06 — Saldo insuficiente bloqueia débito ❌
+### RN-ACC-06 — Saldo insuficiente bloqueia débito ✅
 
-Ao criar despesa (`type = "expense"`) ou transferência (débito na origem), verificar se `balance - amount >= 0`. Exceção: contas do tipo `credit` podem ter saldo negativo dentro do limite do cartão associado. **Deve retornar 422.**
+Ao criar despesa (`type = "expense"`) ou transferência (débito na origem), verificar se `balance - amount >= 0`. Retorna 422 com `code: "INSUFFICIENT_BALANCE"`. Pendentes não verificam saldo. Receitas nunca bloqueiam.
 
 ### RN-ACC-07 — Tipos de conta válidos ✅
 
@@ -103,9 +103,9 @@ Todo cartão tem um `accountId` obrigatório — a conta de onde a fatura será 
 
 `creditLimit` é inteiro em centavos. Pode ser zero (cartão de débito sem limite de crédito).
 
-### RN-CARD-03 — Limite não pode ser excedido ❌
+### RN-CARD-03 — Limite não pode ser excedido ✅
 
-Ao criar transação com `cardId`, verificar se `despesas_do_mes + amount <= creditLimit`. **Deve retornar 422 com o limite disponível no erro.**
+Ao criar transação com `cardId`, verificar se `despesas_do_mes + amount <= creditLimit`. Retorna 422 com `code: "CARD_LIMIT_EXCEEDED"` e `availableLimit`. Considera apenas despesas `confirmed` do mês da transação (`YYYY-MM` do `date`).
 
 ### RN-CARD-04 — `billingDay` e `dueDay` são dias do mês válidos ⚠️
 
@@ -161,9 +161,9 @@ Não há diferença técnica entre categorias criadas pelo usuário e as do seed
 
 Se `type = "transfer"`, `destinationAccountId` é obrigatório. Validado no schema Zod.
 
-### RN-TX-03 — Transferência não pode ser entre a mesma conta ⚠️
+### RN-TX-03 — Transferência não pode ser entre a mesma conta ✅
 
-Frontend valida, mas a API aceita `accountId === destinationAccountId`. **Deve retornar 400 no backend.**
+`accountId` e `destinationAccountId` não podem ser iguais. Validado no schema Zod (`.refine()`). Retorna 400 com `error: "Transferência não pode ser para a mesma conta."`.
 
 ### RN-TX-04 — Transferência não conta como receita nem despesa ✅
 

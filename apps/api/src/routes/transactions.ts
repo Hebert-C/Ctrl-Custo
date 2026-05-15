@@ -3,7 +3,7 @@ import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { eq, and, sql } from "drizzle-orm";
 import { db } from "../db/index";
-import { transactions, accounts } from "../db/schema";
+import { transactions, accounts, cards } from "../db/schema";
 import { requireAuth, type AuthEnv } from "../middleware/auth";
 
 const transactionBodyBase = z.object({
@@ -22,13 +22,15 @@ const transactionBodyBase = z.object({
   notes: z.string().max(1000).optional(),
 });
 
-const transactionBody = transactionBodyBase.refine(
-  (d) => d.type !== "transfer" || !!d.destinationAccountId,
-  {
+const transactionBody = transactionBodyBase
+  .refine((d) => d.type !== "transfer" || !!d.destinationAccountId, {
     message: "destinationAccountId é obrigatório para transferências.",
     path: ["destinationAccountId"],
-  }
-);
+  })
+  .refine((d) => d.type !== "transfer" || d.accountId !== d.destinationAccountId, {
+    message: "Transferência não pode ser para a mesma conta.",
+    path: ["destinationAccountId"],
+  });
 
 async function applyTransferBalances(
   trx: Parameters<Parameters<typeof db.transaction>[0]>[0],
@@ -72,31 +74,81 @@ transactionsRouter.get("/", async (c) => {
   return c.json(rows);
 });
 
-transactionsRouter.post("/", zValidator("json", transactionBody), async (c) => {
-  const userId = c.get("userId");
-  const body = c.req.valid("json");
-
-  const [row] = await db.transaction(async (trx) => {
-    const inserted = await trx
-      .insert(transactions)
-      .values({ ...body, userId })
-      .returning();
-    if (body.status === "confirmed") {
-      await applyTransferBalances(
-        trx,
-        body.type,
-        body.amount,
-        body.accountId,
-        body.destinationAccountId,
-        userId,
-        1
-      );
+transactionsRouter.post(
+  "/",
+  zValidator("json", transactionBody, (result, c) => {
+    if (!result.success) {
+      return c.json({ error: result.error.issues[0]?.message ?? "Dados inválidos." }, 400);
     }
-    return inserted;
-  });
+  }),
+  async (c) => {
+    const userId = c.get("userId");
+    const body = c.req.valid("json");
 
-  return c.json(row, 201);
-});
+    // RN-ACC-06: saldo insuficiente bloqueia débito confirmado
+    if (body.status === "confirmed" && (body.type === "expense" || body.type === "transfer")) {
+      const [acct] = await db
+        .select({ balance: accounts.balance })
+        .from(accounts)
+        .where(and(eq(accounts.id, body.accountId), eq(accounts.userId, userId)))
+        .limit(1);
+      if (!acct || acct.balance < body.amount) {
+        return c.json({ code: "INSUFFICIENT_BALANCE" }, 422);
+      }
+    }
+
+    // RN-CARD-03: limite do cartão não pode ser excedido no mês corrente
+    if (body.cardId && body.type === "expense" && body.status === "confirmed") {
+      const [cardRow] = await db
+        .select({ creditLimit: cards.creditLimit })
+        .from(cards)
+        .where(and(eq(cards.id, body.cardId), eq(cards.userId, userId)))
+        .limit(1);
+
+      if (cardRow) {
+        const yearMonth = body.date.slice(0, 7);
+        const [spent] = await db
+          .select({ total: sql<number>`COALESCE(SUM(${transactions.amount}), 0)` })
+          .from(transactions)
+          .where(
+            and(
+              eq(transactions.cardId, body.cardId),
+              eq(transactions.status, "confirmed"),
+              eq(transactions.type, "expense"),
+              sql`LEFT(${transactions.date}, 7) = ${yearMonth}`
+            )
+          );
+
+        const totalSpent = Number(spent?.total ?? 0);
+        const availableLimit = cardRow.creditLimit - totalSpent;
+        if (totalSpent + body.amount > cardRow.creditLimit) {
+          return c.json({ code: "CARD_LIMIT_EXCEEDED", availableLimit }, 422);
+        }
+      }
+    }
+
+    const [row] = await db.transaction(async (trx) => {
+      const inserted = await trx
+        .insert(transactions)
+        .values({ ...body, userId })
+        .returning();
+      if (body.status === "confirmed") {
+        await applyTransferBalances(
+          trx,
+          body.type,
+          body.amount,
+          body.accountId,
+          body.destinationAccountId,
+          userId,
+          1
+        );
+      }
+      return inserted;
+    });
+
+    return c.json(row, 201);
+  }
+);
 
 transactionsRouter.put("/:id", zValidator("json", transactionBodyBase.partial()), async (c) => {
   const userId = c.get("userId");

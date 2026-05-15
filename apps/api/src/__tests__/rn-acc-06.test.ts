@@ -1,8 +1,7 @@
 /**
  * RN-ACC-06 — Saldo insuficiente bloqueia débito
  *
- * STATUS: ❌ Não implementado — estes testes vão FALHAR até a regra ser adicionada.
- * Implementar em: apps/api/src/routes/transactions.ts (POST handler e goals deposit)
+ * STATUS: ✅ Implementado — estes testes são de REGRESSÃO.
  */
 
 import { describe, it, expect } from "vitest";

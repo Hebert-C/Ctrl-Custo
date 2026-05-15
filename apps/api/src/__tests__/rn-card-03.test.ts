@@ -1,8 +1,7 @@
 /**
  * RN-CARD-03 — Limite de cartão não pode ser excedido
  *
- * STATUS: ❌ Não implementado — estes testes vão FALHAR até a regra ser adicionada.
- * Implementar em: apps/api/src/routes/transactions.ts (POST handler)
+ * STATUS: ✅ Implementado — estes testes são de REGRESSÃO.
  */
 
 import { describe, it, expect } from "vitest";

@@ -180,130 +180,21 @@ packages/config/ — tsconfig bases
 
 ---
 
-## ⚡ Próxima Sessão — Regras de Negócio Ausentes
+## Regras de Negócio Pendentes
 
-> Levantamento feito em 2026-05-14. Implementar na ordem abaixo.
-> Branch sugerida: `feature/business-rules`
+> RNs críticas implementadas em 2026-05-14. Ver `BUSINESS_RULES.md` para status completo.
 
----
+### Prioridade Alta (próximas a implementar)
 
-### Prioridade 1 — Críticas (bugs silenciosos em produção)
+- **RN-ACC-05** — Conta arquivada não pode receber/débitar transação (`isArchived` check em `transactions.ts` e `goals.ts`)
+- **RN-GOAL-05** — Depósito em meta não pode exceder `targetAmount` (HTTP 422 em `goals.ts`)
+- **RN-TX-11** — Arredondamento de parcelas: última parcela absorve os centavos restantes
 
-#### RN-01 · Saldo insuficiente não bloqueia transação
+### Prioridade Média
 
-**Arquivo:** `apps/api/src/routes/transactions.ts` (função `applyTransferBalances`)
-**Problema:** O delta é aplicado diretamente via SQL sem verificar se o saldo resultante fica negativo. Despesas e depósitos de meta sofrem do mesmo problema.
-**Regra:** Antes de debitar, buscar `account.balance` e rejeitar com HTTP 422 se `balance - amount < 0`.
-**Exceção permitida:** Contas do tipo `credit` (cartão) podem ter saldo negativo dentro do limite.
-
----
-
-#### RN-02 · Limite de cartão não é verificado ao criar transação
-
-**Arquivo:** `apps/api/src/routes/transactions.ts` (POST handler)
-**Problema:** `GET /cards/:id/statement` calcula `availableLimit` corretamente para exibição, mas o `POST /transactions` ignora esse cálculo. É possível gastar além do limite sem nenhum erro.
-**Regra:** Se `cardId` presente na transação, buscar `creditLimit` do cartão, somar as despesas do mês vigente e rejeitar com HTTP 422 se `totalSpent + newAmount > creditLimit`.
-
----
-
-#### RN-03 · Cancelar transação confirmada não reverte saldo
-
-**Arquivo:** `apps/api/src/routes/transactions.ts` (PUT handler, função `applyTransferBalances`)
-**Problema:** A lógica de reversão de saldo só existe quando o `accountId` muda. Se o status muda de `confirmed` → `cancelled`, o dinheiro não volta à conta.
-**Regra:** No PUT, se `oldStatus === "confirmed"` e `newStatus === "cancelled"`, reverter o saldo da conta (e da conta de destino em transferências). Se `oldStatus === "pending"` e `newStatus === "confirmed"`, aplicar o saldo normalmente.
-
----
-
-#### RN-04 · Validação de propriedade de recursos
-
-**Arquivo:** `apps/api/src/routes/transactions.ts` (POST e PUT handlers)
-**Problema:** `categoryId`, `cardId` e `destinationAccountId` são usados sem verificar se pertencem ao usuário logado.
-**Regra:** Antes de inserir/atualizar, fazer `SELECT id FROM tabela WHERE id = $id AND user_id = $userId` para cada FK recebida do cliente. Retornar HTTP 404 se não encontrar (não revelar que existe mas é de outro usuário).
-
----
-
-### Prioridade 2 — Altas (falhas lógicas visíveis)
-
-#### RN-05 · Arredondamento de parcelas perde centavos
-
-**Arquivo:** `packages/core/src/services/TransactionService.ts` (linha ~124)
-**Problema:** `Math.round(amount / total)` em 3x de R$ 100 gera 3 × R$ 33 = R$ 99.
-**Regra:** `amountPerInstallment = Math.round(amount / total)`. Última parcela = `amount - (total - 1) * amountPerInstallment`.
-
----
-
-#### RN-06 · Transferência entre a mesma conta aceita no backend
-
-**Arquivo:** `apps/api/src/routes/transactions.ts` (schema Zod, `transactionBody`)
-**Problema:** A API aceita `accountId === destinationAccountId`. O web e mobile bloqueiam no formulário, mas sem garantia no backend.
-**Regra:** Adicionar `.refine()` no schema Zod: `d.type !== "transfer" || d.accountId !== d.destinationAccountId`.
-
----
-
-#### RN-07 · Conta arquivada pode ser usada em operações
-
-**Arquivo:** `apps/api/src/routes/transactions.ts` e `apps/api/src/routes/goals.ts`
-**Problema:** Nenhuma rota verifica `isArchived` antes de debitar ou creditar.
-**Regra:** Ao buscar conta para uso em transação/depósito, rejeitar com HTTP 422 se `isArchived = true`.
-
----
-
-#### RN-08 · Data inválida passa na validação
-
-**Arquivos:** `apps/api/src/routes/transactions.ts`, `apps/api/src/routes/goals.ts`
-**Problema:** O regex `/^\d{4}-\d{2}-\d{2}$/` aceita datas como `2024-02-30` ou `2024-13-01`.
-**Regra:** Após o regex, checar `new Date(value).toISOString().startsWith(value)` ou usar `z.string().refine(isValidDate)`. Para `deadline` de metas, exigir data > hoje.
-
----
-
-### Prioridade 3 — Médias (inconsistências de produto)
-
-#### RN-09 · Depósito em meta pode exceder o valor alvo
-
-**Arquivo:** `apps/api/src/routes/goals.ts` (rota de depósito)
-**Problema:** `currentAmount` pode passar de `targetAmount` sem aviso ou bloqueio.
-**Regra:** Bloquear depósito que faria `currentAmount > targetAmount` com HTTP 422 e mensagem clara. Ou permitir com aviso no response (`"warning": "meta já atingida"`).
-
----
-
-#### RN-10 · Transação `pending` → `confirmed` não aplica saldo
-
-**Arquivo:** `apps/api/src/routes/transactions.ts` (PUT handler)
-**Problema:** `applyTransferBalances` só é chamada na criação. Confirmar uma transação pendente via edição não movimenta saldo.
-**Regra:** No PUT, se `oldStatus === "pending"` e `newStatus === "confirmed"`, chamar `applyTransferBalances` com os valores da transação atualizada.
-
----
-
-#### RN-11 · Status `pending` não existe no mobile
-
-**Arquivo:** `apps/mobile/src/components/TransactionForm.tsx`
-**Problema:** Mobile sempre cria transações como `"confirmed"`. O conceito de transação pendente (ex: boleto a pagar) não está acessível.
-**Regra:** Adicionar toggle Confirmada / Pendente no formulário mobile, igual ao web.
-
----
-
-### Prioridade 4 — Baixas (qualidade e robustez)
-
-#### RN-12 · Máximo de 24 parcelas não é validado
-
-**Arquivo:** `apps/api/src/routes/transactions.ts` e `packages/core/src/services/TransactionService.ts`
-**Regra:** `totalInstallments: z.number().int().min(1).max(24)`.
-
----
-
-#### RN-13 · Descrição só com espaços em branco é aceita
-
-**Arquivo:** `apps/api/src/routes/transactions.ts` (schema Zod)
-**Problema:** `z.string().min(1)` aceita `"   "`.
-**Regra:** Adicionar `.transform(s => s.trim()).pipe(z.string().min(1))` no schema.
-
----
-
-#### RN-14 · `billingDay`/`dueDay` do cartão não são usados
-
-**Arquivo:** `apps/api/src/routes/cards.ts` e statement endpoint
-**Problema:** Os campos existem no banco mas nenhuma lógica os usa para calcular o período de fatura real.
-**Regra:** (baixa prioridade — só implementar junto com feature de fatura completa)
+- **RN-ACC-04** — Data inválida (ex: 2024-02-30) deve ser rejeitada (`.refine(isValidDate)` no Zod)
+- **RN-TX-08** — Validação de propriedade de `categoryId`, `cardId`, `destinationAccountId` (FK ownership check)
+- **RN-CARD-04** — `billingDay`/`dueDay` do cartão usados para calcular período real da fatura
 
 ---
 
@@ -1058,6 +949,28 @@ pnpm --filter mobile test --verbose
 ---
 
 ## Log de Sessões
+
+### 2026-05-14 — Implementação das RNs críticas (RN-ACC-06, RN-CARD-03, RN-TX-03)
+
+#### O que foi feito
+
+- **feat(api):** `RN-ACC-06` — saldo insuficiente bloqueia débito confirmado: `POST /transactions` agora consulta `accounts.balance` antes de criar despesa ou transferência `confirmed`; retorna HTTP 422 com `code: "INSUFFICIENT_BALANCE"`. Pendentes e receitas não verificam saldo.
+- **feat(api):** `RN-CARD-03` — limite do cartão verificado ao criar transação: quando `cardId` presente, soma despesas `confirmed` do mês da transação (`LEFT(date,7)`); retorna HTTP 422 com `code: "CARD_LIMIT_EXCEEDED"` e `availableLimit` quando excedido.
+- **feat(api):** `RN-TX-03` — transferência para a mesma conta rejeitada no backend: segundo `.refine()` no schema Zod verifica `accountId !== destinationAccountId`; retorna HTTP 400 com `error: "Transferência não pode ser para a mesma conta."`.
+- **refactor(api):** zValidator do POST `/transactions` agora usa callback de erro que retorna `{ error: message }` (primeiro issue do Zod), garantindo formato consistente.
+- **docs:** `BUSINESS_RULES.md` — RN-ACC-06, RN-CARD-03 e RN-TX-03 marcadas como ✅
+- **test(api):** Status dos 3 arquivos de teste TDD atualizados para ✅ REGRESSÃO
+- **docs:** Seção "⚡ Próxima Sessão" do PROJECT.md condensada — RNs críticas concluídas
+
+#### Arquivos modificados
+
+- `apps/api/src/routes/transactions.ts` — implementação das 3 RNs
+- `apps/api/src/__tests__/rn-acc-06.test.ts` — status atualizado
+- `apps/api/src/__tests__/rn-card-03.test.ts` — status atualizado
+- `apps/api/src/__tests__/rn-tx-03.test.ts` — status atualizado
+- `BUSINESS_RULES.md` — 3 regras marcadas ✅
+
+---
 
 ### 2026-05-14 — Infraestrutura de testes de integração para a API
 

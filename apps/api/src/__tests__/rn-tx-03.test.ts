@@ -1,9 +1,7 @@
 /**
  * RN-TX-03 — Transferência não pode ser entre a mesma conta
  *
- * STATUS: ❌ Não implementado no backend — este teste vai FALHAR até a regra ser adicionada.
- * O frontend já valida, mas a API aceita accountId === destinationAccountId.
- * Implementar em: apps/api/src/routes/transactions.ts (schema Zod, transactionBody.refine)
+ * STATUS: ✅ Implementado — estes testes são de REGRESSÃO.
  */
 
 import { describe, it, expect } from "vitest";
