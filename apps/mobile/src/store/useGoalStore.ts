@@ -6,7 +6,7 @@ interface GoalStore {
   goals: Goal[];
   load: () => Promise<void>;
   add: (data: NewGoal) => Promise<Goal>;
-  deposit: (id: string, amountCents: number) => Promise<void>;
+  deposit: (id: string, amountCents: number, accountId: string) => Promise<void>;
   update: (id: string, data: Partial<NewGoal>) => Promise<void>;
   remove: (id: string, refundAccountId?: string) => Promise<void>;
 }
@@ -25,8 +25,8 @@ export const useGoalStore = create<GoalStore>((set) => ({
     return goal;
   },
 
-  deposit: async (id, amountCents) => {
-    const updated = await api.goals.deposit(id, amountCents);
+  deposit: async (id, amountCents, accountId) => {
+    const updated = await api.goals.deposit(id, amountCents, accountId);
     set((s) => ({ goals: s.goals.map((g) => (g.id === id ? updated : g)) }));
   },
 

@@ -16,7 +16,6 @@ import type { Colors } from "@ctrl-custo/ui";
 import type { Account, Category, Goal } from "@ctrl-custo/core";
 import { formatCurrencyInput, parseCurrencyInput } from "../hooks/useCurrency";
 import { useGoalStore } from "../store/useGoalStore";
-import { useTransactionStore } from "../store/useTransactionStore";
 import { useAccountStore } from "../store/useAccountStore";
 
 interface Props {
@@ -31,7 +30,6 @@ interface Props {
 export function DepositForm({ visible, onClose, isDark, goal, accounts, categories }: Props) {
   const colors = isDark ? darkColors : lightColors;
   const deposit = useGoalStore((s) => s.deposit);
-  const addTransaction = useTransactionStore((s) => s.add);
   const loadAccounts = useAccountStore((s) => s.load);
 
   const expenseCategories = categories.filter((c) => c.type === "expense" || c.type === "both");
@@ -57,20 +55,8 @@ export function DepositForm({ visible, onClose, isDark, goal, accounts, categori
 
     setSaving(true);
     try {
-      await deposit(goal.id, amount);
-
-      await addTransaction({
-        description: `Aporte: ${goal.name}`,
-        amount,
-        type: "expense",
-        status: "confirmed",
-        date: today(),
-        categoryId,
-        accountId,
-      });
-
+      await deposit(goal.id, amount, accountId);
       await loadAccounts();
-
       handleClose();
     } finally {
       setSaving(false);
@@ -194,10 +180,6 @@ export function DepositForm({ visible, onClose, isDark, goal, accounts, categori
       </KeyboardAvoidingView>
     </Modal>
   );
-}
-
-function today() {
-  return new Date().toISOString().split("T")[0];
 }
 
 const styles = (colors: Colors) =>
