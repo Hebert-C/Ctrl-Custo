@@ -6,7 +6,7 @@
     "moduleResolution": "Bundler",
     "strict": true,
     "skipLibCheck": true,
-    "types": ["node"],
+    "types": ["node", "vitest/globals"],
     "noEmit": true
   },
   "include": ["src", "drizzle.config.ts"],

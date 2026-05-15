@@ -11,6 +11,29 @@ jobs:
     name: Typecheck · Lint · Test
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: ctrl_custo_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      # Banco de testes para os testes de integração da API
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ctrl_custo_test
+      JWT_SECRET: ci-test-jwt-secret-must-be-at-least-32-characters!!
+      JWT_REFRESH_SECRET: ci-test-jwt-refresh-secret-must-be-at-least-32!!
+      NODE_ENV: test
+      ALLOWED_ORIGINS: http://localhost
+
     steps:
       - uses: actions/checkout@v4
 
@@ -35,4 +58,8 @@ jobs:
 
       - name: Test (mobile)
         working-directory: apps/mobile
+        run: pnpm test
+
+      - name: Test (api)
+        working-directory: apps/api
         run: pnpm test
