@@ -75,11 +75,43 @@ goalsRouter.delete("/:id", async (c) => {
   const result = await db.transaction(async (trx) => {
     if (deposits.length > 0 && refundAccountId) {
       const total = deposits.reduce((s, d) => s + d.amount, 0);
+
       await trx
         .update(accounts)
         .set({ balance: sql`${accounts.balance} + ${total}`, updatedAt: new Date() })
         .where(and(eq(accounts.id, refundAccountId), eq(accounts.userId, userId)));
+
       await trx.delete(transactions).where(eq(transactions.goalId, id));
+
+      // busca ou cria categoria "Metas" para registrar o reembolso
+      let [metasCategory] = await trx
+        .select()
+        .from(categories)
+        .where(and(eq(categories.userId, userId), eq(categories.name, "Metas")))
+        .limit(1);
+      if (!metasCategory) {
+        [metasCategory] = await trx
+          .insert(categories)
+          .values({ userId, name: "Metas", type: "both", color: "#8B5CF6", icon: "🎯" })
+          .returning();
+      }
+
+      const [goalRow] = await trx
+        .select({ name: goals.name })
+        .from(goals)
+        .where(eq(goals.id, id))
+        .limit(1);
+
+      await trx.insert(transactions).values({
+        userId,
+        description: `Reembolso: ${goalRow?.name ?? "Meta encerrada"}`,
+        amount: total,
+        type: "income",
+        status: "confirmed",
+        date: new Date().toISOString().split("T")[0],
+        categoryId: metasCategory.id,
+        accountId: refundAccountId,
+      });
     }
 
     const [row] = await trx
