@@ -17,6 +17,13 @@ import type { NewGoal } from "@ctrl-custo/core";
 import { formatCurrencyInput, parseCurrencyInput } from "../hooks/useCurrency";
 import { useGoalStore } from "../store/useGoalStore";
 
+function toIsoDate(input: string): string {
+  const match = input.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+  if (!match) return "";
+  const [, day, month, year] = match;
+  return `${year}-${month}-${day}`;
+}
+
 const PRESET_COLORS = [
   "#2563EB",
   "#7C3AED",
@@ -59,7 +66,7 @@ export function GoalForm({ visible, onClose, isDark }: Props) {
         name: name.trim(),
         targetAmount: target,
         currentAmount: 0,
-        deadline: deadline.trim() || undefined,
+        deadline: toIsoDate(deadline.trim()) || undefined,
         status: "active",
         color,
         icon,
@@ -127,7 +134,9 @@ export function GoalForm({ visible, onClose, isDark }: Props) {
               style={s.input}
               value={deadline}
               onChangeText={setDeadline}
-              placeholder="AAAA-MM-DD"
+              placeholder="DD-MM-AAAA"
+              keyboardType="numeric"
+              maxLength={10}
               placeholderTextColor={colors.textDisabled}
             />
 
