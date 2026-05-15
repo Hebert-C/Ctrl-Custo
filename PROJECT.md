@@ -1059,6 +1059,50 @@ pnpm --filter mobile test --verbose
 
 ## Log de Sessões
 
+### 2026-05-14 — Infraestrutura de testes de integração para a API
+
+#### O que foi feito
+
+- **refactor(api):** `src/app.ts` extraído de `src/index.ts` — Hono app exportado sem `serve()`, permitindo importar nos testes sem iniciar servidor HTTP
+- **test(api):** Vitest adicionado como devDependency; scripts `test` e `test:watch` no `package.json`
+- **test(api):** `vitest.config.ts` — `globalSetup` (migrations) + `setupFiles` (truncate + mock de e-mail), timeout de 20s
+- **test(api):** `src/__tests__/global-setup.ts` — carrega `.env.test`, aplica migrations Drizzle no banco de testes antes de todos os testes
+- **test(api):** `src/__tests__/setup.ts` — `TRUNCATE auth.users CASCADE` antes de cada teste; mock de `sendVerificationEmail`
+- **test(api):** `src/__tests__/helpers.ts` — factories: `createUser`, `createAccount`, `createCategory`, `createCard`, `createTransaction`, `getBalance`; helper `api()` que usa `app.request()` (sem servidor real)
+- **test(api):** `rn-acc-06.test.ts` — 5 testes TDD para saldo insuficiente (❌ vão falhar até implementar)
+- **test(api):** `rn-card-03.test.ts` — 5 testes TDD para limite de cartão (❌ vão falhar até implementar)
+- **test(api):** `rn-tx-06-07.test.ts` — 7 testes de regressão para status/saldo (✅ já passam)
+- **test(api):** `rn-tx-03.test.ts` — 3 testes TDD para transferência mesma conta (❌ vai falhar até implementar)
+- **ci(api):** `ci.yml` atualizado com serviço PostgreSQL 16 + step `Test (api)` com `DATABASE_URL` de teste
+- **docs:** `BUSINESS_RULES.md` e `CLAUDE.md` atualizados com convenção de RNs obrigatórias antes de implementar
+- **docs:** `.env.test.example` criado com template para configuração local
+
+#### Como rodar os testes localmente
+
+```bash
+# 1. Criar banco de teste (uma vez)
+createdb ctrl_custo_test
+
+# 2. Copiar e configurar .env.test
+cp apps/api/.env.test.example apps/api/.env.test
+# editar DATABASE_URL se necessário
+
+# 3. Rodar
+pnpm --filter @ctrl-custo/api test
+```
+
+#### Próxima sessão: implementar as RNs críticas
+
+Implementar as regras para que os testes TDD passem:
+
+1. **RN-ACC-06** — saldo insuficiente bloqueia débito (em `transactions.ts` POST)
+2. **RN-CARD-03** — limite de cartão verificado ao criar transação (em `transactions.ts` POST)
+3. **RN-TX-03** — transferência mesma conta rejeitada no backend (schema Zod)
+
+Branch: `feature/business-rules`
+
+---
+
 ### 2026-05-14 — Regras de negócio: levantamento e documentação
 
 #### O que foi feito
