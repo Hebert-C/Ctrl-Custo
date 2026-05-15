@@ -13,6 +13,21 @@ Leia `PROJECT.md` antes de qualquer tarefa. Ele contém:
 
 Ao final de cada sessão, atualize a seção **Log de Sessões** do `PROJECT.md` com o que foi feito e o que ficou pendente.
 
+## Regras de Negócio — obrigatório antes de implementar
+
+Antes de implementar qualquer feature nova ou corrigir lógica de negócio, leia `BUSINESS_RULES.md`. Ele contém:
+
+- Todas as RNs documentadas por domínio (Auth, Accounts, Cards, Categories, Transactions, Goals, Investments, Reports)
+- Status de cada regra (✅ implementada · ⚠️ parcial · ❌ ausente)
+- Template para documentar RNs de novas features
+
+**Fluxo obrigatório para qualquer nova feature:**
+
+1. Escrever as RNs no `BUSINESS_RULES.md` (seção do domínio afetado)
+2. Revisar se alguma RN existente é impactada
+3. Só então iniciar a implementação
+4. Ao concluir, marcar as RNs implementadas com ✅
+
 ## Project Overview
 
 **Ctrl-Custo** is a personal finance app (Brazilian Portuguese) with a web version (React) and a mobile version (Expo). Business logic, the SQLite database, and TypeScript types live in a shared `packages/core` package.
