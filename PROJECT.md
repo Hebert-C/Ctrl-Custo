@@ -946,6 +946,38 @@ pnpm --filter mobile test --verbose
 
 ## Log de Sessões
 
+### 2026-05-16 — Onboarding checklist + responsividade mobile web + desativação de Cartões
+
+#### O que foi feito
+
+- **feat(web):** Responsividade mobile — `SummaryCards`, `RecentTransactions`, `Reports`, `AccountsSection` e `BottomNav` ajustados com breakpoints `sm:`/`md:` para funcionar bem em telas pequenas. Rótulos do `BottomNav` com `truncate` para evitar overflow.
+- **feat(web/mobile):** Desativação de Cartões na web (removido de `BottomNav` e `Sidebar`) para espelhar o mobile (que já tinha `href: null` no `cards` tab). Regra: web e mobile são espelhos — qualquer feature/rota deve existir em ambos ou em nenhum.
+- **fix(web):** Incompatibilidade de versões do React (`19.2.5` vs `19.1.4`) — atualizado `react` e `react-dom` para `19.2.6` em `apps/web/package.json` e nas overrides do `package.json` raiz.
+- **chore(web):** Vite `server.proxy` adicionado para desenvolvimento com SSH tunnel (proxy `/api` → `localhost:3000`); `.env.local` com `VITE_API_URL=/api` (gitignored).
+- **feat(web/mobile):** Checklist de onboarding "Primeiros passos" criado e integrado em ambos os dashboards — exibe 3 passos (cadastrar banco, verificar categorias, adicionar transação), com progresso visual e botão "Pular" que persiste em `localStorage` (web) / `AsyncStorage` (mobile). Desaparece automaticamente quando todos os 3 passos estão concluídos.
+
+#### Arquivos criados/modificados
+
+- `apps/web/src/components/OnboardingChecklist.tsx` — componente web (novo)
+- `apps/mobile/src/components/OnboardingChecklist.tsx` — componente mobile (novo)
+- `apps/web/src/pages/Dashboard/index.tsx` — importa e renderiza `OnboardingChecklist`
+- `apps/mobile/app/(tabs)/index.tsx` — importa e renderiza `OnboardingChecklist`
+- `apps/web/src/pages/Dashboard/SummaryCards.tsx` — responsividade mobile
+- `apps/web/src/components/BottomNav.tsx` — removido Cartões; labels com `truncate`
+- `apps/web/src/components/Sidebar.tsx` — removido Cartões
+- `apps/web/src/pages/Reports/index.tsx` — responsividade mobile
+- `apps/web/src/pages/Settings/AccountsSection.tsx` — botões em segunda linha no mobile
+- `apps/web/vite.config.ts` — proxy para SSH tunnel local
+- `apps/web/package.json` + `package.json` (root) — react/react-dom `19.2.6`
+
+#### Pendências restantes
+
+- **RN-CARD-05** ⚠️ — cálculo de período de fatura usando `billingDay`/`dueDay` real
+- **RN-TX-14** ❌ — toggle de status pendente/confirmado no formulário mobile
+- **Oracle A1.Flex** — aguardando disponibilidade de capacidade (serviço rodando 24/7)
+
+---
+
 ### 2026-05-16 — Correção de bugs históricos de CI + fechamento do registro
 
 #### O que foi feito
