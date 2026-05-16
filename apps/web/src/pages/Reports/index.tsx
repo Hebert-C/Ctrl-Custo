@@ -218,7 +218,7 @@ export function Reports() {
                       className="w-2 h-2 rounded-full flex-shrink-0"
                       style={{ backgroundColor: category?.color ?? "#6B7280" }}
                     />
-                    <span className="text-sm text-gray-700 dark:text-gray-300 w-32 truncate">
+                    <span className="text-sm text-gray-700 dark:text-gray-300 w-20 sm:w-32 truncate">
                       {category?.name ?? "Sem categoria"}
                     </span>
                     <div className="flex-1 h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">

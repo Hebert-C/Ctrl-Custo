@@ -5,7 +5,6 @@ import { useAuthStore } from "../hooks/useAuth";
 const NAV_ITEMS = [
   { to: "/", label: "Dashboard", icon: "⊞" },
   { to: "/transactions", label: "Transações", icon: "↕" },
-  { to: "/cards", label: "Cartões", icon: "▣" },
   { to: "/goals", label: "Metas", icon: "◎" },
   { to: "/reports", label: "Relatórios", icon: "≡" },
   { to: "/settings", label: "Configurações", icon: "⚙" },

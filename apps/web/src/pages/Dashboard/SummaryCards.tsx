@@ -57,27 +57,27 @@ export function SummaryCards({
       <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide capitalize">
         {monthLabel}
       </p>
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-2 md:gap-4">
         {cards.map((card) => {
           const isBalance = card.label === "Saldo do Mês";
           return (
             <div
               key={card.label}
               onClick={isBalance ? onChartToggle : undefined}
-              className={`card p-3 md:p-5 ${isBalance ? "cursor-pointer hover:ring-2 hover:ring-brand-400 dark:hover:ring-brand-600 transition-shadow" : ""} ${isBalance && chartOpen ? "ring-2 ring-brand-500" : ""}`}
+              className={`card p-2.5 md:p-5 ${isBalance ? "cursor-pointer hover:ring-2 hover:ring-brand-400 dark:hover:ring-brand-600 transition-shadow" : ""} ${isBalance && chartOpen ? "ring-2 ring-brand-500" : ""}`}
             >
-              <div className="flex items-center justify-between mb-2 md:mb-4">
-                <p className="text-xs md:text-sm font-medium text-gray-500 dark:text-gray-400 truncate pr-1">
+              <div className="flex items-center justify-between mb-1.5 md:mb-4">
+                <p className="text-[10px] md:text-sm font-medium text-gray-500 dark:text-gray-400 truncate pr-1">
                   {card.label}
                 </p>
                 <span
-                  className={`text-xs font-bold w-6 h-6 md:w-7 md:h-7 flex-shrink-0 flex items-center justify-center rounded-full ${card.iconBg} ${card.iconClass}`}
+                  className={`text-[10px] font-bold w-5 h-5 md:w-7 md:h-7 flex-shrink-0 flex items-center justify-center rounded-full ${card.iconBg} ${card.iconClass}`}
                 >
                   {card.icon}
                 </span>
               </div>
               <p
-                className={`text-base md:text-3xl font-bold tracking-tight truncate ${card.valueClass}`}
+                className={`text-sm md:text-3xl font-bold tracking-tight truncate ${card.valueClass}`}
               >
                 {formatCurrency(card.value)}
               </p>

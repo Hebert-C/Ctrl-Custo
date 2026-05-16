@@ -4,7 +4,6 @@ import { NavLink } from "react-router-dom";
 const NAV_ITEMS = [
   { to: "/", label: "Início", icon: "⊞" },
   { to: "/transactions", label: "Transações", icon: "↕" },
-  { to: "/cards", label: "Cartões", icon: "▣" },
   { to: "/goals", label: "Metas", icon: "◎" },
   { to: "/reports", label: "Relatórios", icon: "≡" },
   { to: "/settings", label: "Config.", icon: "⚙" },
@@ -25,7 +24,7 @@ export function BottomNav() {
           }
         >
           <span className="text-base leading-none">{item.icon}</span>
-          {item.label}
+          <span className="max-w-full truncate">{item.label}</span>
         </NavLink>
       ))}
     </nav>

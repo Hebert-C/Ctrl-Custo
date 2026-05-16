@@ -243,25 +243,47 @@ export function AccountsSection() {
           accounts.map((account) => (
             <div
               key={account.id}
-              className="flex items-center gap-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 px-4 py-3"
+              className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 px-4 py-3"
             >
-              <div
-                className="w-3 h-10 rounded-full flex-shrink-0"
-                style={{ backgroundColor: account.color }}
-              />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                  {account.name}
+              <div className="flex items-center gap-3">
+                <div
+                  className="w-3 h-10 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: account.color }}
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                    {account.name}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {ACCOUNT_TYPES.find((t) => t.value === account.type)?.label}
+                    {account.bankName ? ` · ${account.bankName}` : ""}
+                  </p>
+                </div>
+                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex-shrink-0">
+                  R$ {centsToBRL(account.balance)}
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {ACCOUNT_TYPES.find((t) => t.value === account.type)?.label}
-                  {account.bankName ? ` · ${account.bankName}` : ""}
-                </p>
+                <div className="hidden sm:flex gap-1 flex-shrink-0">
+                  <button
+                    onClick={() => startEdit(account)}
+                    className="px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded"
+                  >
+                    Editar
+                  </button>
+                  <button
+                    onClick={() => handleArchive(account.id)}
+                    className="px-2 py-1 text-xs text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                  >
+                    Arquivar
+                  </button>
+                  <button
+                    onClick={() => handleRemove(account.id)}
+                    className="px-2 py-1 text-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                  >
+                    Excluir
+                  </button>
+                </div>
               </div>
-              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex-shrink-0">
-                R$ {centsToBRL(account.balance)}
-              </p>
-              <div className="flex gap-1 flex-shrink-0">
+              <div className="flex gap-1 mt-2 pl-6 sm:hidden">
                 <button
                   onClick={() => startEdit(account)}
                   className="px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded"
