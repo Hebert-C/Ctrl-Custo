@@ -948,6 +948,28 @@ pnpm --filter mobile test --verbose
 
 ## Log de Sessões
 
+### 2026-05-15 — Implementação das RNs de média prioridade (RN-TX-08, RN-TX-10, RN-CARD-04)
+
+#### O que foi feito
+
+- **feat(api):** `RN-TX-08` — data de transação validada com `isValidDate()`: converte `d + "T00:00:00Z"` e compara o resultado formatado com a entrada; datas como `2024-02-30` e `2023-02-29` são rejeitadas com HTTP 400.
+- **feat(api):** `RN-TX-10` — ownership verificado no `POST /transactions` para `accountId`, `destinationAccountId`, `categoryId` e `cardId`; no `PUT` para os campos que mudam; retorna 404 se o recurso não pertencer ao usuário (RN-CROSS-02). Fecha IDOR no `accountId` do POST que antes era vulnerável.
+- **feat(api):** `RN-CARD-04` — `billingDay` e `dueDay` limitados a 1–28 em vez de 1–31; garante que o dia sempre existe em qualquer mês.
+- **fix(api):** erros de tipo em `token.ts` corrigidos — guarda `if (!process.env.JWT_SECRET)` antes da atribuição da constante + `as string`.
+- **test:** `rn-tx-08.test.ts` — 5 testes (datas inválidas e válidas)
+- **test:** `rn-tx-10.test.ts` — 4 testes (ownership de category, card, account, happy path)
+
+#### Arquivos modificados
+
+- `apps/api/src/routes/transactions.ts` — RN-TX-08 + RN-TX-10
+- `apps/api/src/routes/cards.ts` — RN-CARD-04
+- `apps/api/src/lib/token.ts` — fix de tipos
+- `apps/api/src/__tests__/rn-tx-08.test.ts` — testes TDD
+- `apps/api/src/__tests__/rn-tx-10.test.ts` — testes TDD
+- `BUSINESS_RULES.md` — 3 RNs marcadas ✅
+
+---
+
 ### 2026-05-15 — Implementação das RNs de alta prioridade (RN-ACC-05, RN-GOAL-05, RN-TX-11)
 
 #### O que foi feito
@@ -971,9 +993,7 @@ pnpm --filter mobile test --verbose
 
 #### Próximas RNs (média prioridade)
 
-- **RN-ACC-04** — data inválida (`.refine(isValidDate)` no Zod)
-- **RN-TX-08** — validar ownership de `categoryId`, `cardId`, `destinationAccountId`
-- **RN-CARD-04** — `billingDay`/`dueDay` para calcular período real da fatura
+> RNs de média prioridade implementadas em 2026-05-15 — ver log de sessões.
 
 ---
 
