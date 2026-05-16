@@ -186,9 +186,7 @@ packages/config/ — tsconfig bases
 
 ### Prioridade Alta (próximas a implementar)
 
-- **RN-ACC-05** — Conta arquivada não pode receber/débitar transação (`isArchived` check em `transactions.ts` e `goals.ts`)
-- **RN-GOAL-05** — Depósito em meta não pode exceder `targetAmount` (HTTP 422 em `goals.ts`)
-- **RN-TX-11** — Arredondamento de parcelas: última parcela absorve os centavos restantes
+> RNs de alta prioridade implementadas em 2026-05-15 — ver log de sessões.
 
 ### Prioridade Média
 
@@ -949,6 +947,35 @@ pnpm --filter mobile test --verbose
 ---
 
 ## Log de Sessões
+
+### 2026-05-15 — Implementação das RNs de alta prioridade (RN-ACC-05, RN-GOAL-05, RN-TX-11)
+
+#### O que foi feito
+
+- **feat(api):** `RN-ACC-05` — conta arquivada não pode receber operações: `POST /transactions` verifica `isArchived` em `accountId` e `destinationAccountId` antes de prosseguir; `POST /goals/:id/deposit` verifica `isArchived` na conta do depósito. Ambos retornam HTTP 422 com `code: "ACCOUNT_ARCHIVED"`.
+- **feat(api):** `RN-GOAL-05` — depósito limitado ao `targetAmount` restante: antes de executar o depósito, soma `currentAmount + amount` e rejeita com HTTP 422 e `code: "DEPOSIT_EXCEEDS_TARGET"` se exceder o alvo.
+- **fix(web/mobile):** `RN-TX-11` — arredondamento de parcelas corrigido em `useTransactionStore.addInstallments` (web e mobile): última parcela = `amount - perInstallment * (total - 1)`. Ex: 3× de R$ 100 gera R$ 33 + R$ 33 + **R$ 34** em vez de 3× R$ 33 (perdia R$ 0,01).
+- **test:** `rn-acc-05.test.ts` — 5 testes TDD (conta arquivada em expense, income, transfer destino e depósito de meta)
+- **test:** `rn-goal-05.test.ts` — 4 testes TDD (excede do zero, excede após parcial, atinge exatamente, parcial normal)
+- **docs:** `BUSINESS_RULES.md` — 3 RNs marcadas ✅
+
+#### Arquivos modificados
+
+- `apps/api/src/routes/transactions.ts` — RN-ACC-05
+- `apps/api/src/routes/goals.ts` — RN-ACC-05 + RN-GOAL-05
+- `apps/web/src/store/useTransactionStore.ts` — RN-TX-11
+- `apps/mobile/src/store/useTransactionStore.ts` — RN-TX-11
+- `apps/api/src/__tests__/rn-acc-05.test.ts` — testes TDD
+- `apps/api/src/__tests__/rn-goal-05.test.ts` — testes TDD
+- `BUSINESS_RULES.md` — 3 RNs marcadas ✅
+
+#### Próximas RNs (média prioridade)
+
+- **RN-ACC-04** — data inválida (`.refine(isValidDate)` no Zod)
+- **RN-TX-08** — validar ownership de `categoryId`, `cardId`, `destinationAccountId`
+- **RN-CARD-04** — `billingDay`/`dueDay` para calcular período real da fatura
+
+---
 
 ### 2026-05-14 — Implementação das RNs críticas (RN-ACC-06, RN-CARD-03, RN-TX-03)
 
