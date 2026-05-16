@@ -64,21 +64,25 @@ export function SummaryCards({
             <div
               key={card.label}
               onClick={isBalance ? onChartToggle : undefined}
-              className={`card p-5 ${isBalance ? "cursor-pointer hover:ring-2 hover:ring-brand-400 dark:hover:ring-brand-600 transition-shadow" : ""} ${isBalance && chartOpen ? "ring-2 ring-brand-500" : ""}`}
+              className={`card p-3 md:p-5 ${isBalance ? "cursor-pointer hover:ring-2 hover:ring-brand-400 dark:hover:ring-brand-600 transition-shadow" : ""} ${isBalance && chartOpen ? "ring-2 ring-brand-500" : ""}`}
             >
-              <div className="flex items-center justify-between mb-4">
-                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{card.label}</p>
+              <div className="flex items-center justify-between mb-2 md:mb-4">
+                <p className="text-xs md:text-sm font-medium text-gray-500 dark:text-gray-400 truncate pr-1">
+                  {card.label}
+                </p>
                 <span
-                  className={`text-xs font-bold w-7 h-7 flex items-center justify-center rounded-full ${card.iconBg} ${card.iconClass}`}
+                  className={`text-xs font-bold w-6 h-6 md:w-7 md:h-7 flex-shrink-0 flex items-center justify-center rounded-full ${card.iconBg} ${card.iconClass}`}
                 >
                   {card.icon}
                 </span>
               </div>
-              <p className={`text-3xl font-bold tracking-tight ${card.valueClass}`}>
+              <p
+                className={`text-base md:text-3xl font-bold tracking-tight truncate ${card.valueClass}`}
+              >
                 {formatCurrency(card.value)}
               </p>
               {isBalance && (
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
+                <p className="hidden md:block text-xs text-gray-400 dark:text-gray-500 mt-2">
                   {chartOpen ? "Clique para fechar ↑" : "Clique para detalhar ↓"}
                 </p>
               )}

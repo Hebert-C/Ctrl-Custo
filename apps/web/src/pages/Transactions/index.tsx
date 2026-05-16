@@ -155,7 +155,7 @@ export function Transactions() {
                   </span>
 
                   {/* Ações */}
-                  <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity">
+                  <div className="flex items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={() => handleEdit(tx)}
                       className="text-gray-400 hover:text-blue-500 p-1"

@@ -15,7 +15,7 @@ export function Sidebar() {
   const logout = useAuthStore((s) => s.logout);
 
   return (
-    <aside className="w-56 flex-shrink-0 h-screen sticky top-0 flex flex-col bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800">
+    <aside className="hidden md:flex w-56 flex-shrink-0 h-screen sticky top-0 flex-col bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800">
       {/* Logo */}
       <div className="px-5 py-5 border-b border-gray-200 dark:border-gray-800">
         <span className="text-lg font-bold text-brand-600 dark:text-brand-500 tracking-tight">
