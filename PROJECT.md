@@ -157,26 +157,24 @@ packages/config/ — tsconfig bases
 
 ## Status Atual da VM
 
-| Item                 | Status | Observação                                                                 |
-| -------------------- | ------ | -------------------------------------------------------------------------- |
-| Nginx                | ✅     | rodando                                                                    |
-| PostgreSQL 16        | ✅     | rodando                                                                    |
-| PM2 `ctrl-custo-api` | ✅     | online em fork mode — logs em `/home/deploy/logs/api-out.log`              |
-| Frontend acessível   | ✅     | `https://ctrlcusto.duckdns.org`                                            |
-| API health           | ✅     | `http://ctrlcusto.duckdns.org/api/health`                                  |
-| CORS                 | ✅     | resolvido                                                                  |
-| Migração 0000        | ✅     | aplicada                                                                   |
-| Migração 0001        | ✅     | aplicada manualmente (colunas adicionadas a `auth.users`)                  |
-| Migração 0002        | ✅     | aplicada (7 schemas + 6 views em `reports.*`)                              |
-| Cadastro de conta    | ✅     | funcionando                                                                |
-| HTTPS/SSL            | ✅     | Certificado Let's Encrypt ativo — expira 2026-08-04 (renovação automática) |
-| CI/CD automático     | ✅     | CI + Deploy API + Deploy Web funcionando                                   |
+| Item                 | Status | Observação                                                                                |
+| -------------------- | ------ | ----------------------------------------------------------------------------------------- |
+| Nginx                | ✅     | rodando                                                                                   |
+| PostgreSQL 16        | ✅     | rodando                                                                                   |
+| PM2 `ctrl-custo-api` | ✅     | online em fork mode — logs em `/home/deploy/logs/api-out.log`                             |
+| Frontend acessível   | ✅     | `https://ctrlcusto.duckdns.org`                                                           |
+| API health           | ✅     | `http://ctrlcusto.duckdns.org/api/health`                                                 |
+| CORS                 | ✅     | resolvido                                                                                 |
+| Migrations 0000–0004 | ✅     | todas aplicadas — verificado em 2026-05-15 (5/5 hashes no `drizzle.__drizzle_migrations`) |
+| Cadastro de conta    | ✅     | funcionando (REGISTRATION_ENABLED reaberto em 2026-05-15)                                 |
+| HTTPS/SSL            | ✅     | Certificado Let's Encrypt ativo — expira 2026-08-04 (renovação automática)                |
+| CI/CD automático     | ✅     | CI + Deploy API + Deploy Web funcionando                                                  |
 
 ---
 
 ## Pendências Prioritárias
 
-1. **Reabrir cadastro** quando encerrar fase de testes — alterar `REGISTRATION_ENABLED = true` em `apps/web/src/pages/Login/index.tsx`
+1. ~~**Reabrir cadastro**~~ ✅ — `REGISTRATION_ENABLED = true` em 2026-05-15
 
 ---
 

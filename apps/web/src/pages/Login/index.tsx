@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../hooks/useAuth";
 import { api, ApiError } from "../../lib/api";
 
-const REGISTRATION_ENABLED = false;
+const REGISTRATION_ENABLED = true;
 
 type Mode = "login" | "register";
 
