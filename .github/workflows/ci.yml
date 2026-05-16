@@ -60,6 +60,9 @@ jobs:
         working-directory: apps/mobile
         run: pnpm test
 
+      - name: Create DB role for API tests
+        run: psql postgresql://postgres:postgres@localhost:5432/ctrl_custo_test -c "CREATE ROLE ctrl_custo_user WITH LOGIN;"
+
       - name: Test (api)
         working-directory: apps/api
         run: pnpm test
