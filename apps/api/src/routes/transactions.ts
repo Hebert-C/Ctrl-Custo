@@ -3,15 +3,24 @@ import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { eq, and, sql } from "drizzle-orm";
 import { db } from "../db/index";
-import { transactions, accounts, cards } from "../db/schema";
+import { transactions, accounts, cards, categories } from "../db/schema";
 import { requireAuth, type AuthEnv } from "../middleware/auth";
+
+// RN-TX-08: valida que a data existe de fato (ex: 2024-02-30 é inválida)
+function isValidDate(d: string): boolean {
+  const dt = new Date(d + "T00:00:00Z");
+  return !isNaN(dt.getTime()) && dt.toISOString().slice(0, 10) === d;
+}
 
 const transactionBodyBase = z.object({
   description: z.string().min(1).max(255),
   amount: z.number().int().positive(),
   type: z.enum(["income", "expense", "transfer"]),
   status: z.enum(["confirmed", "pending", "cancelled"]).default("confirmed"),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD"),
+  date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD")
+    .refine(isValidDate, "Data inválida."),
   categoryId: z.string().uuid(),
   accountId: z.string().uuid(),
   destinationAccountId: z.string().uuid().optional(),
@@ -85,7 +94,7 @@ transactionsRouter.post(
     const userId = c.get("userId");
     const body = c.req.valid("json");
 
-    // RN-ACC-05: conta arquivada não pode receber operações
+    // RN-TX-10 + RN-ACC-05: ownership e isArchived das contas
     const accountIds = [body.accountId];
     if (body.destinationAccountId) accountIds.push(body.destinationAccountId);
     for (const accId of accountIds) {
@@ -94,9 +103,26 @@ transactionsRouter.post(
         .from(accounts)
         .where(and(eq(accounts.id, accId), eq(accounts.userId, userId)))
         .limit(1);
-      if (acct?.isArchived) {
-        return c.json({ code: "ACCOUNT_ARCHIVED" }, 422);
-      }
+      if (!acct) return c.json({ error: "Conta não encontrada." }, 404);
+      if (acct.isArchived) return c.json({ code: "ACCOUNT_ARCHIVED" }, 422);
+    }
+
+    // RN-TX-10: ownership de categoryId
+    const [cat] = await db
+      .select({ id: categories.id })
+      .from(categories)
+      .where(and(eq(categories.id, body.categoryId), eq(categories.userId, userId)))
+      .limit(1);
+    if (!cat) return c.json({ error: "Categoria não encontrada." }, 404);
+
+    // RN-TX-10: ownership de cardId
+    if (body.cardId) {
+      const [card] = await db
+        .select({ id: cards.id })
+        .from(cards)
+        .where(and(eq(cards.id, body.cardId), eq(cards.userId, userId)))
+        .limit(1);
+      if (!card) return c.json({ error: "Cartão não encontrado." }, 404);
     }
 
     // RN-ACC-06: saldo insuficiente bloqueia débito confirmado
@@ -176,13 +202,32 @@ transactionsRouter.put("/:id", zValidator("json", transactionBodyBase.partial())
     .limit(1);
   if (!existing) return c.json({ error: "Transação não encontrada." }, 404);
 
+  // RN-TX-10: ownership checks no PUT para campos opcionalmente atualizados
   if (body.accountId && body.accountId !== existing.accountId) {
     const [acct] = await db
       .select({ id: accounts.id })
       .from(accounts)
       .where(and(eq(accounts.id, body.accountId), eq(accounts.userId, userId)))
       .limit(1);
-    if (!acct) return c.json({ error: "Transação não encontrada." }, 404);
+    if (!acct) return c.json({ error: "Conta não encontrada." }, 404);
+  }
+
+  if (body.categoryId && body.categoryId !== existing.categoryId) {
+    const [cat] = await db
+      .select({ id: categories.id })
+      .from(categories)
+      .where(and(eq(categories.id, body.categoryId), eq(categories.userId, userId)))
+      .limit(1);
+    if (!cat) return c.json({ error: "Categoria não encontrada." }, 404);
+  }
+
+  if (body.cardId && body.cardId !== existing.cardId) {
+    const [card] = await db
+      .select({ id: cards.id })
+      .from(cards)
+      .where(and(eq(cards.id, body.cardId), eq(cards.userId, userId)))
+      .limit(1);
+    if (!card) return c.json({ error: "Cartão não encontrado." }, 404);
   }
 
   const [row] = await db.transaction(async (trx) => {

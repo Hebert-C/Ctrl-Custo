@@ -107,9 +107,9 @@ Todo cartão tem um `accountId` obrigatório — a conta de onde a fatura será 
 
 Ao criar transação com `cardId`, verificar se `despesas_do_mes + amount <= creditLimit`. Retorna 422 com `code: "CARD_LIMIT_EXCEEDED"` e `availableLimit`. Considera apenas despesas `confirmed` do mês da transação (`YYYY-MM` do `date`).
 
-### RN-CARD-04 — `billingDay` e `dueDay` são dias do mês válidos ⚠️
+### RN-CARD-04 — `billingDay` e `dueDay` são dias do mês válidos ✅
 
-Aceitos valores 1–31, mas não validado se o dia existe no mês (ex: 30 de fevereiro). Por ora a validação é 1–31.
+Aceitos valores 1–28. Cap em 28 garante que o dia existe em qualquer mês (incluindo fevereiro).
 
 ### RN-CARD-05 — Fatura calculada sobre transações do mês vigente ⚠️
 
@@ -181,17 +181,17 @@ Se `status` muda de `confirmed` → `cancelled` via PUT, o impacto original no s
 
 Se `status` muda de `pending` → `confirmed` via PUT, o saldo deve ser movimentado como se fosse uma criação nova. **Deve aplicar `applyTransferBalances` no PUT nesses casos.**
 
-### RN-TX-08 — Data deve ser válida ⚠️
+### RN-TX-08 — Data deve ser válida ✅
 
-Formato `YYYY-MM-DD` validado por regex, mas datas impossíveis como `2024-02-30` passam. **Deve validar com `new Date()` e checar se não é `NaN`.**
+Formato `YYYY-MM-DD` validado por regex + `.refine(isValidDate)`. Datas impossíveis como `2024-02-30` são rejeitadas: converte para `new Date(d + "T00:00:00Z")` e compara o resultado formatado com a entrada.
 
 ### RN-TX-09 — Descrição não pode ser só espaços em branco ❌
 
 `z.string().min(1)` aceita `"   "`. **Deve aplicar `.trim()` antes de validar.**
 
-### RN-TX-10 — Propriedade dos recursos vinculados ⚠️
+### RN-TX-10 — Propriedade dos recursos vinculados ✅
 
-`accountId`, `categoryId`, `cardId`, `destinationAccountId` devem pertencer ao usuário logado. Hoje `accountId` tem validação parcial no PUT. **Todos devem ser verificados no POST e PUT.**
+`accountId`, `destinationAccountId`, `categoryId` e `cardId` verificados no POST e PUT de `/transactions`. Recurso de outro usuário retorna 404 (conforme RN-CROSS-02).
 
 ### RN-TX-11 — Arredondamento de parcelas não perde centavos ✅
 
