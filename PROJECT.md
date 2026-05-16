@@ -946,6 +946,38 @@ pnpm --filter mobile test --verbose
 
 ## Log de Sessões
 
+### 2026-05-16 — Correção de bugs históricos de CI + fechamento do registro
+
+#### O que foi feito
+
+- **fix(test):** `GoalForm.test.tsx` — placeholder esperado corrigido de `"AAAA-MM-DD"` para `"DD-MM-AAAA"` (formato brasileiro que o componente usa desde sempre). Bug antigo que bloqueava o CI.
+- **fix(ci):** `ci.yml` — adicionado step "Create DB role for API tests" que cria o role `ctrl_custo_user` antes de rodar os testes da API. A migration `0002_db_schemas` concede permissões a esse role, mas o postgres do CI só tinha o user `postgres`, fazendo todos os testes de API falharem desde que a migration foi aplicada.
+- **fix(journal):** `_journal.json` — timestamp `when` da migration 0004 corrigido de `1747267200000` (maio 2025, antes das migrations 0001–0003) para `1778803200000` (maio 2026, após 0003). Drizzle só aplica migration se `folderMillis > lastDbMigration.created_at`, então 0004 estava sendo silenciosamente pulada desde que foi criada.
+- **feat(web/mobile):** Propagação de erros de API nas telas — `ApiError` com `code` adicionada ao mobile `lib/api.ts` (estava ausente); `TransactionForm` (web + mobile), `Goals` (web) e `DepositForm`/`GoalForm` (mobile) agora exibem mensagens amigáveis para os códigos `INSUFFICIENT_BALANCE`, `CARD_LIMIT_EXCEEDED`, `DEPOSIT_EXCEEDS_TARGET`, `ACCOUNT_ARCHIVED`, `GOAL_NOT_ACTIVE`.
+- **feat(api):** 7 RNs de baixa prioridade implementadas — RN-TX-09, RN-TX-12, RN-TX-13, RN-CAT-03, RN-GOAL-07, RN-GOAL-08, RN-GOAL-09 (ver sessão anterior para detalhes).
+- **chore:** CI ✅ passando, Deploy API ✅ e Deploy Web ✅ concluídos.
+- **chore:** `REGISTRATION_ENABLED = false` — registro público fechado após deploy bem-sucedido.
+
+#### Arquivos modificados
+
+- `apps/mobile/src/__tests__/GoalForm.test.tsx` — fix placeholder
+- `.github/workflows/ci.yml` — step para criar role no postgres de teste
+- `apps/api/drizzle/meta/_journal.json` — fix timestamp migration 0004
+- `apps/web/src/pages/Login/index.tsx` — REGISTRATION_ENABLED = false
+- `apps/mobile/src/lib/api.ts` — ApiError class + code
+- `apps/web/src/pages/Transactions/TransactionForm.tsx` — error handling
+- `apps/web/src/pages/Goals/index.tsx` — error handling
+- `apps/mobile/src/components/TransactionForm.tsx` — error handling
+- `apps/mobile/src/components/DepositForm.tsx` — error handling
+- `apps/mobile/src/components/GoalForm.tsx` — error handling
+
+#### Pendências restantes
+
+- **RN-CARD-05** ⚠️ — cálculo de período de fatura usando `billingDay`/`dueDay` real em vez de mês calendário
+- **RN-TX-14** ❌ — toggle de status pendente/confirmado no formulário mobile
+
+---
+
 ### 2026-05-15 — Implementação das RNs de baixa prioridade (RN-TX-09, RN-TX-12, RN-TX-13, RN-CAT-03, RN-GOAL-07, RN-GOAL-08, RN-GOAL-09)
 
 #### O que foi feito
