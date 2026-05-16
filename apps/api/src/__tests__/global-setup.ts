@@ -6,8 +6,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default async function globalSetup() {
   // Carrega .env.test antes de qualquer módulo — globalSetup roda antes das env vars do Vitest
-  config({ path: path.resolve(__dirname, "../../../.env.test"), override: true });
-  config({ path: path.resolve(__dirname, "../../../.env") });
+  config({ path: path.resolve(__dirname, "../../.env.test"), override: true });
+  config({ path: path.resolve(__dirname, "../../.env") });
 
   const url = process.env.DATABASE_URL;
   if (!url) {

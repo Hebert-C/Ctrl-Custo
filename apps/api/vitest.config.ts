@@ -8,5 +8,12 @@ export default defineConfig({
     setupFiles: ["./src/__tests__/setup.ts"],
     testTimeout: 20000,
     hookTimeout: 30000,
+    // Banco de testes compartilhado: execução sequencial evita truncate concorrente
+    pool: "threads",
+    poolOptions: {
+      threads: {
+        singleThread: true,
+      },
+    },
   },
 });
