@@ -13,7 +13,8 @@ function isValidDate(d: string): boolean {
 }
 
 const transactionBodyBase = z.object({
-  description: z.string().min(1).max(255),
+  // RN-TX-09: trim antes de validar — rejeita descrições só com espaços
+  description: z.string().trim().min(1).max(255),
   amount: z.number().int().positive(),
   type: z.enum(["income", "expense", "transfer"]),
   status: z.enum(["confirmed", "pending", "cancelled"]).default("confirmed"),
@@ -25,7 +26,8 @@ const transactionBodyBase = z.object({
   accountId: z.string().uuid(),
   destinationAccountId: z.string().uuid().optional(),
   cardId: z.string().uuid().optional(),
-  installmentTotal: z.number().int().positive().optional(),
+  // RN-TX-12: máximo de 24 parcelas
+  installmentTotal: z.number().int().positive().max(24).optional(),
   installmentCurrent: z.number().int().positive().optional(),
   installmentGroupId: z.string().uuid().optional(),
   notes: z.string().max(1000).optional(),
@@ -39,6 +41,11 @@ const transactionBody = transactionBodyBase
   .refine((d) => d.type !== "transfer" || d.accountId !== d.destinationAccountId, {
     message: "Transferência não pode ser para a mesma conta.",
     path: ["destinationAccountId"],
+  })
+  // RN-TX-13: parcelamento só em despesa com cartão
+  .refine((d) => !d.installmentTotal || (d.type === "expense" && !!d.cardId), {
+    message: "Parcelamento só é permitido em despesas com cartão.",
+    path: ["installmentTotal"],
   });
 
 async function applyTransferBalances(

@@ -173,11 +173,11 @@ Dashboard e Relatórios excluem `type = "transfer"` dos totais de entrada e saí
 
 Transações `pending` e `cancelled` não movimentam o saldo de nenhuma conta. O saldo reflete apenas a realidade financeira atual.
 
-### RN-TX-06 — Cancelar transação confirmada deve reverter o saldo ❌
+### RN-TX-06 — Cancelar transação confirmada deve reverter o saldo ✅
 
 Se `status` muda de `confirmed` → `cancelled` via PUT, o impacto original no saldo deve ser revertido. Hoje o PUT só reverte quando `accountId` muda. **Deve reverter também na mudança de status.**
 
-### RN-TX-07 — Confirmar transação pendente deve aplicar o saldo ❌
+### RN-TX-07 — Confirmar transação pendente deve aplicar o saldo ✅
 
 Se `status` muda de `pending` → `confirmed` via PUT, o saldo deve ser movimentado como se fosse uma criação nova. **Deve aplicar `applyTransferBalances` no PUT nesses casos.**
 

@@ -10,9 +10,11 @@ const goalBody = z.object({
   name: z.string().min(1).max(100),
   targetAmount: z.number().int().positive(),
   currentAmount: z.number().int().min(0).optional(),
+  // RN-GOAL-08: prazo deve ser uma data futura
   deadline: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .refine((d) => d > new Date().toISOString().slice(0, 10), "O prazo deve ser uma data futura.")
     .optional(),
   status: z.enum(["active", "completed", "cancelled"]).optional(),
   color: z.string().min(1).max(20),
@@ -70,6 +72,17 @@ goalsRouter.delete("/:id", async (c) => {
 
   if (deposits.length > 0 && !refundAccountId) {
     return c.json({ error: "Escolha uma conta para receber o valor depositado." }, 400);
+  }
+
+  // RN-GOAL-07: conta de reembolso não pode estar arquivada
+  if (deposits.length > 0 && refundAccountId) {
+    const [refundAcct] = await db
+      .select({ isArchived: accounts.isArchived })
+      .from(accounts)
+      .where(and(eq(accounts.id, refundAccountId), eq(accounts.userId, userId)))
+      .limit(1);
+    if (!refundAcct) return c.json({ error: "Conta não encontrada." }, 404);
+    if (refundAcct.isArchived) return c.json({ code: "ACCOUNT_ARCHIVED" }, 422);
   }
 
   const result = await db.transaction(async (trx) => {
@@ -141,13 +154,18 @@ goalsRouter.post("/:id/deposit", zValidator("json", depositBody), async (c) => {
   // RN-ACC-05: conta arquivada não pode ser debitada
   if (account.isArchived) return c.json({ code: "ACCOUNT_ARCHIVED" }, 422);
 
-  // RN-GOAL-05: depósito não pode exceder o valor alvo
+  // RN-GOAL-05 + RN-GOAL-09: limites e status da meta
   const [goalRow] = await db
-    .select({ currentAmount: goals.currentAmount, targetAmount: goals.targetAmount })
+    .select({
+      currentAmount: goals.currentAmount,
+      targetAmount: goals.targetAmount,
+      status: goals.status,
+    })
     .from(goals)
     .where(and(eq(goals.id, id), eq(goals.userId, userId)))
     .limit(1);
   if (!goalRow) return c.json({ error: "Meta não encontrada." }, 404);
+  if (goalRow.status !== "active") return c.json({ code: "GOAL_NOT_ACTIVE" }, 422);
   if (goalRow.currentAmount + amount > goalRow.targetAmount) {
     return c.json({ code: "DEPOSIT_EXCEEDS_TARGET" }, 422);
   }

@@ -52,6 +52,14 @@ categoriesRouter.delete("/:id", async (c) => {
   const id = c.req.param("id");
   const transferTo = c.req.query("transferTo");
 
+  // RN-CAT-03: categoria não pode ser transferida para si mesma
+  if (transferTo && transferTo === id) {
+    return c.json(
+      { error: "A categoria de destino não pode ser a mesma que está sendo excluída." },
+      400
+    );
+  }
+
   try {
     if (transferTo) {
       await db

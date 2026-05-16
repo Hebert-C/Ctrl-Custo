@@ -948,6 +948,30 @@ pnpm --filter mobile test --verbose
 
 ## Log de Sessões
 
+### 2026-05-15 — Implementação das RNs de baixa prioridade (RN-TX-09, RN-TX-12, RN-TX-13, RN-CAT-03, RN-GOAL-07, RN-GOAL-08, RN-GOAL-09)
+
+#### O que foi feito
+
+- **feat(api):** `RN-TX-09` — descrição de transação não pode ser só espaços em branco: `.trim().min(1)` no schema Zod, retorna HTTP 400.
+- **feat(api):** `RN-TX-12` — máximo de 24 parcelas: `installmentTotal: z.number().int().positive().max(24)`, retorna HTTP 400.
+- **feat(api):** `RN-TX-13` — parcelamento só permitido em despesas com cartão: `.refine()` no schema transactionBody; rejeita receitas ou despesas sem `cardId` com `installmentTotal`, retorna HTTP 400.
+- **feat(api):** `RN-CAT-03` — categoria não pode ser transferida para si mesma: guarda `if (transferTo && transferTo === id)` no `DELETE /categories/:id`, retorna HTTP 400.
+- **feat(api):** `RN-GOAL-07` — conta de reembolso não pode estar arquivada: no `DELETE /goals/:id`, verifica `isArchived` antes da transação e retorna HTTP 422 com `code: "ACCOUNT_ARCHIVED"`.
+- **feat(api):** `RN-GOAL-08` — prazo da meta deve ser data futura: `.refine((d) => d > today)` no schema `goalBody`, retorna HTTP 400.
+- **feat(api):** `RN-GOAL-09` — meta cancelada/concluída não aceita depósitos: `if (goalRow.status !== "active")` no `POST /goals/:id/deposit`, retorna HTTP 422 com `code: "GOAL_NOT_ACTIVE"`.
+- **test:** `rn-batch-small.test.ts` — 19 testes cobrindo todas as 7 RNs (cenários de rejeição + aceitação). 52/52 testes passando na suite completa.
+- **docs:** `BUSINESS_RULES.md` — RN-TX-06, RN-TX-07, RN-TX-09, RN-TX-12, RN-TX-13, RN-CAT-03, RN-GOAL-07, RN-GOAL-08, RN-GOAL-09 marcadas ✅. Apenas RN-CARD-05 (⚠️) e RN-TX-14 (❌) pendentes.
+
+#### Arquivos modificados
+
+- `apps/api/src/routes/transactions.ts` — RN-TX-09, RN-TX-12, RN-TX-13
+- `apps/api/src/routes/categories.ts` — RN-CAT-03
+- `apps/api/src/routes/goals.ts` — RN-GOAL-07, RN-GOAL-08, RN-GOAL-09
+- `apps/api/src/__tests__/rn-batch-small.test.ts` — testes TDD
+- `BUSINESS_RULES.md` — 9 RNs marcadas ✅
+
+---
+
 ### 2026-05-15 — Implementação das RNs de média prioridade (RN-TX-08, RN-TX-10, RN-CARD-04)
 
 #### O que foi feito
