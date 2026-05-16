@@ -79,9 +79,9 @@ Tentativa de DELETE com transações vinculadas retorna 409. A ação correta é
 
 `GET /accounts` retorna apenas `isArchived = false`. Contas arquivadas só aparecem se explicitamente solicitado.
 
-### RN-ACC-05 — Conta arquivada não pode receber novas operações ❌
+### RN-ACC-05 — Conta arquivada não pode receber novas operações ✅
 
-Transações, depósitos de meta e transferências não verificam `isArchived` antes de debitar/creditar. **Deve retornar 422.**
+Transações, depósitos de meta e transferências verificam `isArchived` antes de debitar/creditar. Retorna 422 com `code: "ACCOUNT_ARCHIVED"`.
 
 ### RN-ACC-06 — Saldo insuficiente bloqueia débito ✅
 
@@ -193,10 +193,9 @@ Formato `YYYY-MM-DD` validado por regex, mas datas impossíveis como `2024-02-30
 
 `accountId`, `categoryId`, `cardId`, `destinationAccountId` devem pertencer ao usuário logado. Hoje `accountId` tem validação parcial no PUT. **Todos devem ser verificados no POST e PUT.**
 
-### RN-TX-11 — Arredondamento de parcelas não perde centavos ❌
+### RN-TX-11 — Arredondamento de parcelas não perde centavos ✅
 
-`Math.round(amount / total)` em 3× de R$ 100 gera 3 × R$ 33 = R$ 99 (perde R$ 0,01).
-**Regra:** última parcela = `amount − (total − 1) × amountPerInstallment`.
+Última parcela = `amount − (total − 1) × amountPerInstallment`. Ex: 3× de R$ 100 gera R$ 33 + R$ 33 + R$ 34. Implementado em `useTransactionStore.addInstallments` (web e mobile).
 
 ### RN-TX-12 — Máximo de 24 parcelas ❌
 
@@ -230,9 +229,9 @@ Ao criar, `currentAmount = 0`. Só aumenta via depósitos.
 
 Se após depósito `currentAmount >= targetAmount`, `status` muda para `"completed"` automaticamente.
 
-### RN-GOAL-05 — Depósito não pode exceder o valor alvo ❌
+### RN-GOAL-05 — Depósito não pode exceder o valor alvo ✅
 
-Hoje é possível depositar além de `targetAmount`. **Deve retornar 422 se `currentAmount + amount > targetAmount`.**
+Retorna 422 com `code: "DEPOSIT_EXCEEDS_TARGET"` se `currentAmount + amount > targetAmount`. Depósito que atinge exatamente o alvo completa a meta.
 
 ### RN-GOAL-06 — Delete com depósitos exige conta de reembolso ✅
 

@@ -40,6 +40,8 @@ export const useTransactionStore = create<TransactionStore>((set, get) => ({
   addInstallments: async (data, total) => {
     const groupId = crypto.randomUUID();
     const amountPerInstallment = Math.round(data.amount / total);
+    // RN-TX-11: última parcela absorve centavos restantes do arredondamento
+    const lastInstallmentAmount = data.amount - amountPerInstallment * (total - 1);
     const baseDate = new Date(data.date);
     const txs = await Promise.all(
       Array.from({ length: total }, (_, i) => {
@@ -47,7 +49,7 @@ export const useTransactionStore = create<TransactionStore>((set, get) => ({
         installmentDate.setMonth(installmentDate.getMonth() + i);
         return api.transactions.create({
           ...data,
-          amount: amountPerInstallment,
+          amount: i === total - 1 ? lastInstallmentAmount : amountPerInstallment,
           date: installmentDate.toISOString().split("T")[0],
           installment: { total, current: i + 1, groupId },
         });

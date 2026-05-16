@@ -85,6 +85,20 @@ transactionsRouter.post(
     const userId = c.get("userId");
     const body = c.req.valid("json");
 
+    // RN-ACC-05: conta arquivada não pode receber operações
+    const accountIds = [body.accountId];
+    if (body.destinationAccountId) accountIds.push(body.destinationAccountId);
+    for (const accId of accountIds) {
+      const [acct] = await db
+        .select({ isArchived: accounts.isArchived })
+        .from(accounts)
+        .where(and(eq(accounts.id, accId), eq(accounts.userId, userId)))
+        .limit(1);
+      if (acct?.isArchived) {
+        return c.json({ code: "ACCOUNT_ARCHIVED" }, 422);
+      }
+    }
+
     // RN-ACC-06: saldo insuficiente bloqueia débito confirmado
     if (body.status === "confirmed" && (body.type === "expense" || body.type === "transfer")) {
       const [acct] = await db

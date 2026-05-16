@@ -132,11 +132,25 @@ goalsRouter.post("/:id/deposit", zValidator("json", depositBody), async (c) => {
   const { amount, accountId } = c.req.valid("json");
 
   const [account] = await db
-    .select({ id: accounts.id })
+    .select({ id: accounts.id, isArchived: accounts.isArchived })
     .from(accounts)
     .where(and(eq(accounts.id, accountId), eq(accounts.userId, userId)))
     .limit(1);
   if (!account) return c.json({ error: "Conta não encontrada." }, 404);
+
+  // RN-ACC-05: conta arquivada não pode ser debitada
+  if (account.isArchived) return c.json({ code: "ACCOUNT_ARCHIVED" }, 422);
+
+  // RN-GOAL-05: depósito não pode exceder o valor alvo
+  const [goalRow] = await db
+    .select({ currentAmount: goals.currentAmount, targetAmount: goals.targetAmount })
+    .from(goals)
+    .where(and(eq(goals.id, id), eq(goals.userId, userId)))
+    .limit(1);
+  if (!goalRow) return c.json({ error: "Meta não encontrada." }, 404);
+  if (goalRow.currentAmount + amount > goalRow.targetAmount) {
+    return c.json({ code: "DEPOSIT_EXCEEDS_TARGET" }, 422);
+  }
 
   let [metasCategory] = await db
     .select()
