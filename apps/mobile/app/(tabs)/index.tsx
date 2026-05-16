@@ -17,6 +17,7 @@ import { useThemeStore } from "../../src/store/useThemeStore";
 import { useUiStore } from "../../src/store/useUiStore";
 import { formatCurrency } from "../../src/hooks/useCurrency";
 import { TransactionForm } from "../../src/components/TransactionForm";
+import { OnboardingChecklist } from "../../src/components/OnboardingChecklist";
 import { lightColors, darkColors, categoryColors, PieChart } from "@ctrl-custo/ui";
 import type { Colors, PieChartData } from "@ctrl-custo/ui";
 import type { Transaction, Category } from "@ctrl-custo/core";
@@ -272,6 +273,15 @@ export default function Dashboard() {
           )}
         </View>
       )}
+
+      {/* Onboarding — primeiros passos */}
+      <OnboardingChecklist
+        hasAccounts={accounts.length > 0}
+        hasCategories={categories.length > 0}
+        hasTransactions={transactions.length > 0}
+        onAddTransaction={() => setFormVisible(true)}
+        colors={colors}
+      />
 
       {/* Saldo nos Bancos */}
       <TouchableOpacity

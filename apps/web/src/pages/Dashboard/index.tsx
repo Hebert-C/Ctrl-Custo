@@ -10,6 +10,7 @@ import { useAccountStore } from "../../store/useAccountStore";
 import { useCategoryStore } from "../../store/useCategoryStore";
 import { useCardStore } from "../../store/useCardStore";
 import { useMonthReport, currentMonth } from "../../hooks/useReport";
+import { OnboardingChecklist } from "../../components/OnboardingChecklist";
 
 type ChartView = null | "overview" | "income" | "expense";
 
@@ -95,6 +96,13 @@ export function Dashboard() {
           month={month}
           onChartToggle={handleChartToggle}
           chartOpen={chartView !== null}
+        />
+
+        <OnboardingChecklist
+          hasAccounts={accounts.length > 0}
+          hasCategories={categories.length > 0}
+          hasTransactions={transactions.length > 0}
+          onAddTransaction={() => setShowForm(true)}
         />
 
         {/* Gráfico interativo — visível ao clicar no Saldo do Mês */}
