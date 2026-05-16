@@ -1420,9 +1420,9 @@ Para rodar o app no celular com Expo Go 54 apontando para a API local:
 - **CORS:** frontend buildado sem `VITE_API_URL` usava fallback `localhost:3000`. Rebuiltado com `VITE_API_URL=http://ctrlcusto.duckdns.org/api`. GitHub Secret configurado.
 - **Logs PM2 vazios:** `ecosystem.config.cjs` aponta para `api-error.log` mas PM2 cria `api-error-0.log`. Workaround: usar `curl` direto para ver erros.
 
-#### Problema em aberto
+#### Problema resolvido
 
-- **500 no `POST /api/auth/register`:** migração `0001` não foi aplicada ao banco. `drizzle.__drizzle_migrations` tem só a migration `0000`. Arquivo existe na VM. Motivo ainda não confirmado — sessão encerrada antes de concluir.
+- **500 no `POST /api/auth/register`:** investigado em 2026-05-15 — todas as 4 migrations (0000–0003) estão aplicadas no banco de produção. `pnpm db:migrate` rodou sem erros com tunnel ativo. A causa do 500 era outra (possivelmente o tunnel não estava ativo na sessão anterior). Banco atual: OK.
 
 ---
 
