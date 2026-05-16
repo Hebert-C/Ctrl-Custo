@@ -32,7 +32,7 @@ describe("GoalForm", () => {
 
   it("exibe campo para prazo", () => {
     render(<GoalForm {...defaultProps} />);
-    expect(screen.getByPlaceholderText("AAAA-MM-DD")).toBeTruthy();
+    expect(screen.getByPlaceholderText("DD-MM-AAAA")).toBeTruthy();
   });
 
   it("exibe botão Salvar", () => {
