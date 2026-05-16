@@ -3,7 +3,14 @@ import { Layout } from "../../components/Layout";
 import { useGoalStore } from "../../store/useGoalStore";
 import { useAccountStore } from "../../store/useAccountStore";
 import { formatCurrency, parseCurrencyInput, formatCurrencyInput } from "../../hooks/useCurrency";
+import { ApiError } from "../../lib/api";
 import type { NewGoal } from "@ctrl-custo/core";
+
+const DEPOSIT_ERROR_MESSAGES: Record<string, string> = {
+  DEPOSIT_EXCEEDS_TARGET: "O valor excede o montante restante da meta.",
+  ACCOUNT_ARCHIVED: "Esta conta está arquivada e não pode ser usada.",
+  GOAL_NOT_ACTIVE: "Não é possível depositar em uma meta inativa.",
+};
 
 export function Goals() {
   const [loading, setLoading] = useState(true);
@@ -11,6 +18,7 @@ export function Goals() {
   const [depositGoalId, setDepositGoalId] = useState<string | null>(null);
   const [depositRaw, setDepositRaw] = useState("");
   const [depositAccountId, setDepositAccountId] = useState("");
+  const [depositError, setDepositError] = useState("");
   const { goals, load, add, deposit } = useGoalStore();
   const { accounts, load: loadAccs } = useAccountStore();
 
@@ -36,11 +44,20 @@ export function Goals() {
   async function handleDeposit(goalId: string) {
     const cents = parseCurrencyInput(depositRaw);
     if (!cents || !depositAccountId) return;
-    await deposit(goalId, cents, depositAccountId);
-    await loadAccs();
-    setDepositGoalId(null);
-    setDepositRaw("");
-    setDepositAccountId("");
+    setDepositError("");
+    try {
+      await deposit(goalId, cents, depositAccountId);
+      await loadAccs();
+      setDepositGoalId(null);
+      setDepositRaw("");
+      setDepositAccountId("");
+    } catch (err) {
+      if (err instanceof ApiError && err.code && DEPOSIT_ERROR_MESSAGES[err.code]) {
+        setDepositError(DEPOSIT_ERROR_MESSAGES[err.code]);
+      } else {
+        setDepositError("Erro ao realizar depósito. Tente novamente.");
+      }
+    }
   }
 
   return (
@@ -111,6 +128,7 @@ export function Goals() {
                     <div className="mt-4 flex gap-2">
                       {depositGoalId === goal.id ? (
                         <div className="flex flex-col gap-2 flex-1">
+                          {depositError && <p className="text-xs text-red-500">{depositError}</p>}
                           <select
                             className="input-field text-sm"
                             value={depositAccountId}
@@ -153,6 +171,7 @@ export function Goals() {
                                 setDepositGoalId(null);
                                 setDepositRaw("");
                                 setDepositAccountId("");
+                                setDepositError("");
                               }}
                               className="btn-ghost text-sm px-2"
                             >

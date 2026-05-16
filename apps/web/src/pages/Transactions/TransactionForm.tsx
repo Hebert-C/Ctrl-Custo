@@ -1,6 +1,13 @@
 import React, { useState } from "react";
 import type { NewTransaction, Transaction, Category, Account, Card } from "@ctrl-custo/core";
 import { formatCurrencyInput, parseCurrencyInput } from "../../hooks/useCurrency";
+import { ApiError } from "../../lib/api";
+
+const API_ERROR_MESSAGES: Record<string, string> = {
+  INSUFFICIENT_BALANCE: "Saldo insuficiente para esta operação.",
+  ACCOUNT_ARCHIVED: "Esta conta está arquivada e não pode ser usada.",
+  CARD_LIMIT_EXCEEDED: "Limite do cartão excedido para este mês.",
+};
 
 interface TransactionFormProps {
   categories: Category[];
@@ -99,8 +106,12 @@ export function TransactionForm({
         form.installments
       );
       onClose();
-    } catch {
-      setError("Erro ao salvar. Tente novamente.");
+    } catch (err) {
+      if (err instanceof ApiError && err.code && API_ERROR_MESSAGES[err.code]) {
+        setError(API_ERROR_MESSAGES[err.code]);
+      } else {
+        setError("Erro ao salvar. Tente novamente.");
+      }
     } finally {
       setLoading(false);
     }

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import {
+  Alert,
   View,
   Text,
   TextInput,
@@ -74,6 +75,9 @@ export function GoalForm({ visible, onClose, isDark }: Props) {
       };
       await add(data);
       handleClose();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Erro ao criar meta. Tente novamente.";
+      Alert.alert("Erro", msg);
     } finally {
       setSaving(false);
     }

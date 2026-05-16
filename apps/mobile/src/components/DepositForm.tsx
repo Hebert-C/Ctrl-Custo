@@ -9,6 +9,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { lightColors, darkColors } from "@ctrl-custo/ui";
@@ -17,6 +18,13 @@ import type { Account, Category, Goal } from "@ctrl-custo/core";
 import { formatCurrencyInput, parseCurrencyInput } from "../hooks/useCurrency";
 import { useGoalStore } from "../store/useGoalStore";
 import { useAccountStore } from "../store/useAccountStore";
+import { ApiError } from "../lib/api";
+
+const DEPOSIT_ERROR_MESSAGES: Record<string, string> = {
+  DEPOSIT_EXCEEDS_TARGET: "O valor excede o montante restante da meta.",
+  ACCOUNT_ARCHIVED: "Esta conta está arquivada e não pode ser usada.",
+  GOAL_NOT_ACTIVE: "Não é possível depositar em uma meta inativa.",
+};
 
 interface Props {
   visible: boolean;
@@ -58,6 +66,12 @@ export function DepositForm({ visible, onClose, isDark, goal, accounts, categori
       await deposit(goal.id, amount, accountId);
       await loadAccounts();
       handleClose();
+    } catch (err) {
+      const msg =
+        err instanceof ApiError && err.code && DEPOSIT_ERROR_MESSAGES[err.code]
+          ? DEPOSIT_ERROR_MESSAGES[err.code]
+          : "Erro ao realizar depósito. Tente novamente.";
+      Alert.alert("Erro", msg);
     } finally {
       setSaving(false);
     }

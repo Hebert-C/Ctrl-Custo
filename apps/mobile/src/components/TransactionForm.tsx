@@ -9,6 +9,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { lightColors, darkColors } from "@ctrl-custo/ui";
@@ -16,6 +17,13 @@ import type { Colors } from "@ctrl-custo/ui";
 import type { Account, Category, NewTransaction, Transaction } from "@ctrl-custo/core";
 import { formatCurrencyInput, parseCurrencyInput } from "../hooks/useCurrency";
 import { useTransactionStore } from "../store/useTransactionStore";
+import { ApiError } from "../lib/api";
+
+const API_ERROR_MESSAGES: Record<string, string> = {
+  INSUFFICIENT_BALANCE: "Saldo insuficiente para esta operação.",
+  ACCOUNT_ARCHIVED: "Esta conta está arquivada e não pode ser usada.",
+  CARD_LIMIT_EXCEEDED: "Limite do cartão excedido para este mês.",
+};
 
 interface Props {
   visible: boolean;
@@ -132,6 +140,12 @@ export function TransactionForm({
       }
       onSaved?.();
       handleClose();
+    } catch (err) {
+      const msg =
+        err instanceof ApiError && err.code && API_ERROR_MESSAGES[err.code]
+          ? API_ERROR_MESSAGES[err.code]
+          : "Erro ao salvar. Tente novamente.";
+      Alert.alert("Erro", msg);
     } finally {
       setSaving(false);
     }

@@ -66,6 +66,15 @@ async function refreshTokenOnce(): Promise<boolean> {
   return _refreshing;
 }
 
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public code?: string
+  ) {
+    super(message);
+  }
+}
+
 async function req<T>(path: string, init: RequestInit = {}): Promise<T> {
   const hdrs: Record<string, string> = { "Content-Type": "application/json" };
   if (_token) hdrs["Authorization"] = `Bearer ${_token}`;
@@ -87,8 +96,8 @@ async function req<T>(path: string, init: RequestInit = {}): Promise<T> {
   }
 
   if (!res.ok) {
-    const body = (await res.json().catch(() => ({}))) as { error?: string };
-    throw new Error(body.error ?? `HTTP ${res.status}`);
+    const body = (await res.json().catch(() => ({}))) as { error?: string; code?: string };
+    throw new ApiError(body.error ?? `HTTP ${res.status}`, body.code);
   }
 
   if (res.status === 204) return {} as T;
