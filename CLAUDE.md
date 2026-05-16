@@ -13,6 +13,25 @@ Leia `PROJECT.md` antes de qualquer tarefa. Ele contém:
 
 Ao final de cada sessão, atualize a seção **Log de Sessões** do `PROJECT.md` com o que foi feito e o que ficou pendente.
 
+## Oracle Cloud A1.Flex — verificação obrigatória a cada sessão
+
+**Enquanto o app não estiver concluído**, execute este comando via SSH no início de cada sessão (após ler o PROJECT.md) para verificar se a instância A1.Flex já foi criada:
+
+```bash
+ssh oracle-ctrl-custos 'tail -20 ~/oci-create-a1.log'
+```
+
+**O que observar:**
+
+- Se o log mostrar apenas linhas `"Sem capacidade. Próxima tentativa em 60s..."` → ainda aguardando, nada a fazer.
+- Se o log mostrar `"=== SUCESSO! Instância criada: ocid1.instance..."` → A1.Flex criada! Informar o usuário imediatamente com o IP público e os próximos passos:
+  1. `sudo systemctl disable --now oci-create-a1` (na VM atual)
+  2. Re-executar `deploy/setup.sh` na nova A1.Flex
+  3. Transferir dados do PostgreSQL
+  4. Atualizar GitHub Secrets com o novo IP
+
+**Remova esta seção do CLAUDE.md quando a migração para A1.Flex estiver concluída.**
+
 ## Regras de Negócio — obrigatório antes de implementar
 
 Antes de implementar qualquer feature nova ou corrigir lógica de negócio, leia `BUSINESS_RULES.md`. Ele contém:

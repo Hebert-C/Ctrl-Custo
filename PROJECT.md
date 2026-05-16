@@ -971,10 +971,20 @@ pnpm --filter mobile test --verbose
 - `apps/mobile/src/components/DepositForm.tsx` — error handling
 - `apps/mobile/src/components/GoalForm.tsx` — error handling
 
+#### Oracle Cloud — A1.Flex retry service
+
+- **infra:** Identificado que a VM atual é `VM.Standard.E2.1.Micro` (AMD x86, 1/8 OCPU, 1 GB RAM) — insuficiente para o projeto.
+- **infra:** Configurado OCI CLI (`/home/ubuntu/bin/oci`) na VM com API Key + fingerprint + chave privada RSA em `~/.oci/`.
+- **infra:** Criado script `/home/ubuntu/oci-create-a1.sh` — loop de retry a cada 60s que tenta criar `VM.Standard.A1.Flex` (4 OCPU, 24 GB) até conseguir capacidade. Ao criar, loga IP público e para.
+- **infra:** Criado `/etc/systemd/system/oci-create-a1.service` (User=ubuntu, Restart=on-failure). Serviço ativado e confirmado funcionando (primeira tentativa retornou "Sem capacidade").
+- **Log:** `/home/ubuntu/oci-create-a1.log` na VM. Monitorar com `ssh oracle-ctrl-custos 'tail -f ~/oci-create-a1.log'`.
+- **Quando criar:** desativar serviço (`sudo systemctl disable --now oci-create-a1`), re-executar `deploy/setup.sh` na A1.Flex, transferir dados do PostgreSQL e atualizar GitHub Secrets com novo IP.
+
 #### Pendências restantes
 
 - **RN-CARD-05** ⚠️ — cálculo de período de fatura usando `billingDay`/`dueDay` real em vez de mês calendário
 - **RN-TX-14** ❌ — toggle de status pendente/confirmado no formulário mobile
+- **Oracle A1.Flex** — aguardando disponibilidade de capacidade (serviço rodando automaticamente 24/7 na VM)
 
 ---
 
