@@ -137,7 +137,7 @@ Aceitos valores 1–28. Cap em 28 garante que o dia existe em qualquer mês (inc
 
 `DELETE /categories/:id` com transações vinculadas: obrigatório informar `?transferTo=<uuid>`. A API reatribui todas as transações atomicamente e depois deleta a categoria.
 
-### RN-CAT-03 — Categoria não pode ser transferida para si mesma ❌
+### RN-CAT-03 — Categoria não pode ser transferida para si mesma ✅
 
 `DELETE /categories/:id?transferTo=:id` deve ser rejeitado. **Deve retornar 400.**
 
@@ -185,7 +185,7 @@ Se `status` muda de `pending` → `confirmed` via PUT, o saldo deve ser moviment
 
 Formato `YYYY-MM-DD` validado por regex + `.refine(isValidDate)`. Datas impossíveis como `2024-02-30` são rejeitadas: converte para `new Date(d + "T00:00:00Z")` e compara o resultado formatado com a entrada.
 
-### RN-TX-09 — Descrição não pode ser só espaços em branco ❌
+### RN-TX-09 — Descrição não pode ser só espaços em branco ✅
 
 `z.string().min(1)` aceita `"   "`. **Deve aplicar `.trim()` antes de validar.**
 
@@ -197,11 +197,11 @@ Formato `YYYY-MM-DD` validado por regex + `.refine(isValidDate)`. Datas impossí
 
 Última parcela = `amount − (total − 1) × amountPerInstallment`. Ex: 3× de R$ 100 gera R$ 33 + R$ 33 + R$ 34. Implementado em `useTransactionStore.addInstallments` (web e mobile).
 
-### RN-TX-12 — Máximo de 24 parcelas ❌
+### RN-TX-12 — Máximo de 24 parcelas ✅
 
 Não há limite superior no campo `installmentTotal`. **Deve validar `max(24)`.**
 
-### RN-TX-13 — Parcelas só em despesas com cartão ⚠️
+### RN-TX-13 — Parcelas só em despesas com cartão ✅
 
 Parcelamento faz sentido apenas em `type = "expense"` com `cardId`. Não existe validação que impeça parcelas em transferências ou receitas.
 
@@ -237,15 +237,15 @@ Retorna 422 com `code: "DEPOSIT_EXCEEDS_TARGET"` se `currentAmount + amount > ta
 
 Se a meta tem depósitos e `refundAccountId` não for informado, retorna 400. O reembolso é feito atomicamente.
 
-### RN-GOAL-07 — Conta de reembolso não pode estar arquivada ⚠️
+### RN-GOAL-07 — Conta de reembolso não pode estar arquivada ✅
 
 A API aceita qualquer `refundAccountId` sem verificar `isArchived`. **Deve rejeitar conta arquivada com 422.**
 
-### RN-GOAL-08 — Prazo deve ser data futura ❌
+### RN-GOAL-08 — Prazo deve ser data futura ✅
 
 Campo `deadline` aceita qualquer data no formato `YYYY-MM-DD`, incluindo datas passadas. **Deve validar `deadline > hoje` no backend.**
 
-### RN-GOAL-09 — Meta cancelada não aceita depósitos ❌
+### RN-GOAL-09 — Meta cancelada não aceita depósitos ✅
 
 Não há validação de `status` ao depositar. **Deve retornar 422 se `status !== "active"`.**
 
