@@ -116,50 +116,38 @@ export function Cards() {
           <p className="text-center text-sm text-gray-400 py-12">Carregando…</p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {cards.map((card) => {
-              const usagePercent =
-                card.creditLimit > 0
-                  ? Math.min(100, Math.round(((card.creditLimit - 0) / card.creditLimit) * 100))
-                  : 0;
-              return (
-                <div
-                  key={card.id}
-                  className="card p-5 relative group cursor-pointer hover:shadow-md transition-shadow"
-                  style={{ borderTop: `4px solid ${card.color}` }}
-                  onClick={() => openDetail(card)}
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <p className="font-semibold text-gray-900 dark:text-gray-100">{card.name}</p>
-                      <p className="text-xs text-gray-500">{BRAND_LABELS[card.brand]}</p>
-                    </div>
-                    <button
-                      onClick={(e) => handleRemove(e, card.id)}
-                      className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-opacity text-sm"
-                    >
-                      ✕
-                    </button>
+            {cards.map((card) => (
+              <div
+                key={card.id}
+                className="card p-5 relative group cursor-pointer hover:shadow-md transition-shadow"
+                style={{ borderTop: `4px solid ${card.color}` }}
+                onClick={() => openDetail(card)}
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <p className="font-semibold text-gray-900 dark:text-gray-100">{card.name}</p>
+                    <p className="text-xs text-gray-500">{BRAND_LABELS[card.brand]}</p>
                   </div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Limite</span>
-                      <span className="font-medium">{formatCurrency(card.creditLimit)}</span>
-                    </div>
-                    <div className="flex justify-between text-xs text-gray-400">
-                      <span>Fecha dia {card.billingDay}</span>
-                      <span>Vence dia {card.dueDay}</span>
-                    </div>
-                    <div className="h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-brand-500 rounded-full"
-                        style={{ width: `${usagePercent}%` }}
-                      />
-                    </div>
-                    <p className="text-xs text-gray-400 text-right">Clique para ver fatura</p>
-                  </div>
+                  <button
+                    onClick={(e) => handleRemove(e, card.id)}
+                    className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-opacity text-sm"
+                  >
+                    ✕
+                  </button>
                 </div>
-              );
-            })}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Limite</span>
+                    <span className="font-medium">{formatCurrency(card.creditLimit)}</span>
+                  </div>
+                  <div className="flex justify-between text-xs text-gray-400">
+                    <span>Fecha dia {card.billingDay}</span>
+                    <span>Vence dia {card.dueDay}</span>
+                  </div>
+                  <p className="text-xs text-gray-400 text-right">Clique para ver fatura</p>
+                </div>
+              </div>
+            ))}
 
             {cards.length === 0 && (
               <p className="col-span-2 text-center text-sm text-gray-400 py-12 card">
@@ -221,6 +209,34 @@ export function Cards() {
                   </p>
                 </div>
               </div>
+
+              {/* Barra de uso do limite */}
+              {statement && selectedCard.creditLimit > 0 && (
+                <div className="mt-4 space-y-1">
+                  <div className="flex justify-between text-xs text-gray-400">
+                    <span>Uso do limite</span>
+                    <span>
+                      {Math.min(
+                        100,
+                        Math.round((statement.totalSpent / selectedCard.creditLimit) * 100)
+                      )}
+                      %
+                    </span>
+                  </div>
+                  <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{
+                        width: `${Math.min(100, Math.round((statement.totalSpent / selectedCard.creditLimit) * 100))}%`,
+                        backgroundColor:
+                          statement.totalSpent / selectedCard.creditLimit > 0.8
+                            ? "#EF4444"
+                            : selectedCard.color,
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
 
               {/* Month navigation */}
               <div className="flex items-center justify-between mt-4">
