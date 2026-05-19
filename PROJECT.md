@@ -940,7 +940,7 @@ pnpm --filter mobile test --verbose
 
 ## Log de Sessões
 
-### 2026-05-19 — Carteira de Investimentos + Maestro E2E sem custo
+### 2026-05-19 — Carteira de Investimentos + Maestro E2E sem custo + Fix Cartões
 
 #### O que foi feito
 
@@ -949,6 +949,9 @@ pnpm --filter mobile test --verbose
 - **feat(web):** Item "Carteira" adicionado na `Sidebar` e `BottomNav`.
 - **ci:** `maestro-cloud.yml` migrado de Maestro Cloud (pago) para emulador Android no GitHub Actions (gratuito) — `expo prebuild` + Gradle + `reactivecircus/android-emulator-runner`; remove dependência do secret `MAESTRO_API_KEY`.
 - **chore(api):** `scripts/seed-e2e-user.ts` — cria usuário `e2e@ctrl-custo.test` com hash Argon2id, 10 categorias padrão e conta inicial; idempotente.
+- **fix(web):** Bug da barra de progresso nos cartões — a barra no card da lista sempre mostrava 100% porque usava `creditLimit - 0` como numerador. Fix: removida a barra da lista; adicionada barra correta **no modal de fatura** onde `statement.totalSpent` está disponível. Barra usa a cor do cartão; fica vermelha (`#EF4444`) quando uso > 80%.
+- **feat(web/mobile):** Reativação da aba Cartões — estava desativada na `BottomNav`/`Sidebar` (web) e com `href: null` no tab layout (mobile). `apps/mobile/app/(tabs)/cards.tsx` já estava completo com `FlatList`, `CardForm`, `CardStatement` e swipe de exclusão. Ambos reativados.
+- **analysis:** "Pagar fatura" não implementado — investigado o fluxo completo. Hoje a aba mostra fatura e controla limite, mas não existe ação de "pagar" (debitando a conta vinculada e marcando o ciclo como liquidado). Documentado como próxima feature (RN-CARD-06).
 
 #### Arquivos criados/modificados
 
@@ -960,13 +963,16 @@ pnpm --filter mobile test --verbose
 - `apps/web/src/data/b3-tickers.json` — 80 tickers estáticos (novo)
 - `apps/web/src/lib/api.ts` — cliente HTTP investments
 - `apps/web/src/App.tsx` — rota `/investments`
-- `apps/web/src/components/Sidebar.tsx` — item Carteira
-- `apps/web/src/components/BottomNav.tsx` — item Carteira
+- `apps/web/src/components/Sidebar.tsx` — item Carteira + aba Cartões reativada
+- `apps/web/src/components/BottomNav.tsx` — item Carteira + aba Cartões reativada
+- `apps/web/src/pages/Cards/index.tsx` — barra de progresso corrigida (modal) + lista simplificada
+- `apps/mobile/app/(tabs)/_layout.tsx` — aba Cartões reativada
 - `.github/workflows/maestro-cloud.yml` — migrado para emulador
 
 #### Pendências restantes
 
-- **RN-CARD-05** ⚠️ — cálculo de período de fatura usando `billingDay`/`dueDay` real
+- **RN-CARD-05** ⚠️ — cálculo de período de fatura usando `billingDay`/`dueDay` real (ex: fecha dia 10 → fatura vai do dia 11 do mês anterior ao dia 10 do mês atual)
+- **RN-CARD-06** ❌ — "Pagar fatura": botão no modal que cria transação de saída na conta vinculada com valor = `totalSpent` do mês + marca ciclo como liquidado. Requer: tabela `card_payments` ou campo na transação, endpoint `POST /cards/:id/pay`, UI web + mobile.
 - **RN-TX-14** ❌ — toggle pendente/confirmado no formulário mobile
 - **Oracle A1.Flex** — aguardando disponibilidade de capacidade
 - **Maestro E2E** — criar usuário `e2e@ctrl-custo.test` no banco de produção via `pnpm --filter @ctrl-custo/api tsx src/scripts/seed-e2e-user.ts` na VM
