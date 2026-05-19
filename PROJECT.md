@@ -483,17 +483,11 @@ Coletado via WhatsApp após primeira sessão de uso real.
 
 ---
 
-#### 4. Seção de Investimentos
+#### 4. Seção de Investimentos ✅
 
 **Prioridade:** Média
 **Origem:** "Sinto falta de uma parte de investimentos."
-**O que fazer:**
-
-- Criar rota `GET/POST/PUT/DELETE /investments` na API (schema `investments` já existe no banco)
-- Criar página `/investments` no web com listagem e formulário
-- Adicionar item "Investimentos" na navegação
-- Categorias de investimento já existem no seed (tipo `income` — "Investimentos")
-- Ver schema `portfolioSchema` no banco — tabela `investments` já está criada na migration 0002
+**Implementado — `c17cee3`:** Rota CRUD `/investments` na API; página `/investments` com card de resumo da carteira (valor total, variação R$ e %), gráfico de rosca interativo por tipo de ativo (Ação, FII, Fundo/ETF, Cripto, Renda Fixa), lista de ativos com variação individual e formulário de criar/editar com autocomplete de 80 tickers B3; item "Carteira" adicionado na Sidebar e BottomNav.
 
 ---
 
@@ -945,6 +939,39 @@ pnpm --filter mobile test --verbose
 ---
 
 ## Log de Sessões
+
+### 2026-05-19 — Carteira de Investimentos + Maestro E2E sem custo
+
+#### O que foi feito
+
+- **feat(api):** Rota CRUD `/investments` com autenticação JWT — `GET/POST/PUT/DELETE`; validação Zod; ownership garantido por `userId` do token.
+- **feat(web):** Página `/investments` completa — card de resumo da carteira (valor atual, total investido, variação R$ e %), gráfico de rosca interativo por tipo de ativo ao clicar no card, lista de ativos com variação individual (R$ e %), formulário de criar/editar com autocomplete de 80 tickers B3 (ações, FIIs, ETFs, cripto). Ticker livre para qualquer ativo fora da lista.
+- **feat(web):** Item "Carteira" adicionado na `Sidebar` e `BottomNav`.
+- **ci:** `maestro-cloud.yml` migrado de Maestro Cloud (pago) para emulador Android no GitHub Actions (gratuito) — `expo prebuild` + Gradle + `reactivecircus/android-emulator-runner`; remove dependência do secret `MAESTRO_API_KEY`.
+- **chore(api):** `scripts/seed-e2e-user.ts` — cria usuário `e2e@ctrl-custo.test` com hash Argon2id, 10 categorias padrão e conta inicial; idempotente.
+
+#### Arquivos criados/modificados
+
+- `apps/api/src/routes/investments.ts` — rota CRUD (novo)
+- `apps/api/src/app.ts` — registro de `/investments`
+- `apps/api/src/scripts/seed-e2e-user.ts` — seed E2E (novo)
+- `apps/web/src/pages/Investments/index.tsx` — página completa (novo)
+- `apps/web/src/store/useInvestmentStore.ts` — Zustand store (novo)
+- `apps/web/src/data/b3-tickers.json` — 80 tickers estáticos (novo)
+- `apps/web/src/lib/api.ts` — cliente HTTP investments
+- `apps/web/src/App.tsx` — rota `/investments`
+- `apps/web/src/components/Sidebar.tsx` — item Carteira
+- `apps/web/src/components/BottomNav.tsx` — item Carteira
+- `.github/workflows/maestro-cloud.yml` — migrado para emulador
+
+#### Pendências restantes
+
+- **RN-CARD-05** ⚠️ — cálculo de período de fatura usando `billingDay`/`dueDay` real
+- **RN-TX-14** ❌ — toggle pendente/confirmado no formulário mobile
+- **Oracle A1.Flex** — aguardando disponibilidade de capacidade
+- **Maestro E2E** — criar usuário `e2e@ctrl-custo.test` no banco de produção via `pnpm --filter @ctrl-custo/api tsx src/scripts/seed-e2e-user.ts` na VM
+
+---
 
 ### 2026-05-16 — Onboarding checklist + responsividade mobile web + desativação de Cartões
 
