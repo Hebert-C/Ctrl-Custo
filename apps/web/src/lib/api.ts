@@ -9,6 +9,8 @@ import type {
   NewCard,
   Goal,
   NewGoal,
+  Investment,
+  NewInvestment,
 } from "@ctrl-custo/core";
 import type { InstallmentInfo } from "@ctrl-custo/core";
 
@@ -159,6 +161,19 @@ interface ApiGoal extends ApiRow {
   notes: string | null;
 }
 
+interface ApiInvestment extends ApiRow {
+  id: string;
+  name: string;
+  type: Investment["type"];
+  ticker: string | null;
+  quantity: number;
+  purchasePrice: number;
+  currentPrice: number;
+  purchaseDate: string;
+  accountId: string;
+  notes: string | null;
+}
+
 // --- Mappers: null → undefined ---
 
 function mapTransaction(row: ApiTransaction): Transaction {
@@ -242,6 +257,23 @@ function mapGoal(row: ApiGoal): Goal {
     status: row.status,
     color: row.color,
     icon: row.icon,
+    notes: row.notes ?? undefined,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
+}
+
+function mapInvestment(row: ApiInvestment): Investment {
+  return {
+    id: row.id,
+    name: row.name,
+    type: row.type,
+    ticker: row.ticker ?? undefined,
+    quantity: row.quantity,
+    purchasePrice: row.purchasePrice,
+    currentPrice: row.currentPrice,
+    purchaseDate: row.purchaseDate,
+    accountId: row.accountId,
     notes: row.notes ?? undefined,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -375,6 +407,21 @@ export const api = {
         totalSpent: r.totalSpent,
         availableLimit: r.availableLimit,
       })),
+  },
+
+  investments: {
+    list: () => req<ApiInvestment[]>("/investments").then((rows) => rows.map(mapInvestment)),
+    create: (data: NewInvestment) =>
+      req<ApiInvestment>("/investments", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }).then(mapInvestment),
+    update: (id: string, data: Partial<NewInvestment>) =>
+      req<ApiInvestment>(`/investments/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }).then(mapInvestment),
+    remove: (id: string) => req<{ ok: boolean }>(`/investments/${id}`, { method: "DELETE" }),
   },
 
   goals: {

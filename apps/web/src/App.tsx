@@ -4,6 +4,7 @@ import { Dashboard } from "./pages/Dashboard";
 import { Transactions } from "./pages/Transactions";
 import { Cards } from "./pages/Cards";
 import { Goals } from "./pages/Goals";
+import { Investments } from "./pages/Investments";
 import { Reports } from "./pages/Reports";
 import { Settings } from "./pages/Settings";
 import { Login } from "./pages/Login";
@@ -68,6 +69,14 @@ export function App() {
           element={
             <RequireAuth>
               <Goals />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/investments"
+          element={
+            <RequireAuth>
+              <Investments />
             </RequireAuth>
           }
         />

@@ -1,0 +1,172 @@
+[
+  { "ticker": "PETR3", "name": "Petróleo Brasileiro S.A. — Petrobras ON", "type": "stock" },
+  { "ticker": "PETR4", "name": "Petróleo Brasileiro S.A. — Petrobras PN", "type": "stock" },
+  { "ticker": "VALE3", "name": "Vale S.A. ON", "type": "stock" },
+  { "ticker": "ITUB3", "name": "Itaú Unibanco Holding S.A. ON", "type": "stock" },
+  { "ticker": "ITUB4", "name": "Itaú Unibanco Holding S.A. PN", "type": "stock" },
+  { "ticker": "BBDC3", "name": "Banco Bradesco S.A. ON", "type": "stock" },
+  { "ticker": "BBDC4", "name": "Banco Bradesco S.A. PN", "type": "stock" },
+  { "ticker": "ABEV3", "name": "Ambev S.A. ON", "type": "stock" },
+  { "ticker": "WEGE3", "name": "WEG S.A. ON", "type": "stock" },
+  { "ticker": "BBAS3", "name": "Banco do Brasil S.A. ON", "type": "stock" },
+  {
+    "ticker": "ELET3",
+    "name": "Centrais Elétricas Brasileiras S.A. — Eletrobras ON",
+    "type": "stock"
+  },
+  {
+    "ticker": "ELET6",
+    "name": "Centrais Elétricas Brasileiras S.A. — Eletrobras PNB",
+    "type": "stock"
+  },
+  { "ticker": "EMBR3", "name": "Embraer S.A. ON", "type": "stock" },
+  { "ticker": "PRIO3", "name": "PetroRio S.A. ON", "type": "stock" },
+  { "ticker": "JBSS3", "name": "JBS S.A. ON", "type": "stock" },
+  { "ticker": "LREN3", "name": "Lojas Renner S.A. ON", "type": "stock" },
+  { "ticker": "MGLU3", "name": "Magazine Luiza S.A. ON", "type": "stock" },
+  { "ticker": "TOTS3", "name": "TOTVS S.A. ON", "type": "stock" },
+  { "ticker": "RENT3", "name": "Localiza Rent a Car S.A. ON", "type": "stock" },
+  { "ticker": "CSAN3", "name": "Cosan S.A. ON", "type": "stock" },
+  { "ticker": "SUZB3", "name": "Suzano S.A. ON", "type": "stock" },
+  { "ticker": "KLBN11", "name": "Klabin S.A. UNT", "type": "stock" },
+  { "ticker": "BPAC11", "name": "BTG Pactual Participations Ltd. UNT", "type": "stock" },
+  { "ticker": "HAPV3", "name": "Hapvida Participações e Investimentos S.A. ON", "type": "stock" },
+  { "ticker": "RDOR3", "name": "Rede D'Or São Luiz S.A. ON", "type": "stock" },
+  {
+    "ticker": "SBSP3",
+    "name": "Companhia de Saneamento Básico do Estado de São Paulo — Sabesp ON",
+    "type": "stock"
+  },
+  { "ticker": "CMIG4", "name": "Cemig — Companhia Energética de Minas Gerais PN", "type": "stock" },
+  { "ticker": "VIVT3", "name": "Telefônica Brasil S.A. — Vivo ON", "type": "stock" },
+  {
+    "ticker": "TAEE11",
+    "name": "Transmissora Aliança de Energia Elétrica S.A. UNT",
+    "type": "stock"
+  },
+  { "ticker": "EGIE3", "name": "Engie Brasil Energia S.A. ON", "type": "stock" },
+  { "ticker": "CPFE3", "name": "CPFL Energia S.A. ON", "type": "stock" },
+  { "ticker": "CPLE6", "name": "Copel — Companhia Paranaense de Energia PNB", "type": "stock" },
+  { "ticker": "RAIL3", "name": "Rumo S.A. ON", "type": "stock" },
+  { "ticker": "AZUL4", "name": "Azul S.A. PN", "type": "stock" },
+  { "ticker": "GOLL4", "name": "Gol Linhas Aéreas Inteligentes S.A. PN", "type": "stock" },
+  { "ticker": "CRFB3", "name": "Atacadão S.A. ON", "type": "stock" },
+  { "ticker": "ASAI3", "name": "Sendas Distribuidora S.A. — Assaí ON", "type": "stock" },
+  { "ticker": "YDUQ3", "name": "Yduqs Participações S.A. ON", "type": "stock" },
+  { "ticker": "ARZZ3", "name": "Arezzo Indústria e Comércio S.A. ON", "type": "stock" },
+  { "ticker": "PETZ3", "name": "Petz S.A. ON", "type": "stock" },
+  { "ticker": "BRFS3", "name": "BRF S.A. ON", "type": "stock" },
+  { "ticker": "SANB11", "name": "Banco Santander Brasil S.A. UNT", "type": "stock" },
+  { "ticker": "BBSE3", "name": "BB Seguridade Participações S.A. ON", "type": "stock" },
+  { "ticker": "IRBR3", "name": "IRB Brasil RE S.A. ON", "type": "stock" },
+  { "ticker": "ENEV3", "name": "Eneva S.A. ON", "type": "stock" },
+  { "ticker": "SOMA3", "name": "Grupo Soma S.A. ON", "type": "stock" },
+  { "ticker": "LWSA3", "name": "Locaweb Serviços de Internet S.A. ON", "type": "stock" },
+  { "ticker": "B3SA3", "name": "B3 S.A. — Brasil, Bolsa, Balcão ON", "type": "stock" },
+  {
+    "ticker": "HGLG11",
+    "name": "CSHG Logística — Fundo de Investimento Imobiliário",
+    "type": "real_estate"
+  },
+  {
+    "ticker": "KNRI11",
+    "name": "Kinea Renda Imobiliária — Fundo de Investimento Imobiliário",
+    "type": "real_estate"
+  },
+  {
+    "ticker": "XPLG11",
+    "name": "XP Log — Fundo de Investimento Imobiliário",
+    "type": "real_estate"
+  },
+  {
+    "ticker": "HGRU11",
+    "name": "CSHG Renda Urbana — Fundo de Investimento Imobiliário",
+    "type": "real_estate"
+  },
+  {
+    "ticker": "BTLG11",
+    "name": "BTG Pactual Logística — Fundo de Investimento Imobiliário",
+    "type": "real_estate"
+  },
+  {
+    "ticker": "MXRF11",
+    "name": "Maxi Renda — Fundo de Investimento Imobiliário",
+    "type": "real_estate"
+  },
+  {
+    "ticker": "KNCR11",
+    "name": "Kinea Índices de Preços — Fundo de Investimento Imobiliário",
+    "type": "real_estate"
+  },
+  {
+    "ticker": "HGBS11",
+    "name": "CSHG Brasil Shopping — Fundo de Investimento Imobiliário",
+    "type": "real_estate"
+  },
+  {
+    "ticker": "PVBI11",
+    "name": "VBI Prime Properties — Fundo de Investimento Imobiliário",
+    "type": "real_estate"
+  },
+  {
+    "ticker": "BRCO11",
+    "name": "Bresco Logística — Fundo de Investimento Imobiliário",
+    "type": "real_estate"
+  },
+  {
+    "ticker": "CPTS11",
+    "name": "Capitânia Securities — Fundo de Investimento Imobiliário",
+    "type": "real_estate"
+  },
+  {
+    "ticker": "GGRC11",
+    "name": "GGR Copernicus — Fundo de Investimento Imobiliário",
+    "type": "real_estate"
+  },
+  {
+    "ticker": "JSRE11",
+    "name": "JS Real Estate — Fundo de Investimento Imobiliário",
+    "type": "real_estate"
+  },
+  {
+    "ticker": "BCFF11",
+    "name": "BTG Pactual Fundo de Fundos — Fundo de Investimento Imobiliário",
+    "type": "real_estate"
+  },
+  {
+    "ticker": "RBRF11",
+    "name": "RBR Alpha — Fundo de Investimento Imobiliário",
+    "type": "real_estate"
+  },
+  {
+    "ticker": "VILG11",
+    "name": "Vinci Logística — Fundo de Investimento Imobiliário",
+    "type": "real_estate"
+  },
+  {
+    "ticker": "XPML11",
+    "name": "XP Malls — Fundo de Investimento Imobiliário",
+    "type": "real_estate"
+  },
+  {
+    "ticker": "MIDW11",
+    "name": "Midwest — Fundo de Investimento Imobiliário",
+    "type": "real_estate"
+  },
+  { "ticker": "BOVA11", "name": "iShares Ibovespa Fundo de Índice ETF", "type": "fund" },
+  { "ticker": "SMAL11", "name": "iShares MSCI Brazil Small Cap ETF", "type": "fund" },
+  { "ticker": "IVVB11", "name": "iShares S&P 500 ETF", "type": "fund" },
+  { "ticker": "NASI11", "name": "Trend Nasdaq 100 ETF", "type": "fund" },
+  { "ticker": "DIVO11", "name": "IT NOW IDIV ETF", "type": "fund" },
+  { "ticker": "SPXI11", "name": "IT NOW S&P 500 ETF", "type": "fund" },
+  { "ticker": "HASH11", "name": "Hashdex Nasdaq Crypto Index ETF", "type": "fund" },
+  { "ticker": "XINA11", "name": "iShares MSCI China ETF", "type": "fund" },
+  { "ticker": "TECK11", "name": "IT NOW IFNC ETF", "type": "fund" },
+  { "ticker": "BTC", "name": "Bitcoin", "type": "crypto" },
+  { "ticker": "ETH", "name": "Ethereum", "type": "crypto" },
+  { "ticker": "SOL", "name": "Solana", "type": "crypto" },
+  { "ticker": "BNB", "name": "BNB Chain", "type": "crypto" },
+  { "ticker": "XRP", "name": "XRP (Ripple)", "type": "crypto" },
+  { "ticker": "ADA", "name": "Cardano", "type": "crypto" },
+  { "ticker": "DOGE", "name": "Dogecoin", "type": "crypto" }
+]

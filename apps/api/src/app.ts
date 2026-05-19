@@ -7,6 +7,7 @@ import { cardsRouter } from "./routes/cards";
 import { transactionsRouter } from "./routes/transactions";
 import { goalsRouter } from "./routes/goals";
 import { reportsRouter } from "./routes/reports";
+import { investmentsRouter } from "./routes/investments";
 
 const app = new Hono();
 
@@ -20,6 +21,7 @@ app.route("/categories", categoriesRouter);
 app.route("/cards", cardsRouter);
 app.route("/transactions", transactionsRouter);
 app.route("/goals", goalsRouter);
+app.route("/investments", investmentsRouter);
 app.route("/reports", reportsRouter);
 
 app.onError((err, c) => {
