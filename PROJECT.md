@@ -570,41 +570,14 @@ Coletado após primeira sessão de uso real.
 
 ---
 
-### 2. Seção de Investimentos — Carteira
+### 2. Seção de Investimentos — Carteira ✅
 
-**Prioridade:** Média
-**Ideia:** Página dedicada para o usuário registrar seus aportes em ações, FIIs e ETFs da B3. O foco é facilitar o cadastro — o usuário digita o ticker e o nome do ativo é preenchido automaticamente, sem depender de API externa.
+**Implementado — `c17cee3` (2026-05-19)**
 
-#### Como implementar
-
-**Autocomplete de tickers — lista estática embutida no app**
-
-- Criar um arquivo JSON em `apps/web/src/data/b3-tickers.json` com todos os ativos da B3 (~500 itens): ticker + nome completo + tipo (ação, FII, ETF)
-- Sem API, sem rate limit, funciona offline, sempre disponível
-- Lista muda raramente (novos IPOs e delistings ocasionais) — atualização manual algumas vezes por ano
-- Exemplo de entrada: `{ "ticker": "PETR4", "name": "Petróleo Brasileiro S.A. — Petrobras PN", "type": "stock" }`
-
-**Fluxo de cadastro:**
-
-1. Usuário digita o ticker (ex: "PETR") → autocomplete sugere os ativos correspondentes
-2. Seleciona o ativo → nome preenchido automaticamente
-3. Informa quantidade e preço médio de compra — o app calcula o valor total do aporte
-4. Para ativos não listados (renda fixa, cripto, exterior) → preenchimento manual livre
-
-**Backend (`apps/api`):**
-
-- Rotas `GET/POST/PUT/DELETE /investments` (tabela `portfolio.investments` já existe na migration 0002)
-- Campos: `ticker` (opcional), `name`, `quantity`, `averagePrice` (centavos), `type` (stock | fii | etf | other)
-
-**Web (`apps/web`):**
-
-- Página `/investments` com listagem dos aportes cadastrados
-- Formulário com autocomplete de ticker via lista estática
-- Exibição: ticker, nome, quantidade, preço médio, valor total do aporte
-- Adicionar item "Carteira" na navegação (Sidebar)
-- **Card de total investido clicável:** exibe o valor total da carteira; ao clicar, abre um gráfico de pizza com a distribuição percentual por tipo de ativo (ex: 60% FII · 30% Ações · 10% ETF). O gráfico usa o `PieChart` já disponível em `packages/ui`. Clicar fora ou no card novamente fecha o gráfico.
-
-**Complexidade:** Média — o maior trabalho é criar as rotas na API e a página web. O autocomplete com lista estática é simples de implementar.
+- **API:** CRUD `/investments` com autenticação JWT e validação Zod; tabela `portfolio.investments` (migration 0002)
+- **Web:** Página `/investments` com card de resumo (valor total investido, variação R$ e %), gráfico de rosca interativo por tipo de ativo ao clicar no card, lista de ativos com variação individual, formulário de criar/editar com autocomplete de 80 tickers B3 (ações, FIIs, ETFs, cripto); ticker livre para ativos fora da lista
+- **Navegação:** Item "Carteira" adicionado na `Sidebar` e `BottomNav`
+- **Mobile:** página de Investimentos ainda não implementada no mobile
 
 ---
 
@@ -622,7 +595,7 @@ Coletado após primeira sessão de uso real.
 
 #### Como implementar
 
-**Banco de dados — nova tabela em `planning` schema (migration 0003):**
+**Banco de dados — nova tabela em `planning` schema (migration 0005):**
 
 ```sql
 planning.recurring_bills (
@@ -753,7 +726,7 @@ Regras obrigatórias:
 
 #### Como implementar
 
-**Banco de dados — `auth.users` + nova coluna (migration 0003 ou 0004):**
+**Banco de dados — `auth.users` + nova coluna (migration 0005 ou 0006):**
 
 ```sql
 -- adicionar em auth.users:
