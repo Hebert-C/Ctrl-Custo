@@ -34,26 +34,7 @@
 
 > Tarefas que não podem ser feitas via código — requerem ação manual no browser ou terminal.
 
-### 🔑 Maestro Cloud — ativar E2E em dispositivo real
-
-**Por que:** O workflow `.github/workflows/maestro-cloud.yml` já está criado e os flows `.maestro/*.yaml` estão prontos. Falta apenas configurar a conta e o secret para que os testes rodem automaticamente após cada EAS Build.
-
-**Como fazer (uma vez):**
-
-1. Acesse [cloud.mobile.dev](https://cloud.mobile.dev) → criar conta gratuita (100 runs/mês)
-2. Em **Settings → API Keys**, gere uma nova chave
-3. No GitHub, vá em **Settings → Secrets → Actions** e adicione:
-   - Nome: `MAESTRO_API_KEY`
-   - Valor: a chave gerada no passo 2
-4. Pronto — após o próximo `eas.yml` no `main`, o `maestro-cloud.yml` dispara automaticamente
-
-**O que vai rodar (flows `.maestro/`):**
-
-- `login.yaml` → login na conta E2E
-- `dashboard.yaml` → verifica dashboard + navegação por abas
-- `transactions.yaml` → abre formulário de transação
-- `goals.yaml` → cria uma meta completa
-- `settings.yaml` → verifica tela de configurações
+> ✅ **Maestro Cloud removido (2026-05-19):** `maestro-cloud.yml` migrado para emulador Android gratuito no GitHub Actions — `MAESTRO_API_KEY` não é mais necessário.
 
 ---
 
@@ -133,25 +114,25 @@ packages/config/ — tsconfig bases
 
 ### CI/CD — GitHub Actions
 
-| Workflow            | Trigger                                     | O que faz                                                             |
-| ------------------- | ------------------------------------------- | --------------------------------------------------------------------- |
-| `ci.yml`            | Todo push/PR                                | typecheck + lint + testes Vitest (core) + Jest (mobile)               |
-| `deploy-api.yml`    | CI verde na `main`                          | SSH na VM → `deploy/deploy.sh`                                        |
-| `deploy-web.yml`    | CI verde na `main`                          | Build React + rsync `dist/` para VM                                   |
-| `eas.yml`           | Manual / tag `v*.*.*`                       | Build Android APK/AAB via EAS                                         |
-| `maestro-cloud.yml` | Após `eas.yml` na `main` / manual (APK URL) | E2E em dispositivo real via Maestro Cloud ⚠️ requer `MAESTRO_API_KEY` |
-| `tauri.yml`         | Manual / tag `v*.*.*`                       | Build Windows `.msi`/`.exe`                                           |
+| Workflow            | Trigger                           | O que faz                                                                     |
+| ------------------- | --------------------------------- | ----------------------------------------------------------------------------- |
+| `ci.yml`            | Todo push/PR                      | typecheck + lint + testes Vitest (core) + Jest (mobile)                       |
+| `deploy-api.yml`    | CI verde na `main`                | SSH na VM → `deploy/deploy.sh`                                                |
+| `deploy-web.yml`    | CI verde na `main`                | Build React + rsync `dist/` para VM                                           |
+| `eas.yml`           | Manual / tag `v*.*.*`             | Build Android APK/AAB via EAS                                                 |
+| `maestro-cloud.yml` | Após `eas.yml` na `main` / manual | E2E via emulador Android no GitHub Actions (gratuito) — migrado em 2026-05-19 |
+| `tauri.yml`         | Manual / tag `v*.*.*`             | Build Windows `.msi`/`.exe`                                                   |
 
 ### GitHub Secrets necessários
 
-| Secret            | Valor                              | Status                                              |
-| ----------------- | ---------------------------------- | --------------------------------------------------- |
-| `VITE_API_URL`    | `http://ctrlcusto.duckdns.org/api` | ✅ configurado                                      |
-| `ORACLE_HOST`     | `163.176.42.49`                    | ✅ configurado                                      |
-| `ORACLE_USER`     | `deploy`                           | ✅ configurado                                      |
-| `ORACLE_SSH_KEY`  | chave privada ed25519              | ✅ configurado                                      |
-| `EXPO_TOKEN`      | token expo.dev                     | ✅ configurado                                      |
-| `MAESTRO_API_KEY` | API key do cloud.mobile.dev        | ⚠️ **PENDENTE** — ver seção "Ações Pendentes" acima |
+| Secret            | Valor                              | Status                                                |
+| ----------------- | ---------------------------------- | ----------------------------------------------------- |
+| `VITE_API_URL`    | `http://ctrlcusto.duckdns.org/api` | ✅ configurado                                        |
+| `ORACLE_HOST`     | `163.176.42.49`                    | ✅ configurado                                        |
+| `ORACLE_USER`     | `deploy`                           | ✅ configurado                                        |
+| `ORACLE_SSH_KEY`  | chave privada ed25519              | ✅ configurado                                        |
+| `EXPO_TOKEN`      | token expo.dev                     | ✅ configurado                                        |
+| `MAESTRO_API_KEY` | —                                  | ✅ removido — E2E roda via emulador no GitHub Actions |
 
 ---
 
