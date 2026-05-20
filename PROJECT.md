@@ -964,6 +964,33 @@ pnpm --filter mobile test --verbose
 
 ---
 
+### 2026-05-19 — RN-CARD-05, RN-TX-14, Seed E2E produção + fix Maestro YAML
+
+#### O que foi feito
+
+- **fix(e2e):** `.maestro/transactions.yaml` usava `description:` como seletor do `tapOn`, propriedade inválida no Maestro. Fix: `accessibilityLabel:`. Maestro falhava no parse sem rodar nenhum teste. Commit: `c4d53ee`.
+- **chore(infra):** Usuário `e2e@ctrl-custo.test` / `e2e-password-123` criado diretamente via SQL no banco de produção (schema `auth.users` + `ledger.categories` x10 + `banking.accounts` x1, saldo R$ 5.000). Seed idempotente não estava acessível na VM pois a pasta `scripts/` não é deployada.
+- **feat(api/web/mobile): RN-CARD-05** — período real de fatura. `getBillingPeriod(year, month, billingDay)` calcula `start = billingDay+1 do mês anterior` e `end = billingDay do mês atual`. `GET /cards/:id/statement` e `POST /cards/:id/pay` usam `gte/lte` em vez de `LIKE`. Resposta inclui `billingStart` e `billingEnd`. Web e mobile exibem o período real abaixo do label do mês (ex: "11 abr – 10 mai").
+- **feat(mobile): RN-TX-14** — toggle "Confirmado / Pendente" no `TransactionForm`. State `status` (default `confirmed`), carregado do `editing.status` ao editar, resetado ao fechar. Usa `colors.income` (verde) / `colors.pending` (amarelo). Payload passa `status` em vez de `"confirmed"` hardcoded.
+- **docs:** RN-CARD-05 e RN-TX-14 marcadas ✅ no `BUSINESS_RULES.md`.
+
+#### Arquivos criados/modificados
+
+- `.maestro/transactions.yaml` — `description:` → `accessibilityLabel:`
+- `apps/api/src/routes/cards.ts` — `getBillingPeriod()` + `gte/lte` em statement e pay + `billingStart`/`billingEnd` na resposta
+- `apps/web/src/lib/api.ts` — `CardStatement` com `billingStart`/`billingEnd`
+- `apps/web/src/pages/Cards/index.tsx` — `formatBillingPeriod()` + exibição do período
+- `apps/mobile/src/lib/api.ts` — statement mapper com `billingStart`/`billingEnd`
+- `apps/mobile/src/components/CardStatement.tsx` — `billingPeriod` style + `formatBillingPeriod()` + exibição
+- `apps/mobile/src/components/TransactionForm.tsx` — state `status` + toggle UI
+
+#### Pendências restantes
+
+- **Oracle A1.Flex** — aguardando disponibilidade de capacidade
+- **E2E Android** — verificar se o run disparado por `c4d53ee` (fix YAML) passou; novo run disparado por `576e2cc`
+
+---
+
 ### 2026-05-16 — Onboarding checklist + responsividade mobile web + desativação de Cartões
 
 #### O que foi feito
