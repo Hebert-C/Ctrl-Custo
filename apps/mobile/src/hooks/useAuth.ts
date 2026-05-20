@@ -34,15 +34,20 @@ export const useAuthStore = create<AuthStore>((set) => ({
 
   tryRestore: async () => {
     set({ isLoading: true });
+    // Deadline is created before any await so it covers loadTokenFromStorage too
+    const deadline = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("timeout")), 10_000)
+    );
     try {
-      await loadTokenFromStorage();
-      // 10-second timeout so a slow/unreachable server doesn't block the login screen
-      const deadline = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("timeout")), 10_000)
-      );
-      const { accessToken } = await Promise.race([api.auth.refresh(), deadline]);
-      setToken(accessToken);
-      set({ isAuthenticated: true });
+      await Promise.race([
+        (async () => {
+          await loadTokenFromStorage();
+          const { accessToken } = await api.auth.refresh();
+          setToken(accessToken);
+          set({ isAuthenticated: true });
+        })(),
+        deadline,
+      ]);
     } catch {
       clearToken();
       set({ isAuthenticated: false });

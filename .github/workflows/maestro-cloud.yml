@@ -60,7 +60,7 @@ jobs:
           EXPO_PUBLIC_API_URL: https://ctrlcusto.duckdns.org/api
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleDebug --no-daemon --no-build-cache
 
       - name: Install Maestro CLI
         run: |
