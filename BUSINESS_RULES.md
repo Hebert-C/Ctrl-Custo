@@ -111,9 +111,9 @@ Ao criar transação com `cardId`, verificar se `despesas_do_mes + amount <= cre
 
 Aceitos valores 1–28. Cap em 28 garante que o dia existe em qualquer mês (incluindo fevereiro).
 
-### RN-CARD-05 — Fatura calculada sobre transações do mês vigente ⚠️
+### RN-CARD-05 — Fatura calculada sobre período real do cartão ✅
 
-`GET /cards/:id/statement` filtra transações pelo mês informado. Ainda não usa `billingDay`/`dueDay` para calcular o período real da fatura (ex: do dia 6 ao dia 5 do mês seguinte).
+`GET /cards/:id/statement` usa `billingDay` do cartão para calcular o intervalo real: `start = billingDay+1 do mês anterior`, `end = billingDay do mês informado`. A resposta inclui `billingStart` e `billingEnd`. `POST /cards/:id/pay` usa o mesmo período para calcular `totalSpent`.
 
 ### RN-CARD-06 — Disponível = limite − total gasto no mês ✅
 
