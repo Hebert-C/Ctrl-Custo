@@ -118,6 +118,7 @@ export default function Goals() {
       )}
 
       <TouchableOpacity
+        accessibilityLabel="Nova Meta"
         style={[s.fab, { bottom: insets.bottom + 24 }]}
         onPress={() => setGoalFormVisible(true)}
       >

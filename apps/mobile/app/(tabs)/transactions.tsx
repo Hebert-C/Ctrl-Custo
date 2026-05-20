@@ -159,6 +159,7 @@ export default function Transactions() {
           <Ionicons name="chevron-forward" size={20} color={colors.textPrimary} />
         </TouchableOpacity>
         <TouchableOpacity
+          accessibilityLabel="Filtrar transações"
           onPress={() => setFilterVisible(true)}
           style={[s.filterBtn, filterCount > 0 && { backgroundColor: colors.primary }]}
         >

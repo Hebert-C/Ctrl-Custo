@@ -10,11 +10,12 @@ appId: com.hebert.ctrlcusto
 - assertVisible:
     text: "Despesas"
 
-# Expande o hero card para ver o donut
+# Expande o hero card para ver o donut (só aparece se há transações no mês)
 - tapOn:
     text: "Fluxo do Mês"
 - assertVisible:
     text: "Receitas vs Despesas"
+    optional: true
 
 # Fecha o donut tocando novamente
 - tapOn:

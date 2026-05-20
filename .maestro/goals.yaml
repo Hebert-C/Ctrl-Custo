@@ -8,9 +8,9 @@ appId: com.hebert.ctrlcusto
 - assertVisible:
     text: "Metas"
 
-# Abre formulário de nova meta
+# Abre formulário de nova meta via FAB
 - tapOn:
-    text: "Nova Meta"
+    label: "Nova Meta"
 - assertVisible:
     text: "Nova Meta"
 
