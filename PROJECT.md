@@ -991,6 +991,31 @@ pnpm --filter mobile test --verbose
 
 ---
 
+### 2026-05-19 — Mobile Investimentos (espelho da web)
+
+#### O que foi feito
+
+- **docs:** RN-INV-01 a RN-INV-06 marcadas ✅ no `BUSINESS_RULES.md`; status da seção atualizado de "rotas ainda não implementadas" para "Implementado — API, web e mobile".
+- **feat(mobile):** `useInvestmentStore` — Zustand store com `load`, `add`, `update`, `remove` seguindo o padrão dos demais stores.
+- **feat(mobile):** `investments.tsx` — tela completa com: card de resumo (valor atual, custo total, P&L em %); `FlatList` de ativos com badge colorido por tipo, ticker, quantidade, valor e P&L individual; botões de editar/excluir. Formulário bottom-sheet: nome, tipo (chips), ticker opcional, quantidade decimal, preço de compra e atual (formatados em reais), data de compra, conta, observações. Respeita `isHidden` (modo de privacidade).
+- **feat(mobile):** Aba "Investimentos" adicionada ao tab layout com ícone `trending-up`.
+- **feat(mobile):** `api.ts` — tipos `Investment`/`NewInvestment` importados do core; interface `ApiInvestment`; função `mapInvestment`; métodos `api.investments.{list,create,update,remove}`.
+
+#### Arquivos criados/modificados
+
+- `BUSINESS_RULES.md` — RN-INV-01 a RN-INV-06 ✅
+- `apps/mobile/src/lib/api.ts` — Investment types + ApiInvestment interface + mapInvestment + api.investments
+- `apps/mobile/src/store/useInvestmentStore.ts` — store (novo)
+- `apps/mobile/app/(tabs)/investments.tsx` — tela completa (novo)
+- `apps/mobile/app/(tabs)/_layout.tsx` — aba Investimentos adicionada
+
+#### Pendências restantes
+
+- **Oracle A1.Flex** — aguardando disponibilidade de capacidade
+- **E2E Android** — verificar resultado do último run
+
+---
+
 ### 2026-05-16 — Onboarding checklist + responsividade mobile web + desativação de Cartões
 
 #### O que foi feito
