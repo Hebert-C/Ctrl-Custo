@@ -939,6 +939,42 @@ pnpm --filter mobile test --verbose
 
 ## Log de Sessões
 
+### 2026-05-20 — Fix tema bottom sheets + Export XLSX web + Mobile Investimentos
+
+#### O que foi feito
+
+- **fix(mobile):** `InvestmentForm` e `CardForm` passam a ler `isDark` do `useThemeStore` diretamente, em vez de receber como prop. Causa raiz do título preto e fundo azul escuro no dark mode: o tema não era garantido no momento de abertura do modal.
+- **fix(mobile):** `sheet.backgroundColor` trocado de `colors.surface` (`#111827`) para `colors.surfaceRaised` (`#1F2937`) em ambos os bottom sheets — mais claro e neutro em dark mode.
+- **fix(mobile):** Adicionado `borderTopWidth/borderTopColor` no sheet para separar visualmente do overlay.
+- **fix(mobile):** Removido prop `isDark` do call site `cards.tsx` (agora `CardForm` lê do store).
+- **feat(web):** Exportação Excel (`.xlsx`) na tela de Relatórios — botão "↓ Excel (.xlsx)" ao lado de CSV e JSON. Planilha com duas abas: "Transações" e "Resumo Mensal". Instala pacote `xlsx` em `apps/web`.
+- **feat(mobile):** Tela de Investimentos completa (store, screen, tab layout). Ver sessão anterior.
+- **docs:** Backlog de inconsistências web ↔ mobile documentado no PROJECT.md (3 críticos, 3 moderados, 8 RNs).
+- **fix(e2e):** Maestro YAML — `accessibilityLabel` → `label`; concurrency group no workflow.
+
+#### Arquivos criados/modificados
+
+- `apps/mobile/src/components/CardForm.tsx` — lê `isDark` do store, sheet `surfaceRaised`, border
+- `apps/mobile/app/(tabs)/investments.tsx` — `InvestmentForm` lê `isDark` do store, sheet `surfaceRaised`
+- `apps/mobile/app/(tabs)/cards.tsx` — removido prop `isDark` do `<CardForm>`
+- `apps/web/src/pages/Reports/index.tsx` — `handleExportXLSX` + botão + import xlsx
+- `apps/web/package.json` — adicionado `xlsx`
+
+#### Pendências para a próxima sessão
+
+Ver seção **"Backlog de Inconsistências Web ↔ Mobile"** no início deste arquivo.
+
+Prioridade sugerida:
+
+1. **C2** — `api.cards.statement()` mobile: adicionar campo `card` no retorno (vai quebrar `CardStatement.tsx`)
+2. **C3** — `api.cards.pay()` mobile: mapear resposta com `mapTransaction`
+3. **C1** — verificar tipo de retorno real de `auth.register()` na API e alinhar mobile
+4. **M1** — web `categories.remove()` sem `?transferTo`
+5. **M2** — web `goals.remove()` sem `?refundAccountId`
+6. **M3** — mobile sem `auth.verifyEmail()` / `auth.resendVerification()`
+
+---
+
 ### 2026-05-20 — Auditoria de paridade web ↔ mobile + fix Maestro E2E
 
 #### O que foi feito
