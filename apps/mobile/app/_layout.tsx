@@ -12,7 +12,7 @@ import { lightColors, darkColors } from "@ctrl-custo/ui";
 export default function RootLayout() {
   const isDark = useThemeStore((s) => s.isDark);
   const colors = isDark ? darkColors : lightColors;
-  const { isLoading, isAuthenticated, tryRestore } = useAuthStore();
+  const { isLoading, tryRestore } = useAuthStore();
 
   useEffect(() => {
     setUnauthorizedHandler(() => {
@@ -36,16 +36,10 @@ export default function RootLayout() {
     );
   }
 
-  // Stack mounts ONCE after auth is resolved.
-  // initialRouteName avoids any imperative navigate call — the correct
-  // screen is the first entry in the history from the start.
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
       <StatusBar style={isDark ? "light" : "dark"} />
-      <Stack
-        initialRouteName={isAuthenticated ? "(tabs)" : "login"}
-        screenOptions={{ headerShown: false }}
-      />
+      <Stack screenOptions={{ headerShown: false }} />
     </GestureHandlerRootView>
   );
 }
