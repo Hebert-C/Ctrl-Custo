@@ -46,6 +46,7 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('apps/mobile/package.json') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
+          save-always: true
 
       - name: Expo prebuild
         working-directory: apps/mobile
