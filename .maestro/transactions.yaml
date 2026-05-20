@@ -10,11 +10,7 @@ appId: com.hebert.ctrlcusto
 
 # Abre formulário de nova transação via FAB
 - tapOn:
-    id: "fab-add"
-    optional: true
-- tapOn:
-    text: "+"
-    optional: true
+    label: "Adicionar transação"
 - assertVisible:
     text: "Nova Transação"
 

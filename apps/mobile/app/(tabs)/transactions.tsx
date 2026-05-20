@@ -206,6 +206,7 @@ export default function Transactions() {
       {/* FAB */}
       <TouchableOpacity
         testID="fab-add"
+        accessibilityLabel="Adicionar transação"
         style={[s.fab, { bottom: insets.bottom + 16 }]}
         onPress={openCreate}
       >
