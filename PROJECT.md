@@ -933,6 +933,37 @@ pnpm --filter mobile test --verbose
 
 ---
 
+### 2026-05-19 — Pagamento de fatura (RN-CARD-08) + fix E2E Android emulator
+
+#### O que foi feito
+
+- **fix(ci):** `maestro-cloud.yml` — emulador Android falhava no GitHub Actions (`Unable to connect to adb`). Causa: `ubuntu-latest` = Ubuntu 24.04 com incompatibilidade KVM. Fix: `runs-on: ubuntu-22.04` + `emulator-options: swiftshader_indirect` + `disable-animations: true`. Commit: `282f821`.
+- **feat(api):** Endpoint `POST /cards/:id/pay` (RN-CARD-08) — recebe `{ month, categoryId }`, valida cartão/conta/categoria por ownership, calcula `totalSpent` (apenas `expense + confirmed`), valida saldo, cria transação `expense` + debita conta atomicamente via `db.transaction()`. Erros: `INSUFFICIENT_BALANCE` (422), fatura zerada (400).
+- **feat(web):** `api.cards.pay()` adicionado; modal de pagamento no `Cards/index.tsx` — botão "Pagar Fatura — R$ X" aparece quando `totalSpent > 0` e mês ≤ mês atual; modal de confirmação com seletor de categoria (apenas despesa/ambos), exibição de erros inline.
+- **feat(mobile):** `api.cards.pay()` adicionado em `apps/mobile/src/lib/api.ts`; `CardStatement.tsx` — botão "Pagar Fatura" + Modal de seleção de categoria; após pagamento recarrega fatura + contas + dispara `onPaymentDone`.
+- **fix(mobile):** Bug silencioso — `totalAmount` estava mapeado de `data.totalAmount` (undefined) em vez de `data.totalSpent`. Mobile sempre exibia R$ 0,00 na fatura. Corrigido no mesmo commit.
+- **docs:** RN-CARD-08 marcado ✅ no `BUSINESS_RULES.md`.
+
+#### Arquivos criados/modificados
+
+- `apps/api/src/routes/cards.ts` — endpoint `POST /:id/pay`
+- `apps/web/src/lib/api.ts` — `cards.pay()`
+- `apps/web/src/pages/Cards/index.tsx` — UI pagamento de fatura
+- `apps/mobile/src/lib/api.ts` — `cards.pay()` + fix totalAmount mapping + remove `ApiCardStatement` unused
+- `apps/mobile/src/components/CardStatement.tsx` — botão + modal categoria + styles payBtn/catRow
+- `BUSINESS_RULES.md` — RN-CARD-08 ✅
+- `.github/workflows/maestro-cloud.yml` — ubuntu-22.04 + swiftshader_indirect
+
+#### Pendências restantes
+
+- **RN-CARD-05** ⚠️ — cálculo de período de fatura usando `billingDay`/`dueDay` real
+- **RN-TX-14** ❌ — toggle pendente/confirmado no formulário mobile
+- **Oracle A1.Flex** — aguardando disponibilidade de capacidade (tentativa 1103+ em andamento)
+- **Maestro E2E** — criar usuário `e2e@ctrl-custo.test` no banco de produção via `pnpm --filter @ctrl-custo/api tsx src/scripts/seed-e2e-user.ts` na VM
+- **E2E Android** — resultado do run `282f821` não monitorado até o fim; verificar se passou na próxima sessão
+
+---
+
 ### 2026-05-16 — Onboarding checklist + responsividade mobile web + desativação de Cartões
 
 #### O que foi feito
