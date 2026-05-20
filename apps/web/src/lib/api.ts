@@ -147,6 +147,8 @@ export interface CardStatement {
   transactions: Transaction[];
   totalSpent: number;
   availableLimit: number;
+  billingStart: string;
+  billingEnd: string;
 }
 
 interface ApiGoal extends ApiRow {
@@ -401,11 +403,15 @@ export const api = {
         transactions: ApiTransaction[];
         totalSpent: number;
         availableLimit: number;
+        billingStart: string;
+        billingEnd: string;
       }>(`/cards/${id}/statement?month=${month}`).then((r) => ({
         card: mapCard(r.card),
         transactions: r.transactions.map(mapTransaction),
         totalSpent: r.totalSpent,
         availableLimit: r.availableLimit,
+        billingStart: r.billingStart,
+        billingEnd: r.billingEnd,
       })),
     pay: (id: string, month: string, categoryId: string) =>
       req<{ transaction: ApiTransaction }>(`/cards/${id}/pay`, {

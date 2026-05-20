@@ -22,6 +22,8 @@ interface StatementData {
   totalAmount: number;
   availableLimit: number;
   transactions: Transaction[];
+  billingStart: string;
+  billingEnd: string;
 }
 
 interface Props {
@@ -151,9 +153,16 @@ export function CardStatement({ visible, onClose, card, isDark, onPaymentDone }:
             <TouchableOpacity onPress={prevMonth} style={s.navBtn}>
               <Ionicons name="chevron-back" size={20} color={colors.textPrimary} />
             </TouchableOpacity>
-            <Text style={s.monthLabel}>
-              {MONTHS[month - 1]} {year}
-            </Text>
+            <View style={{ alignItems: "center" }}>
+              <Text style={s.monthLabel}>
+                {MONTHS[month - 1]} {year}
+              </Text>
+              {data && (
+                <Text style={s.billingPeriod}>
+                  {formatBillingPeriod(data.billingStart, data.billingEnd)}
+                </Text>
+              )}
+            </View>
             <TouchableOpacity onPress={nextMonth} style={s.navBtn}>
               <Ionicons name="chevron-forward" size={20} color={colors.textPrimary} />
             </TouchableOpacity>
@@ -275,6 +284,16 @@ function formatDate(iso: string) {
   return `${day}/${month}`;
 }
 
+function formatBillingPeriod(start: string, end: string) {
+  const parse = (s: string) => {
+    const [y, m, d] = s.split("-").map(Number);
+    return new Date(y, m - 1, d);
+  };
+  const fmt = (d: Date) =>
+    d.toLocaleDateString("pt-BR", { day: "numeric", month: "short" }).replace(".", "");
+  return `${fmt(parse(start))} – ${fmt(parse(end))}`;
+}
+
 const styles = (colors: Colors) =>
   StyleSheet.create({
     overlay: { flex: 1, justifyContent: "flex-end", backgroundColor: colors.overlay },
@@ -310,6 +329,7 @@ const styles = (colors: Colors) =>
     },
     navBtn: { padding: 4 },
     monthLabel: { fontSize: 15, fontWeight: "600", color: colors.textPrimary },
+    billingPeriod: { fontSize: 11, color: colors.textSecondary, marginTop: 2 },
     center: { alignItems: "center", paddingVertical: 40 },
     summary: {
       flexDirection: "row",

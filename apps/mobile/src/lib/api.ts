@@ -358,10 +358,14 @@ export const api = {
         transactions: ApiTransaction[];
         totalSpent: number;
         availableLimit: number;
+        billingStart: string;
+        billingEnd: string;
       }>(`/cards/${id}/statement?month=${month}`).then((data) => ({
         totalAmount: data.totalSpent,
         availableLimit: data.availableLimit,
         transactions: data.transactions.map(mapTransaction),
+        billingStart: data.billingStart,
+        billingEnd: data.billingEnd,
       })),
     pay: (id: string, month: string, categoryId: string) =>
       req<{ transaction: ApiTransaction }>(`/cards/${id}/pay`, {

@@ -38,6 +38,16 @@ function formatMonthLabel(month: string) {
   return new Date(y, m - 1, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
 }
 
+function formatBillingPeriod(start: string, end: string) {
+  const parse = (s: string) => {
+    const [y, m, d] = s.split("-").map(Number);
+    return new Date(y, m - 1, d);
+  };
+  const fmt = (d: Date) =>
+    d.toLocaleDateString("pt-BR", { day: "numeric", month: "short" }).replace(".", "");
+  return `${fmt(parse(start))} – ${fmt(parse(end))}`;
+}
+
 export function Cards() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -292,9 +302,16 @@ export function Cards() {
                 >
                   ‹
                 </button>
-                <span className="text-sm font-medium capitalize">
-                  {formatMonthLabel(stmtMonth)}
-                </span>
+                <div className="text-center">
+                  <span className="text-sm font-medium capitalize block">
+                    {formatMonthLabel(stmtMonth)}
+                  </span>
+                  {statement && (
+                    <span className="text-xs text-gray-400">
+                      {formatBillingPeriod(statement.billingStart, statement.billingEnd)}
+                    </span>
+                  )}
+                </div>
                 <button
                   onClick={() => changeMonth(nextMonth(stmtMonth))}
                   disabled={stmtMonth >= currentMonth()}

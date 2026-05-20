@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, sql, gte, lte } from "drizzle-orm";
 import { db } from "../db/index";
 import { cards, transactions, accounts, categories } from "../db/schema";
 import { requireAuth, type AuthEnv } from "../middleware/auth";
@@ -17,6 +17,14 @@ const cardBody = z.object({
   color: z.string().min(1).max(20),
   isArchived: z.boolean().optional(),
 });
+
+function getBillingPeriod(year: number, month: number, billingDay: number) {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const end = new Date(year, month - 1, billingDay);
+  const start = new Date(year, month - 2, billingDay + 1);
+  const fmt = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  return { start: fmt(start), end: fmt(end) };
+}
 
 export const cardsRouter = new Hono<AuthEnv>();
 
@@ -71,6 +79,9 @@ cardsRouter.get("/:id/statement", async (c) => {
 
   if (!card) return c.json({ error: "Cartão não encontrado." }, 404);
 
+  const [year, mon] = month.split("-").map(Number);
+  const { start, end } = getBillingPeriod(year, mon, card.billingDay);
+
   const txs = await db
     .select()
     .from(transactions)
@@ -78,7 +89,8 @@ cardsRouter.get("/:id/statement", async (c) => {
       and(
         eq(transactions.userId, userId),
         eq(transactions.cardId, id),
-        sql`${transactions.date} LIKE ${month + "-%"}`
+        gte(transactions.date, start),
+        lte(transactions.date, end)
       )
     )
     .orderBy(sql`${transactions.date} DESC, ${transactions.createdAt} DESC`);
@@ -90,6 +102,8 @@ cardsRouter.get("/:id/statement", async (c) => {
     transactions: txs,
     totalSpent,
     availableLimit: card.creditLimit - totalSpent,
+    billingStart: start,
+    billingEnd: end,
   });
 });
 
@@ -131,6 +145,9 @@ cardsRouter.post(
       .limit(1);
     if (!category) return c.json({ error: "Categoria não encontrada." }, 404);
 
+    const [payYear, payMon] = month.split("-").map(Number);
+    const { start: payStart, end: payEnd } = getBillingPeriod(payYear, payMon, card.billingDay);
+
     const txRows = await db
       .select({ amount: transactions.amount })
       .from(transactions)
@@ -140,7 +157,8 @@ cardsRouter.post(
           eq(transactions.cardId, cardId),
           eq(transactions.type, "expense"),
           eq(transactions.status, "confirmed"),
-          sql`${transactions.date} LIKE ${month + "-%"}`
+          gte(transactions.date, payStart),
+          lte(transactions.date, payEnd)
         )
       );
     const totalSpent = txRows.reduce((sum, t) => sum + t.amount, 0);
