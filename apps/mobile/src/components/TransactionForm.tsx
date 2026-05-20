@@ -59,6 +59,7 @@ export function TransactionForm({
   const [selectedCategoryId, setSelectedCategoryId] = useState("");
   const [date, setDate] = useState(today());
   const [notes, setNotes] = useState("");
+  const [status, setStatus] = useState<"confirmed" | "pending">("confirmed");
   const [installments, setInstallments] = useState("1");
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -72,6 +73,7 @@ export function TransactionForm({
       setSelectedAccountId(editing.accountId);
       setSelectedCategoryId(editing.categoryId ?? "");
       setDate(editing.date);
+      setStatus(editing.status === "pending" ? "pending" : "confirmed");
       setNotes(editing.notes ?? "");
       setDestinationAccountId(
         (editing as Transaction & { destinationAccountId?: string }).destinationAccountId ?? ""
@@ -90,6 +92,7 @@ export function TransactionForm({
     setDestinationAccountId("");
     setSelectedCategoryId("");
     setDate(today());
+    setStatus("confirmed");
     setNotes("");
     setInstallments("1");
     setErrors({});
@@ -120,7 +123,7 @@ export function TransactionForm({
         description: description.trim(),
         amount,
         type,
-        status: "confirmed",
+        status,
         date,
         categoryId: selectedCategoryId,
         accountId: selectedAccountId,
@@ -322,6 +325,27 @@ export function TransactionForm({
                 />
               </>
             )}
+
+            {/* Status */}
+            <Text style={s.label}>Status</Text>
+            <View style={s.typeRow}>
+              <TouchableOpacity
+                style={[s.typeBtn, status === "confirmed" && { backgroundColor: colors.income }]}
+                onPress={() => setStatus("confirmed")}
+              >
+                <Text style={[s.typeBtnText, status === "confirmed" && { color: "#fff" }]}>
+                  Confirmado
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[s.typeBtn, status === "pending" && { backgroundColor: colors.pending }]}
+                onPress={() => setStatus("pending")}
+              >
+                <Text style={[s.typeBtnText, status === "pending" && { color: "#fff" }]}>
+                  Pendente
+                </Text>
+              </TouchableOpacity>
+            </View>
 
             {/* Observações */}
             <Text style={s.label}>Observações (opcional)</Text>
