@@ -34,14 +34,26 @@ export const useAuthStore = create<AuthStore>((set) => ({
 
   tryRestore: async () => {
     set({ isLoading: true });
-    // Deadline is created before any await so it covers loadTokenFromStorage too
-    const deadline = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error("timeout")), 10_000)
-    );
     try {
+      // Fast path: if SecureStore has no token (e.g. fresh install / clearState),
+      // skip the network round-trip entirely and go straight to login.
+      const storedToken = await Promise.race([
+        loadTokenFromStorage(),
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 3_000)),
+      ]);
+
+      if (!storedToken) {
+        clearToken();
+        set({ isAuthenticated: false });
+        return;
+      }
+
+      // Stored token exists — try to get a fresh access token from the server.
+      const deadline = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("timeout")), 7_000)
+      );
       await Promise.race([
         (async () => {
-          await loadTokenFromStorage();
           const { accessToken } = await api.auth.refresh();
           setToken(accessToken);
           set({ isAuthenticated: true });

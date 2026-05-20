@@ -1,6 +1,6 @@
 import "../src/polyfills";
 import React, { useEffect } from "react";
-import { Stack, Redirect } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { ActivityIndicator, View } from "react-native";
@@ -13,6 +13,7 @@ export default function RootLayout() {
   const isDark = useThemeStore((s) => s.isDark);
   const colors = isDark ? darkColors : lightColors;
   const { isLoading, isAuthenticated, tryRestore } = useAuthStore();
+  const router = useRouter();
 
   useEffect(() => {
     setUnauthorizedHandler(() => {
@@ -21,10 +22,19 @@ export default function RootLayout() {
     tryRestore();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Auth guard: navigate imperatively once loading resolves.
+  // <Redirect> inside a root layout is unreliable in Expo Router v5 —
+  // useEffect + router.replace is the documented pattern.
+  useEffect(() => {
+    if (isLoading) return;
+    if (!isAuthenticated) {
+      router.replace("/login" as never);
+    }
+  }, [isLoading, isAuthenticated]); // eslint-disable-line react-hooks/exhaustive-deps
+
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
       <StatusBar style={isDark ? "light" : "dark"} />
-      {!isAuthenticated && !isLoading && <Redirect href={"/login" as never} />}
       <Stack screenOptions={{ headerShown: false }} />
       {isLoading && (
         <View
