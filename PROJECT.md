@@ -38,6 +38,51 @@
 
 ---
 
+## 🔴 Backlog de Inconsistências Web ↔ Mobile
+
+> Auditoria realizada em 2026-05-20. Prioridade sugerida de implementação na próxima sessão.
+
+### Críticos — quebram funcionalidade
+
+| #   | Arquivo                      | Problema                                                                                                                                                   | Como corrigir                                                                                                                 |
+| --- | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| C1  | `apps/mobile/src/lib/api.ts` | `auth.register()` espera `{ accessToken }` mas API retorna `{ message }` após registro (precisa confirmar e-mail primeiro — sem token imediato)            | Verificar retorno real da API (`apps/api/src/routes/auth.ts`) e alinhar o tipo no mobile                                      |
+| C2  | `apps/mobile/src/lib/api.ts` | `cards.statement()` renomeia `totalSpent → totalAmount` e **omite o campo `card`** do retorno — `CardStatement.tsx` acessa `card.*` e vai lançar TypeError | Adicionar `card: mapCard(data.card)` ao objeto retornado; manter `totalAmount` OU renomear para `totalSpent` consistentemente |
+| C3  | `apps/mobile/src/lib/api.ts` | `cards.pay()` não mapeia a resposta — retorna `ApiTransaction` raw em vez de `{ transaction: Transaction }`                                                | Adicionar `.then((r) => ({ transaction: mapTransaction(r.transaction) }))` igual à web                                        |
+
+### Moderados — faltam no web
+
+| #   | Arquivo                      | Problema                                                                                                                | Como corrigir                                                           |
+| --- | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| M1  | `apps/web/src/lib/api.ts`    | `categories.remove()` não passa `?transferTo=<id>` — vai retornar 409 ao deletar categoria com transações               | Adicionar parâmetro opcional `transferTo?: string` igual ao mobile      |
+| M2  | `apps/web/src/lib/api.ts`    | `goals.remove()` não passa `?refundAccountId=<id>` — vai falhar ao deletar meta com saldo                               | Adicionar parâmetro opcional `refundAccountId?: string` igual ao mobile |
+| M3  | `apps/mobile/src/lib/api.ts` | Não implementa `auth.verifyEmail()` nem `auth.resendVerification()` — usuário não pode verificar e-mail pelo app mobile | Adicionar os dois métodos espelhando a web                              |
+
+### Business Rules não implementadas
+
+| RN         | Status | Descrição                                                     | Onde implementar                                   |
+| ---------- | ------ | ------------------------------------------------------------- | -------------------------------------------------- |
+| RN-TX-06   | ❌     | Cancelar transação confirmada deve reverter saldo na conta    | Backend (`apps/api/src/routes/transactions.ts`)    |
+| RN-TX-07   | ❌     | Confirmar transação pendente deve aplicar saldo na conta      | Backend                                            |
+| RN-TX-12   | ❌     | Máximo de 24 parcelas                                         | Frontend (web + mobile)                            |
+| RN-TX-13   | ⚠️     | Parcelas só em despesas com cartão — hoje permite em receitas | Frontend (web + mobile)                            |
+| RN-GOAL-07 | ❌     | Conta de reembolso não pode estar arquivada                   | Backend (`apps/api/src/routes/goals.ts`)           |
+| RN-GOAL-08 | ❌     | Prazo da meta deve ser data futura                            | Frontend + Backend                                 |
+| RN-GOAL-09 | ❌     | Meta cancelada não aceita novos depósitos                     | Backend                                            |
+| RN-CAT-03  | ❌     | Categoria não pode ser transferida para si mesma              | Frontend (web — mobile não tem UI para isso ainda) |
+
+### Diferenças de design (não são bugs)
+
+| Área          | Web                                          | Mobile                                        | Observação                                               |
+| ------------- | -------------------------------------------- | --------------------------------------------- | -------------------------------------------------------- |
+| Settings      | 2 seções (Bancos, Categorias)                | 4 seções (+ Tema, Ocultar, Biometria, Logout) | Mobile é superset — OK                                   |
+| Dashboard     | Carrega todos os dados de uma vez            | Filtra por mês selecionado                    | Mobile mais eficiente — avaliar se web precisa paginação |
+| Investimentos | DonutChart por tipo + ticker autocomplete B3 | Só CRUD, sem gráfico                          | Adicionar gráfico no mobile (baixa prioridade)           |
+| Reports       | Export JSON                                  | Export CSV/XLSX + agregação diária            | Alinhar formatos de export                               |
+| Transactions  | Filtros em barra horizontal                  | Filtros em modal                              | Diferença de UX — OK                                     |
+
+---
+
 ## Convenção de Branches
 
 Cada fase usa branch dedicada, criada sempre a partir da fase anterior (nunca de `main` diretamente).
@@ -893,6 +938,33 @@ pnpm --filter mobile test --verbose
 ---
 
 ## Log de Sessões
+
+### 2026-05-20 — Auditoria de paridade web ↔ mobile + fix Maestro E2E
+
+#### O que foi feito
+
+- **analysis:** Auditoria completa de paridade entre `apps/web` e `apps/mobile` — rotas, stores, API client, páginas, formulários, business rules e navegação. Resultado documentado na seção "Backlog de Inconsistências" acima.
+- **fix(e2e):** `.maestro/transactions.yaml` — `accessibilityLabel:` também é propriedade inválida no Maestro; corrigido para `label:` (propriedade correta).
+- **fix(ci):** `maestro-cloud.yml` — adicionado `concurrency: group: maestro-e2e / cancel-in-progress: true` para cancelar runs antigos automaticamente quando um novo push chega. Runs acumulados cancelados manualmente via `gh run cancel`.
+- **feat(mobile):** Tela de Investimentos completa — card de resumo (valor atual, custo, P&L%), lista com badge por tipo, formulário bottom-sheet. Store `useInvestmentStore`. Aba "Investimentos" no tab layout.
+- **docs:** RN-INV-01 a RN-INV-06 marcadas ✅ no `BUSINESS_RULES.md`.
+
+#### Arquivos criados/modificados
+
+- `PROJECT.md` — seção "Backlog de Inconsistências Web ↔ Mobile" adicionada
+- `.maestro/transactions.yaml` — `accessibilityLabel:` → `label:`
+- `.github/workflows/maestro-cloud.yml` — concurrency group
+- `BUSINESS_RULES.md` — RN-INV-01 a RN-INV-06 ✅
+- `apps/mobile/src/lib/api.ts` — Investment types + ApiInvestment + mapInvestment + api.investments
+- `apps/mobile/src/store/useInvestmentStore.ts` — (novo)
+- `apps/mobile/app/(tabs)/investments.tsx` — (novo)
+- `apps/mobile/app/(tabs)/_layout.tsx` — aba Investimentos
+
+#### Pendências restantes (próxima sessão)
+
+Ver seção **"Backlog de Inconsistências Web ↔ Mobile"** acima — 3 críticos + 3 moderados + 8 RNs.
+
+---
 
 ### 2026-05-19 — Carteira de Investimentos + Maestro E2E sem custo + Fix Cartões
 
