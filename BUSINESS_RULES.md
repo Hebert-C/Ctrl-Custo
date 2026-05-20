@@ -209,9 +209,9 @@ Não há limite superior no campo `installmentTotal`. **Deve validar `max(24)`.*
 
 Parcelamento faz sentido apenas em `type = "expense"` com `cardId`. Não existe validação que impeça parcelas em transferências ou receitas.
 
-### RN-TX-14 — Status `pending` disponível no mobile ❌
+### RN-TX-14 — Status `pending` disponível no mobile ✅
 
-Mobile cria todas as transações como `"confirmed"`. Transações pendentes (boletos, parcelas futuras) não são acessíveis no mobile. **Deve adicionar toggle no formulário mobile.**
+Toggle "Confirmado / Pendente" adicionado no `TransactionForm` mobile. Default `confirmed`; ao editar, carrega o status existente. Usa `colors.income` (verde) para confirmado e `colors.pending` (amarelo) para pendente.
 
 ---
 
