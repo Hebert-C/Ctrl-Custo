@@ -16,12 +16,12 @@ appId: com.hebert.ctrlcusto
 
 # Preenche nome
 - tapOn:
-    placeholder: "Ex: Viagem para Europa"
+    id: "input-goal-name"
 - inputText: "Meta Maestro E2E"
 
 # Preenche valor
 - tapOn:
-    placeholder: "0,00"
+    id: "input-goal-amount"
 - inputText: "100000"
 
 # Salva

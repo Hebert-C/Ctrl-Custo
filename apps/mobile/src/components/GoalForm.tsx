@@ -113,6 +113,7 @@ export function GoalForm({ visible, onClose, isDark }: Props) {
           <ScrollView showsVerticalScrollIndicator={false}>
             <Text style={s.label}>Nome da meta</Text>
             <TextInput
+              testID="input-goal-name"
               style={s.input}
               value={name}
               onChangeText={setName}
@@ -124,6 +125,7 @@ export function GoalForm({ visible, onClose, isDark }: Props) {
             <View style={s.amountRow}>
               <Text style={s.currencyPrefix}>R$</Text>
               <TextInput
+                testID="input-goal-amount"
                 style={s.amountInput}
                 value={targetRaw}
                 onChangeText={(v) => setTargetRaw(formatCurrencyInput(parseCurrencyInput(v)))}
