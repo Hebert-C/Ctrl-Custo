@@ -204,7 +204,11 @@ export default function Transactions() {
       )}
 
       {/* FAB */}
-      <TouchableOpacity style={[s.fab, { bottom: insets.bottom + 16 }]} onPress={openCreate}>
+      <TouchableOpacity
+        testID="fab-add"
+        style={[s.fab, { bottom: insets.bottom + 16 }]}
+        onPress={openCreate}
+      >
         <Ionicons name="add" size={28} color="#fff" />
       </TouchableOpacity>
 
