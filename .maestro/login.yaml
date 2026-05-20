@@ -10,11 +10,11 @@ appId: com.hebert.ctrlcusto
     text: "Entrar"
 
 - tapOn:
-    text: "seu@email.com"
+    id: "input-email"
 - inputText: "nome@teste.com"
 
 - tapOn:
-    text: "Mínimo 8 caracteres"
+    id: "input-password"
 - inputText: "Teste@1234"
 
 - tapOn:

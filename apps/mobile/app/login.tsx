@@ -74,6 +74,7 @@ export default function LoginScreen() {
         <View style={s.form}>
           <Text style={s.label}>E-mail</Text>
           <TextInput
+            testID="input-email"
             style={s.input}
             value={email}
             onChangeText={setEmail}
@@ -86,6 +87,7 @@ export default function LoginScreen() {
 
           <Text style={s.label}>Senha</Text>
           <TextInput
+            testID="input-password"
             style={s.input}
             value={password}
             onChangeText={setPassword}
