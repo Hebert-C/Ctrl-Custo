@@ -224,6 +224,9 @@ importers:
       react-router-dom:
         specifier: ^6.28.0
         version: 6.30.3(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
+      xlsx:
+        specifier: ^0.18.5
+        version: 0.18.5
       zustand:
         specifier: ^5.0.0
         version: 5.0.12(@types/react@19.1.17)(react@19.2.6)(use-sync-external-store@1.6.0(react@19.2.6))

@@ -216,7 +216,6 @@ export default function Investments() {
         visible={formVisible}
         onClose={() => setFormVisible(false)}
         accounts={accounts}
-        isDark={isDark}
         editing={editing ?? undefined}
         onSaved={async () => {
           setFormVisible(false);
@@ -235,23 +234,14 @@ interface FormProps {
   visible: boolean;
   onClose: () => void;
   accounts: import("@ctrl-custo/core").Account[];
-  isDark: boolean;
   editing?: Investment;
   onSaved: () => void;
   add: (data: NewInvestment) => Promise<Investment>;
   update: (id: string, data: Partial<NewInvestment>) => Promise<void>;
 }
 
-function InvestmentForm({
-  visible,
-  onClose,
-  accounts,
-  isDark,
-  editing,
-  onSaved,
-  add,
-  update,
-}: FormProps) {
+function InvestmentForm({ visible, onClose, accounts, editing, onSaved, add, update }: FormProps) {
+  const isDark = useThemeStore((s) => s.isDark);
   const colors = isDark ? darkColors : lightColors;
 
   const [name, setName] = useState("");
@@ -565,9 +555,11 @@ const styles = (colors: Colors) =>
     // Form
     overlay: { flex: 1, justifyContent: "flex-end", backgroundColor: colors.overlay },
     sheet: {
-      backgroundColor: colors.surface,
+      backgroundColor: colors.surfaceRaised,
       borderTopLeftRadius: 20,
       borderTopRightRadius: 20,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
       padding: 16,
       maxHeight: "92%",
     },

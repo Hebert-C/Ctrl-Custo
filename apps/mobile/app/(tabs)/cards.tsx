@@ -103,12 +103,7 @@ export default function Cards() {
         <Ionicons name="add" size={28} color="#fff" />
       </TouchableOpacity>
 
-      <CardForm
-        visible={formVisible}
-        onClose={() => setFormVisible(false)}
-        accounts={accounts}
-        isDark={isDark}
-      />
+      <CardForm visible={formVisible} onClose={() => setFormVisible(false)} accounts={accounts} />
 
       {selectedCard && (
         <CardStatement

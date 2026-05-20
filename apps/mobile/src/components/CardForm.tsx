@@ -16,6 +16,7 @@ import type { Colors } from "@ctrl-custo/ui";
 import type { Account, CardBrand, NewCard } from "@ctrl-custo/core";
 import { formatCurrencyInput, parseCurrencyInput } from "../hooks/useCurrency";
 import { useCardStore } from "../store/useCardStore";
+import { useThemeStore } from "../store/useThemeStore";
 
 const CARD_BRANDS: { value: CardBrand; label: string }[] = [
   { value: "visa", label: "Visa" },
@@ -43,10 +44,10 @@ interface Props {
   visible: boolean;
   onClose: () => void;
   accounts: Account[];
-  isDark: boolean;
 }
 
-export function CardForm({ visible, onClose, accounts, isDark }: Props) {
+export function CardForm({ visible, onClose, accounts }: Props) {
+  const isDark = useThemeStore((s) => s.isDark);
   const colors = isDark ? darkColors : lightColors;
   const add = useCardStore((s) => s.add);
 
@@ -235,9 +236,11 @@ const styles = (colors: Colors) =>
   StyleSheet.create({
     overlay: { flex: 1, justifyContent: "flex-end", backgroundColor: colors.overlay },
     sheet: {
-      backgroundColor: colors.surface,
+      backgroundColor: colors.surfaceRaised,
       borderTopLeftRadius: 20,
       borderTopRightRadius: 20,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
       padding: 16,
       maxHeight: "90%",
     },

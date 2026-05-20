@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
+import * as XLSX from "xlsx";
 import { Layout } from "../../components/Layout";
 import { BarChart } from "../../components/BarChart";
 import { LineChart } from "../../components/LineChart";
@@ -74,6 +75,40 @@ export function Reports() {
     URL.revokeObjectURL(url);
   }
 
+  function handleExportXLSX() {
+    const catById = Object.fromEntries(categories.map((c) => [c.id, c.name]));
+    const txRows = transactions.map((tx) => ({
+      Data: tx.date,
+      Descrição: tx.description,
+      Tipo: tx.type === "income" ? "Receita" : tx.type === "expense" ? "Despesa" : "Transferência",
+      "Valor (R$)": (tx.amount / 100).toFixed(2).replace(".", ","),
+      Categoria: catById[tx.categoryId] ?? "",
+      Status: tx.status === "confirmed" ? "Confirmada" : "Pendente",
+      Notas: tx.notes ?? "",
+    }));
+    const summaryRows = evolution.map((m) => ({
+      Mês: formatMonthLabel(m.month),
+      "Receitas (R$)": (m.income / 100).toFixed(2).replace(".", ","),
+      "Despesas (R$)": (m.expense / 100).toFixed(2).replace(".", ","),
+      "Saldo (R$)": ((m.income - m.expense) / 100).toFixed(2).replace(".", ","),
+    }));
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(txRows), "Transações");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summaryRows), "Resumo Mensal");
+
+    const buf = XLSX.write(wb, { type: "array", bookType: "xlsx" });
+    const blob = new Blob([buf], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `ctrl-custo-${new Date().toISOString().slice(0, 10)}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   function handleExportJSON() {
     const svc = createExportService();
     const data = svc.buildExportData(transactions, categories, []);
@@ -109,10 +144,13 @@ export function Reports() {
           </div>
           <div className="flex gap-2">
             <button onClick={handleExportCSV} className="btn-secondary text-sm">
-              ↓ Exportar CSV
+              ↓ CSV
+            </button>
+            <button onClick={handleExportXLSX} className="btn-secondary text-sm">
+              ↓ Excel (.xlsx)
             </button>
             <button onClick={handleExportJSON} className="btn-secondary text-sm">
-              ↓ Exportar JSON
+              ↓ JSON
             </button>
           </div>
         </div>
