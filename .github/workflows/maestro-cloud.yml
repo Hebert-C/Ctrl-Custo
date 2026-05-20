@@ -7,6 +7,10 @@ on:
     types: [completed]
     branches: [main]
 
+concurrency:
+  group: maestro-e2e
+  cancel-in-progress: true
+
 jobs:
   e2e:
     name: E2E Tests — Android Emulator

@@ -44,7 +44,7 @@ appId: com.hebert.ctrlcusto
 
 # Abre painel de filtros
 - tapOn:
-    accessibilityLabel: "Filtrar transações"
+    label: "Filtrar transações"
     optional: true
 - assertVisible:
     text: "Filtros"
