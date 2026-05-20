@@ -1,7 +1,8 @@
-import React from "react";
-import { Tabs } from "expo-router";
+import React, { useEffect } from "react";
+import { Tabs, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useThemeStore } from "../../src/store/useThemeStore";
+import { useAuthStore } from "../../src/hooks/useAuth";
 import { lightColors, darkColors } from "@ctrl-custo/ui";
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>["name"];
@@ -23,6 +24,14 @@ function TabIcon({
 export default function TabLayout() {
   const isDark = useThemeStore((s) => s.isDark);
   const colors = isDark ? darkColors : lightColors;
+  const { isAuthenticated, isLoading } = useAuthStore();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.replace("/login" as never);
+    }
+  }, [isLoading, isAuthenticated]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <Tabs
