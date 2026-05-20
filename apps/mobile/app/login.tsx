@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { useAuthStore } from "../src/hooks/useAuth";
+import { useAuthStore, RegistrationPendingError } from "../src/hooks/useAuth";
 import { lightColors } from "@ctrl-custo/ui";
 
 type Mode = "login" | "register";
@@ -25,19 +25,26 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   async function handleSubmit() {
     setLoading(true);
     setError("");
+    setSuccess("");
     try {
       if (mode === "login") {
         await login(email, password);
+        router.replace("/(tabs)");
       } else {
         await register(email, password);
       }
-      router.replace("/(tabs)");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao autenticar.");
+      if (err instanceof RegistrationPendingError) {
+        setSuccess(err.message);
+        setMode("login");
+      } else {
+        setError(err instanceof Error ? err.message : "Erro ao autenticar.");
+      }
     } finally {
       setLoading(false);
     }
@@ -61,6 +68,7 @@ export default function LoginScreen() {
               onPress={() => {
                 setMode(m);
                 setError("");
+                setSuccess("");
               }}
             >
               <Text style={[s.tabText, mode === m && s.tabTextActive]}>
@@ -97,6 +105,7 @@ export default function LoginScreen() {
             placeholderTextColor={colors.textDisabled}
           />
 
+          {success ? <Text style={s.success}>{success}</Text> : null}
           {error ? <Text style={s.error}>{error}</Text> : null}
 
           <TouchableOpacity
@@ -166,6 +175,7 @@ const s = StyleSheet.create({
     fontSize: 15,
     color: colors.textPrimary,
   },
+  success: { fontSize: 13, color: colors.income, marginTop: 8 },
   error: { fontSize: 13, color: colors.danger, marginTop: 8 },
   btn: {
     backgroundColor: colors.primary,

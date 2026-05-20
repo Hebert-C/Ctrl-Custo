@@ -319,7 +319,7 @@ export const api = {
         body: JSON.stringify({ email, password }),
       }),
     register: (email: string, password: string) =>
-      req<{ accessToken: string }>("/auth/register", {
+      req<{ message: string }>("/auth/register", {
         method: "POST",
         body: JSON.stringify({ email, password }),
       }),
@@ -393,6 +393,7 @@ export const api = {
         billingStart: string;
         billingEnd: string;
       }>(`/cards/${id}/statement?month=${month}`).then((data) => ({
+        card: mapCard(data.card),
         totalAmount: data.totalSpent,
         availableLimit: data.availableLimit,
         transactions: data.transactions.map(mapTransaction),
@@ -403,7 +404,7 @@ export const api = {
       req<{ transaction: ApiTransaction }>(`/cards/${id}/pay`, {
         method: "POST",
         body: JSON.stringify({ month, categoryId }),
-      }),
+      }).then((r) => ({ transaction: mapTransaction(r.transaction) })),
   },
 
   goals: {

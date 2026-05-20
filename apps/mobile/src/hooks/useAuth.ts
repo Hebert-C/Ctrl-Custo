@@ -1,6 +1,13 @@
 import { create } from "zustand";
 import { api, setToken, clearToken, loadTokenFromStorage } from "../lib/api";
 
+export class RegistrationPendingError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "RegistrationPendingError";
+  }
+}
+
 interface AuthStore {
   isAuthenticated: boolean;
   isLoading: boolean;
@@ -21,9 +28,8 @@ export const useAuthStore = create<AuthStore>((set) => ({
   },
 
   register: async (email, password) => {
-    const { accessToken } = await api.auth.register(email, password);
-    setToken(accessToken);
-    set({ isAuthenticated: true });
+    const { message } = await api.auth.register(email, password);
+    throw new RegistrationPendingError(message);
   },
 
   logout: async () => {
