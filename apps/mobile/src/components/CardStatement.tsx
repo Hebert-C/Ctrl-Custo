@@ -7,16 +7,18 @@ import {
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { lightColors, darkColors } from "@ctrl-custo/ui";
 import type { Colors } from "@ctrl-custo/ui";
 import type { Card, Transaction } from "@ctrl-custo/core";
 import { formatCurrency } from "../hooks/useCurrency";
-import { api } from "../lib/api";
+import { api, ApiError } from "../lib/api";
+import { useCategoryStore } from "../store/useCategoryStore";
+import { useAccountStore } from "../store/useAccountStore";
 
 interface StatementData {
-  month: string;
   totalAmount: number;
   availableLimit: number;
   transactions: Transaction[];
@@ -27,6 +29,7 @@ interface Props {
   onClose: () => void;
   card: Card;
   isDark: boolean;
+  onPaymentDone?: () => void;
 }
 
 const MONTHS = [
@@ -44,13 +47,22 @@ const MONTHS = [
   "Dezembro",
 ];
 
-export function CardStatement({ visible, onClose, card, isDark }: Props) {
+export function CardStatement({ visible, onClose, card, isDark, onPaymentDone }: Props) {
   const colors = isDark ? darkColors : lightColors;
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [data, setData] = useState<StatementData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [payLoading, setPayLoading] = useState(false);
+  const [showCatPicker, setShowCatPicker] = useState(false);
+
+  const { categories, load: loadCats } = useCategoryStore();
+  const { load: loadAccounts } = useAccountStore();
+
+  useEffect(() => {
+    if (visible) loadCats();
+  }, [visible]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!visible) return;
@@ -67,6 +79,39 @@ export function CardStatement({ visible, onClose, card, isDark }: Props) {
       setData(null);
     } finally {
       setLoading(false);
+    }
+  }
+
+  function currentMonthStr() {
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  }
+
+  function selectedMonthStr() {
+    return `${year}-${String(month).padStart(2, "0")}`;
+  }
+
+  function handlePayPress() {
+    const expenseCategories = categories.filter((c) => c.type === "expense" || c.type === "both");
+    if (expenseCategories.length === 0) {
+      Alert.alert("Erro", "Nenhuma categoria de despesa encontrada.");
+      return;
+    }
+    setShowCatPicker(true);
+  }
+
+  async function handlePayWithCategory(categoryId: string) {
+    setShowCatPicker(false);
+    setPayLoading(true);
+    try {
+      await api.cards.pay(card.id, selectedMonthStr(), categoryId);
+      await Promise.all([load(), loadAccounts()]);
+      onPaymentDone?.();
+      Alert.alert("Sucesso", "Fatura paga com sucesso!");
+    } catch (err) {
+      const msg = err instanceof ApiError ? err.message : "Erro ao pagar fatura.";
+      Alert.alert("Erro", msg);
+    } finally {
+      setPayLoading(false);
     }
   }
 
@@ -136,6 +181,58 @@ export function CardStatement({ visible, onClose, card, isDark }: Props) {
                   </Text>
                 </View>
               </View>
+
+              {/* Botão Pagar Fatura */}
+              {data.totalAmount > 0 && selectedMonthStr() <= currentMonthStr() && (
+                <TouchableOpacity
+                  style={[s.payBtn, payLoading && s.payBtnDisabled]}
+                  onPress={handlePayPress}
+                  disabled={payLoading}
+                >
+                  {payLoading ? (
+                    <ActivityIndicator color="#fff" size="small" />
+                  ) : (
+                    <Text style={s.payBtnText}>
+                      Pagar Fatura — {formatCurrency(data.totalAmount)}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              )}
+
+              {/* Category picker */}
+              <Modal
+                visible={showCatPicker}
+                animationType="slide"
+                transparent
+                onRequestClose={() => setShowCatPicker(false)}
+              >
+                <View style={s.overlay}>
+                  <View style={s.sheet}>
+                    <View style={s.handle} />
+                    <View style={s.header}>
+                      <TouchableOpacity onPress={() => setShowCatPicker(false)}>
+                        <Ionicons name="close" size={22} color={colors.textSecondary} />
+                      </TouchableOpacity>
+                      <Text style={s.title}>Categoria do pagamento</Text>
+                      <View style={{ width: 22 }} />
+                    </View>
+                    <FlatList
+                      data={categories.filter((c) => c.type === "expense" || c.type === "both")}
+                      keyExtractor={(item) => item.id}
+                      contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32 }}
+                      renderItem={({ item }) => (
+                        <TouchableOpacity
+                          style={s.catRow}
+                          onPress={() => handlePayWithCategory(item.id)}
+                        >
+                          <Text style={s.catName}>{item.name}</Text>
+                          <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+                        </TouchableOpacity>
+                      )}
+                    />
+                  </View>
+                </View>
+              </Modal>
 
               {/* Transações */}
               <FlatList
@@ -238,4 +335,23 @@ const styles = (colors: Colors) =>
     txAmount: { fontSize: 14, fontWeight: "700" },
     empty: { alignItems: "center", paddingVertical: 24 },
     emptyText: { fontSize: 14, color: colors.textDisabled },
+    payBtn: {
+      backgroundColor: colors.primary,
+      marginHorizontal: 16,
+      marginBottom: 12,
+      borderRadius: 10,
+      paddingVertical: 14,
+      alignItems: "center",
+    },
+    payBtnDisabled: { opacity: 0.6 },
+    payBtnText: { color: "#fff", fontSize: 15, fontWeight: "700" },
+    catRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingVertical: 14,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    catName: { fontSize: 15, color: colors.textPrimary },
   });

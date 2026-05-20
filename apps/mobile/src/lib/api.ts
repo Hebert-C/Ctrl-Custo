@@ -128,13 +128,6 @@ interface ApiTransaction extends ApiRow {
   notes: string | null;
 }
 
-interface ApiCardStatement {
-  month: string;
-  totalAmount: number;
-  availableLimit: number;
-  transactions: ApiTransaction[];
-}
-
 interface ApiAccount extends ApiRow {
   id: string;
   name: string;
@@ -360,12 +353,21 @@ export const api = {
       req<ApiCard>(`/cards/${id}`, { method: "PUT", body: JSON.stringify(data) }).then(mapCard),
     remove: (id: string) => req<{ ok: boolean }>(`/cards/${id}`, { method: "DELETE" }),
     statement: (id: string, month: string) =>
-      req<ApiCardStatement>(`/cards/${id}/statement?month=${month}`).then((data) => ({
-        month: data.month,
-        totalAmount: data.totalAmount,
+      req<{
+        card: ApiCard;
+        transactions: ApiTransaction[];
+        totalSpent: number;
+        availableLimit: number;
+      }>(`/cards/${id}/statement?month=${month}`).then((data) => ({
+        totalAmount: data.totalSpent,
         availableLimit: data.availableLimit,
         transactions: data.transactions.map(mapTransaction),
       })),
+    pay: (id: string, month: string, categoryId: string) =>
+      req<{ transaction: ApiTransaction }>(`/cards/${id}/pay`, {
+        method: "POST",
+        body: JSON.stringify({ month, categoryId }),
+      }),
   },
 
   goals: {

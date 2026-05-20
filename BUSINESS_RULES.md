@@ -123,6 +123,10 @@ Aceitos valores 1–28. Cap em 28 garante que o dia existe em qualquer mês (inc
 
 `GET /cards` filtra `isArchived = false`.
 
+### RN-CARD-08 — Pagamento de fatura débita a conta vinculada ✅
+
+`POST /cards/:id/pay` recebe `{ month, categoryId }`. Calcula `totalSpent` do mês (apenas `expense confirmed`). Valida: fatura > 0, conta não arquivada, saldo suficiente (`RN-ACC-06`). Cria transação `expense` na `accountId` do cartão com `amount = totalSpent` e `description = "Fatura {card.name} — {mês}"`. Retorna `{ transaction }`.
+
 ---
 
 ## Domínio: Categories (Categorias)

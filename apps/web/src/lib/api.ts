@@ -407,6 +407,11 @@ export const api = {
         totalSpent: r.totalSpent,
         availableLimit: r.availableLimit,
       })),
+    pay: (id: string, month: string, categoryId: string) =>
+      req<{ transaction: ApiTransaction }>(`/cards/${id}/pay`, {
+        method: "POST",
+        body: JSON.stringify({ month, categoryId }),
+      }).then((r) => ({ transaction: mapTransaction(r.transaction) })),
   },
 
   investments: {

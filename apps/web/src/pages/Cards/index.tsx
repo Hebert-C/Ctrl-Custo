@@ -2,8 +2,9 @@ import React, { useEffect, useState } from "react";
 import { Layout } from "../../components/Layout";
 import { useCardStore } from "../../store/useCardStore";
 import { useAccountStore } from "../../store/useAccountStore";
+import { useCategoryStore } from "../../store/useCategoryStore";
 import { formatCurrency } from "../../hooks/useCurrency";
-import { api } from "../../lib/api";
+import { api, ApiError } from "../../lib/api";
 import type { CardStatement } from "../../lib/api";
 import type { Card, NewCard } from "@ctrl-custo/core";
 
@@ -42,6 +43,7 @@ export function Cards() {
   const [showForm, setShowForm] = useState(false);
   const { cards, load, add, remove } = useCardStore();
   const { accounts, load: loadAccs } = useAccountStore();
+  const { categories, load: loadCats } = useCategoryStore();
 
   const [form, setForm] = useState<Partial<NewCard>>({
     brand: "visa",
@@ -58,8 +60,14 @@ export function Cards() {
   const [stmtMonth, setStmtMonth] = useState(currentMonth());
   const [stmtLoading, setStmtLoading] = useState(false);
 
+  // Payment modal state
+  const [showPayModal, setShowPayModal] = useState(false);
+  const [payCategoryId, setPayCategoryId] = useState("");
+  const [payLoading, setPayLoading] = useState(false);
+  const [payError, setPayError] = useState("");
+
   useEffect(() => {
-    Promise.all([load(), loadAccs()]).then(() => setLoading(false));
+    Promise.all([load(), loadAccs(), loadCats()]).then(() => setLoading(false));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function openDetail(card: Card) {
@@ -94,6 +102,28 @@ export function Cards() {
       color: "#8A2BE2",
       isArchived: false,
     });
+  }
+
+  async function handlePay(e: React.FormEvent) {
+    e.preventDefault();
+    if (!selectedCard || !payCategoryId) return;
+    setPayLoading(true);
+    setPayError("");
+    try {
+      await api.cards.pay(selectedCard.id, stmtMonth, payCategoryId);
+      setShowPayModal(false);
+      setPayCategoryId("");
+      // Reload statement and accounts to reflect new balance
+      const [newStmt] = await Promise.all([
+        api.cards.statement(selectedCard.id, stmtMonth),
+        loadAccs(),
+      ]);
+      setStatement(newStmt);
+    } catch (err) {
+      setPayError(err instanceof ApiError ? err.message : "Erro ao pagar fatura.");
+    } finally {
+      setPayLoading(false);
+    }
   }
 
   async function handleRemove(e: React.MouseEvent, id: string) {
@@ -238,6 +268,22 @@ export function Cards() {
                 </div>
               )}
 
+              {/* Pagar Fatura */}
+              {statement && statement.totalSpent > 0 && stmtMonth <= currentMonth() && (
+                <div className="mt-4">
+                  <button
+                    onClick={() => {
+                      setPayCategoryId("");
+                      setPayError("");
+                      setShowPayModal(true);
+                    }}
+                    className="w-full btn-primary text-sm py-2"
+                  >
+                    Pagar Fatura — {formatCurrency(statement.totalSpent)}
+                  </button>
+                </div>
+              )}
+
               {/* Month navigation */}
               <div className="flex items-center justify-between mt-4">
                 <button
@@ -294,6 +340,59 @@ export function Cards() {
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Payment confirmation modal */}
+      {showPayModal && selectedCard && statement && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60">
+          <form
+            onSubmit={handlePay}
+            className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4"
+          >
+            <h3 className="text-base font-semibold">Pagar Fatura</h3>
+            <div className="bg-red-50 dark:bg-red-900/20 rounded-xl p-4 text-center">
+              <p className="text-xs text-gray-500 mb-1">{formatMonthLabel(stmtMonth)}</p>
+              <p className="text-2xl font-bold text-red-600">
+                {formatCurrency(statement.totalSpent)}
+              </p>
+              <p className="text-xs text-gray-400 mt-1">
+                Débito em: {accounts.find((a) => a.id === selectedCard.accountId)?.name ?? "—"}
+              </p>
+            </div>
+            <div>
+              <label className="label">Categoria</label>
+              <select
+                className="input-field"
+                value={payCategoryId}
+                required
+                onChange={(e) => setPayCategoryId(e.target.value)}
+              >
+                <option value="">Selecionar…</option>
+                {categories
+                  .filter((c) => c.type === "expense" || c.type === "both")
+                  .map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.icon} {c.name}
+                    </option>
+                  ))}
+              </select>
+            </div>
+            {payError && <p className="text-sm text-red-500">{payError}</p>}
+            <div className="flex gap-3 pt-1">
+              <button
+                type="button"
+                onClick={() => setShowPayModal(false)}
+                className="btn-secondary flex-1"
+                disabled={payLoading}
+              >
+                Cancelar
+              </button>
+              <button type="submit" className="btn-primary flex-1" disabled={payLoading}>
+                {payLoading ? "Pagando…" : "Confirmar"}
+              </button>
+            </div>
+          </form>
         </div>
       )}
 

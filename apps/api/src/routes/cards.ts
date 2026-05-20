@@ -3,7 +3,7 @@ import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { eq, and, sql } from "drizzle-orm";
 import { db } from "../db/index";
-import { cards, transactions } from "../db/schema";
+import { cards, transactions, accounts, categories } from "../db/schema";
 import { requireAuth, type AuthEnv } from "../middleware/auth";
 
 const cardBody = z.object({
@@ -92,6 +92,98 @@ cardsRouter.get("/:id/statement", async (c) => {
     availableLimit: card.creditLimit - totalSpent,
   });
 });
+
+// RN-CARD-08: pagamento de fatura
+cardsRouter.post(
+  "/:id/pay",
+  zValidator(
+    "json",
+    z.object({
+      month: z.string().regex(/^\d{4}-\d{2}$/, "month deve ser YYYY-MM"),
+      categoryId: z.string().uuid(),
+    })
+  ),
+  async (c) => {
+    const userId = c.get("userId");
+    const cardId = c.req.param("id");
+    const { month, categoryId } = c.req.valid("json");
+
+    const [card] = await db
+      .select()
+      .from(cards)
+      .where(and(eq(cards.id, cardId), eq(cards.userId, userId)))
+      .limit(1);
+    if (!card) return c.json({ error: "Cartão não encontrado." }, 404);
+
+    const [account] = await db
+      .select()
+      .from(accounts)
+      .where(and(eq(accounts.id, card.accountId), eq(accounts.userId, userId)))
+      .limit(1);
+    if (!account) return c.json({ error: "Conta não encontrada." }, 404);
+    if (account.isArchived)
+      return c.json({ error: "Conta arquivada.", code: "ACCOUNT_ARCHIVED" }, 422);
+
+    const [category] = await db
+      .select({ id: categories.id })
+      .from(categories)
+      .where(and(eq(categories.id, categoryId), eq(categories.userId, userId)))
+      .limit(1);
+    if (!category) return c.json({ error: "Categoria não encontrada." }, 404);
+
+    const txRows = await db
+      .select({ amount: transactions.amount })
+      .from(transactions)
+      .where(
+        and(
+          eq(transactions.userId, userId),
+          eq(transactions.cardId, cardId),
+          eq(transactions.type, "expense"),
+          eq(transactions.status, "confirmed"),
+          sql`${transactions.date} LIKE ${month + "-%"}`
+        )
+      );
+    const totalSpent = txRows.reduce((sum, t) => sum + t.amount, 0);
+
+    if (totalSpent === 0) return c.json({ error: "Fatura zerada. Nada a pagar." }, 400);
+
+    if (account.balance < totalSpent)
+      return c.json({ error: "Saldo insuficiente.", code: "INSUFFICIENT_BALANCE" }, 422);
+
+    const [y, m] = month.split("-").map(Number);
+    const monthLabel = new Date(y, m - 1, 1).toLocaleDateString("pt-BR", {
+      month: "long",
+      year: "numeric",
+    });
+    const payDate = new Date().toISOString().slice(0, 10);
+
+    const result = await db.transaction(async (trx) => {
+      const [newTx] = await trx
+        .insert(transactions)
+        .values({
+          id: crypto.randomUUID(),
+          userId,
+          description: `Fatura ${card.name} — ${monthLabel}`,
+          amount: totalSpent,
+          type: "expense",
+          status: "confirmed",
+          date: payDate,
+          categoryId,
+          accountId: card.accountId,
+        })
+        .returning();
+
+      await trx
+        .update(accounts)
+        .set({ balance: account.balance - totalSpent, updatedAt: new Date() })
+        .where(eq(accounts.id, card.accountId));
+
+      return newTx;
+    });
+
+    return c.json({ transaction: result }, 201);
+  }
+);
 
 cardsRouter.delete("/:id", async (c) => {
   const userId = c.get("userId");
