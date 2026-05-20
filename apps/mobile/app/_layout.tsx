@@ -21,26 +21,27 @@ export default function RootLayout() {
     tryRestore();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (isLoading) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: colors.background,
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        <ActivityIndicator color={colors.primary} size="large" />
-      </View>
-    );
-  }
-
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
       <StatusBar style={isDark ? "light" : "dark"} />
-      {!isAuthenticated && <Redirect href={"/login" as never} />}
+      {!isAuthenticated && !isLoading && <Redirect href={"/login" as never} />}
       <Stack screenOptions={{ headerShown: false }} />
+      {isLoading && (
+        <View
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: colors.background,
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <ActivityIndicator color={colors.primary} size="large" />
+        </View>
+      )}
     </GestureHandlerRootView>
   );
 }
