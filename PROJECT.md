@@ -939,6 +939,37 @@ pnpm --filter mobile test --verbose
 
 ## Log de Sessões
 
+### 2026-05-20 — Fix profundo Maestro E2E (5 correções)
+
+#### O que foi feito
+
+- **analysis:** Auditoria completa do pipeline Maestro E2E — leitura do workflow, de todos os 6 flows YAML e dos componentes React Native referenciados. Identificados 2 críticos, 2 moderados e 4 menores.
+- **fix(e2e/crítico):** `app.json` — removido `"expo-sqlite"` da lista de plugins. O pacote não existe mais no mobile desde a Fase 8 (migração para API REST). O `expo prebuild --clean` falhava ao tentar configurar um plugin sem pacote instalado, derrubando o build antes do Gradle.
+- **fix(e2e/crítico):** `transactions.tsx` — adicionado `testID="fab-add"` no `TouchableOpacity` do FAB. O botão renderiza `<Ionicons name="add">` (ícone SVG), não um `<Text>`. Sem `testID`, os seletores `id: "fab-add"` e `text: "+"` eram ambos pulados (optional) e o `assertVisible: "Nova Transação"` (não-optional) garantia FAIL.
+- **fix(e2e/moderado):** `login.tsx` — adicionado `testID="login-submit"` no botão de submit. A tela de login tem dois elementos com texto "Entrar" (tab e botão); sem `testID`, o Maestro poderia tocar no tab em vez do botão e o login nunca acontecia.
+- **fix(e2e/moderado):** `login.yaml` — reescrito para usar `tapOn: placeholder:` nos campos de email/senha (em vez de `tapOn: text:` nos labels `<Text>`, que não focam o `TextInput`); usa `tapOn: id: "login-submit"` para o submit; corrige assertiva "Ctrl-Custo" → "Ctrl+Custo" (texto real renderizado na tela).
+- **fix(ci):** `maestro-cloud.yml` — adicionado step de cache do Gradle (`~/.gradle/caches` + `~/.gradle/wrapper`) com chave baseada em `apps/mobile/package.json`. Reduz ~20-30 min de build a partir do segundo run.
+
+#### Arquivos criados/modificados
+
+- `apps/mobile/app.json` — removido `"expo-sqlite"` dos plugins
+- `apps/mobile/app/(tabs)/transactions.tsx` — `testID="fab-add"` no FAB
+- `apps/mobile/app/login.tsx` — `testID="login-submit"` no botão de submit
+- `.maestro/login.yaml` — placeholder selectors + id submit + Ctrl+Custo
+- `.github/workflows/maestro-cloud.yml` — cache Gradle
+
+#### Problemas menores documentados (não corrigidos agora)
+
+- `goals.yaml` — cria "Meta Maestro E2E" sem deletar após o teste; acumula entradas no banco a cada run
+- `dashboard.yaml` — "Receitas vs Despesas" pode precisar de scroll após expandir o donut; assertVisible sem scroll pode ser flaky
+- 7 abas no tab bar: no emulador Pixel 6 os labels são truncados visualmente, mas o accessibility tree tem o texto completo — Maestro deve encontrar corretamente via UIAutomator2
+
+#### Pendências para a próxima sessão
+
+Ver seção **"Backlog de Inconsistências Web ↔ Mobile"** no início deste arquivo.
+
+---
+
 ### 2026-05-20 — Fix tema bottom sheets + Export XLSX web + Mobile Investimentos
 
 #### O que foi feito
