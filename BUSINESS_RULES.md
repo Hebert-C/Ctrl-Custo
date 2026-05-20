@@ -261,30 +261,29 @@ Só aumenta via depósito. Delete apaga a meta inteira — não há operação d
 
 ## Domínio: Investments (Investimentos)
 
-> **Status:** Schema definido, rotas ainda não implementadas.
-> Implementar junto com a feature na branch `feature/investments`.
+> **Status:** Implementado — API (`GET/POST/PUT/DELETE /investments`), web e mobile.
 
-### RN-INV-01 — Preço em centavos _(a implementar)_
+### RN-INV-01 — Preço em centavos ✅
 
 `purchasePrice` e `currentPrice` em centavos inteiros. Para ativos com muitos decimais (crypto), usar centavos de centavos (8 casas decimais como inteiro) ou definir escala no schema.
 
-### RN-INV-02 — Quantidade pode ser fracionada _(a implementar)_
+### RN-INV-02 — Quantidade pode ser fracionada ✅
 
 `quantity` é `DOUBLE` — permite frações (ex: 0,5 ação, 0,00045 BTC). Cálculo de valor total: `quantity × currentPrice`.
 
-### RN-INV-03 — Ganho/perda calculado on-the-fly _(a implementar)_
+### RN-INV-03 — Ganho/perda calculado on-the-fly ✅
 
 Nunca armazenar ganho/perda — calcular na leitura: `(currentPrice − purchasePrice) × quantity`.
 
-### RN-INV-04 — `currentPrice` atualizado manualmente _(a implementar)_
+### RN-INV-04 — `currentPrice` atualizado manualmente ✅
 
 O app não consulta API de cotações. O usuário atualiza o preço atual quando quiser. Sem preço de mercado em tempo real.
 
-### RN-INV-05 — Investimento pertence a uma conta _(a implementar)_
+### RN-INV-05 — Investimento pertence a uma conta ✅
 
 `accountId` obrigatório — representa de qual conta o dinheiro saiu para o investimento.
 
-### RN-INV-06 — Tipos válidos _(a implementar)_
+### RN-INV-06 — Tipos válidos ✅
 
 `type`: `stock` (ação), `fund` (fundo), `crypto` (criptomoeda), `fixed_income` (renda fixa), `real_estate` (FII/imóvel), `other`.
 

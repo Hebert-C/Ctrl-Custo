@@ -75,6 +75,15 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="investments"
+        options={{
+          title: "Investimentos",
+          tabBarIcon: ({ focused, color }) => (
+            <TabIcon name="trending-up" focused={focused} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="reports"
         options={{
           title: "Relatórios",
