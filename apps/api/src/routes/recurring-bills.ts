@@ -124,6 +124,36 @@ recurringBillsRouter.post("/", zValidator("json", createBillBody), async (c) => 
   return c.json(row, 201);
 });
 
+// ─── GET /recurring-bills/:id/payments ───────────────────────────────────────
+// RN-PAY-13: histórico de pagamentos ordenado por dueDate ascendente.
+// Registrado antes de /:id para não ser capturado como param.
+
+recurringBillsRouter.get("/:id/payments", async (c) => {
+  const userId = c.get("userId");
+  const id = c.req.param("id");
+
+  const [bill] = await db
+    .select({ id: recurringBills.id })
+    .from(recurringBills)
+    .where(and(eq(recurringBills.id, id), eq(recurringBills.userId, userId)))
+    .limit(1);
+  if (!bill) return c.json({ error: "Conta recorrente não encontrada." }, 404);
+
+  const payments = await db
+    .select({
+      id: recurringPayments.id,
+      dueDate: recurringPayments.dueDate,
+      amountCents: recurringPayments.amountCents,
+      transactionId: recurringPayments.transactionId,
+      createdAt: recurringPayments.createdAt,
+    })
+    .from(recurringPayments)
+    .where(eq(recurringPayments.recurringBillId, id))
+    .orderBy(recurringPayments.dueDate);
+
+  return c.json(payments);
+});
+
 // ─── GET /recurring-bills/:id ─────────────────────────────────────────────────
 
 recurringBillsRouter.get("/:id", async (c) => {

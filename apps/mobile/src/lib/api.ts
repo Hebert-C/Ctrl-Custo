@@ -466,6 +466,7 @@ export const api = {
         method: "POST",
         body: JSON.stringify({ month, ...(amountCents !== undefined ? { amountCents } : {}) }),
       }),
+    payments: (id: string) => req<ApiRecurringPayment[]>(`/recurring-bills/${id}/payments`),
   },
 
   goals: {

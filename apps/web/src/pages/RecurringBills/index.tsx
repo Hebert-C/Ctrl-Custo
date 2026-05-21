@@ -5,9 +5,11 @@ import { useAccountStore } from "../../store/useAccountStore";
 import { useCategoryStore } from "../../store/useCategoryStore";
 import { formatCurrency, parseCurrencyInput, formatCurrencyInput } from "../../hooks/useCurrency";
 import {
+  api,
   ApiError,
   type ApiRecurringBill,
   type ApiRecurringBillDue,
+  type ApiRecurringPayment,
   type NewRecurringBill,
 } from "../../lib/api";
 
@@ -32,6 +34,10 @@ export function RecurringBills() {
   const [payAmountRaw, setPayAmountRaw] = useState("");
   const [payError, setPayError] = useState("");
   const [paying, setPaying] = useState(false);
+
+  const [historyBill, setHistoryBill] = useState<ApiRecurringBill | null>(null);
+  const [historyPayments, setHistoryPayments] = useState<ApiRecurringPayment[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   const { bills, dueBills, load, loadDue, add, update, remove, pay } = useRecurringBillStore();
   const { accounts, load: loadAccs } = useAccountStore();
@@ -95,6 +101,17 @@ export function RecurringBills() {
   async function handleDelete(bill: ApiRecurringBill) {
     if (!confirm(`Excluir "${bill.name}"? Os registros de pagamento serão removidos.`)) return;
     await remove(bill.id);
+  }
+
+  async function openHistory(bill: ApiRecurringBill) {
+    setHistoryBill(bill);
+    setHistoryLoading(true);
+    try {
+      const payments = await api.recurringBills.payments(bill.id);
+      setHistoryPayments(payments);
+    } finally {
+      setHistoryLoading(false);
+    }
   }
 
   function openPay(bill: ApiRecurringBillDue) {
@@ -170,13 +187,14 @@ export function RecurringBills() {
         {loading ? (
           <p className="text-center text-sm text-gray-400 py-12">Carregando…</p>
         ) : tab === "due" ? (
-          <DueTab dueBills={dueBills} onPay={openPay} />
+          <DueTab dueBills={dueBills} onPay={openPay} onHistory={openHistory} />
         ) : (
           <AllTab
             bills={bills}
             onEdit={openEdit}
             onToggle={handleToggleActive}
             onDelete={handleDelete}
+            onHistory={openHistory}
           />
         )}
       </div>
@@ -370,6 +388,40 @@ export function RecurringBills() {
           </div>
         </div>
       )}
+      {/* History modal */}
+      {historyBill && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50">
+          <div className="bg-white dark:bg-gray-900 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-md overflow-y-auto max-h-[92dvh] sm:max-h-[80vh]">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  {historyBill.name}
+                </h2>
+                <p className="text-xs text-gray-400">
+                  Vence dia {historyBill.dueDay} ·{" "}
+                  {historyBill.amountCents !== null
+                    ? formatCurrency(historyBill.amountCents)
+                    : "Valor variável"}
+                </p>
+              </div>
+              <button onClick={() => setHistoryBill(null)} className="btn-ghost p-1.5">
+                ✕
+              </button>
+            </div>
+            <div className="px-6 py-4">
+              {historyLoading ? (
+                <p className="text-sm text-gray-400 text-center py-8">Carregando…</p>
+              ) : (
+                <PaymentTimeline
+                  createdAt={historyBill.createdAt}
+                  fixedAmount={historyBill.amountCents}
+                  payments={historyPayments}
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 }
@@ -379,9 +431,11 @@ export function RecurringBills() {
 function DueTab({
   dueBills,
   onPay,
+  onHistory,
 }: {
   dueBills: ApiRecurringBillDue[];
   onPay: (bill: ApiRecurringBillDue) => void;
+  onHistory: (bill: ApiRecurringBill) => void;
 }) {
   if (dueBills.length === 0) {
     return (
@@ -404,7 +458,7 @@ function DueTab({
           </p>
           <div className="space-y-2">
             {overdue.map((b) => (
-              <DueBillCard key={b.id} bill={b} onPay={onPay} />
+              <DueBillCard key={b.id} bill={b} onPay={onPay} onHistory={onHistory} />
             ))}
           </div>
         </div>
@@ -416,7 +470,7 @@ function DueTab({
           </p>
           <div className="space-y-2">
             {upcoming.map((b) => (
-              <DueBillCard key={b.id} bill={b} onPay={onPay} />
+              <DueBillCard key={b.id} bill={b} onPay={onPay} onHistory={onHistory} />
             ))}
           </div>
         </div>
@@ -428,14 +482,17 @@ function DueTab({
 function DueBillCard({
   bill,
   onPay,
+  onHistory,
 }: {
   bill: ApiRecurringBillDue;
   onPay: (bill: ApiRecurringBillDue) => void;
+  onHistory: (bill: ApiRecurringBill) => void;
 }) {
   const isOverdue = bill.status === "overdue";
   return (
     <div
-      className={`card p-4 flex items-center justify-between gap-3 ${
+      onClick={() => onHistory(bill)}
+      className={`card p-4 flex items-center justify-between gap-3 cursor-pointer hover:border-blue-300 dark:hover:border-blue-700 transition-colors ${
         isOverdue ? "border-red-200 dark:border-red-800" : ""
       }`}
     >
@@ -458,7 +515,13 @@ function DueBillCard({
             {formatCurrency(bill.amountCents)}
           </span>
         )}
-        <button onClick={() => onPay(bill)} className="btn-primary text-xs px-3 py-1.5">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onPay(bill);
+          }}
+          className="btn-primary text-xs px-3 py-1.5"
+        >
           Pagar
         </button>
       </div>
@@ -473,11 +536,13 @@ function AllTab({
   onEdit,
   onToggle,
   onDelete,
+  onHistory,
 }: {
   bills: ApiRecurringBill[];
   onEdit: (bill: ApiRecurringBill) => void;
   onToggle: (bill: ApiRecurringBill) => void;
   onDelete: (bill: ApiRecurringBill) => void;
+  onHistory: (bill: ApiRecurringBill) => void;
 }) {
   if (bills.length === 0) {
     return (
@@ -494,7 +559,14 @@ function AllTab({
     <div className="space-y-4">
       <div className="space-y-2">
         {active.map((b) => (
-          <BillCard key={b.id} bill={b} onEdit={onEdit} onToggle={onToggle} onDelete={onDelete} />
+          <BillCard
+            key={b.id}
+            bill={b}
+            onEdit={onEdit}
+            onToggle={onToggle}
+            onDelete={onDelete}
+            onHistory={onHistory}
+          />
         ))}
       </div>
       {inactive.length > 0 && (
@@ -510,6 +582,7 @@ function AllTab({
                 onEdit={onEdit}
                 onToggle={onToggle}
                 onDelete={onDelete}
+                onHistory={onHistory}
               />
             ))}
           </div>
@@ -519,20 +592,114 @@ function AllTab({
   );
 }
 
+// ─── Payment timeline ─────────────────────────────────────────────────────────
+
+function generateMonths(
+  createdAt: string,
+  payments: ApiRecurringPayment[]
+): { key: string; label: string; payment: ApiRecurringPayment | null; isCurrent: boolean }[] {
+  const start = new Date(createdAt);
+  start.setDate(1);
+  const now = new Date();
+  const currentKey = now.toISOString().slice(0, 7);
+  const months = [];
+
+  const cursor = new Date(start.getFullYear(), start.getMonth(), 1);
+  while (cursor <= now) {
+    const key = cursor.toISOString().slice(0, 7);
+    months.push({
+      key,
+      label: cursor.toLocaleDateString("pt-BR", { month: "long", year: "numeric" }),
+      payment: payments.find((p) => p.dueDate === key) ?? null,
+      isCurrent: key === currentKey,
+    });
+    cursor.setMonth(cursor.getMonth() + 1);
+  }
+
+  return months.reverse();
+}
+
+function PaymentTimeline({
+  createdAt,
+  fixedAmount,
+  payments,
+}: {
+  createdAt: string;
+  fixedAmount: number | null;
+  payments: ApiRecurringPayment[];
+}) {
+  const months = generateMonths(createdAt, payments);
+
+  if (months.length === 0) {
+    return <p className="text-sm text-gray-400 text-center py-4">Sem histórico disponível.</p>;
+  }
+
+  return (
+    <div className="space-y-2">
+      {months.map(({ key, label, payment, isCurrent }) => (
+        <div
+          key={key}
+          className={`flex items-center justify-between py-2.5 px-3 rounded-lg ${
+            isCurrent
+              ? "bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800"
+              : "bg-gray-50 dark:bg-gray-800/50"
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            <span
+              className={`text-base w-5 text-center ${
+                payment ? "text-green-500" : "text-gray-300 dark:text-gray-600"
+              }`}
+            >
+              {payment ? "✓" : "—"}
+            </span>
+            <div>
+              <p
+                className={`text-sm font-medium capitalize ${
+                  payment ? "text-gray-900 dark:text-gray-100" : "text-gray-400 dark:text-gray-500"
+                }`}
+              >
+                {label}
+              </p>
+              {isCurrent && (
+                <span className="text-xs text-blue-500 dark:text-blue-400">mês atual</span>
+              )}
+            </div>
+          </div>
+          <div className="text-right">
+            {payment ? (
+              <p className="text-sm font-semibold text-green-600 dark:text-green-400">
+                {formatCurrency(payment.amountCents)}
+              </p>
+            ) : fixedAmount !== null ? (
+              <p className="text-sm text-gray-300 dark:text-gray-600">
+                {formatCurrency(fixedAmount)}
+              </p>
+            ) : null}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function BillCard({
   bill,
   onEdit,
   onToggle,
   onDelete,
+  onHistory,
 }: {
   bill: ApiRecurringBill;
   onEdit: (bill: ApiRecurringBill) => void;
   onToggle: (bill: ApiRecurringBill) => void;
   onDelete: (bill: ApiRecurringBill) => void;
+  onHistory: (bill: ApiRecurringBill) => void;
 }) {
   return (
     <div
-      className={`card p-4 flex items-center justify-between gap-3 ${
+      onClick={() => onHistory(bill)}
+      className={`card p-4 flex items-center justify-between gap-3 cursor-pointer hover:border-blue-300 dark:hover:border-blue-700 transition-colors ${
         !bill.isActive ? "opacity-60" : ""
       }`}
     >
@@ -555,18 +722,31 @@ function BillCard({
         </p>
       </div>
       <div className="flex items-center gap-1 flex-shrink-0">
-        <button onClick={() => onEdit(bill)} className="btn-ghost text-xs p-1.5" title="Editar">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit(bill);
+          }}
+          className="btn-ghost text-xs p-1.5"
+          title="Editar"
+        >
           ✏
         </button>
         <button
-          onClick={() => onToggle(bill)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggle(bill);
+          }}
           className="btn-ghost text-xs p-1.5"
           title={bill.isActive ? "Desativar" : "Ativar"}
         >
           {bill.isActive ? "⏸" : "▶"}
         </button>
         <button
-          onClick={() => onDelete(bill)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(bill);
+          }}
           className="btn-ghost text-xs p-1.5 text-red-500 hover:text-red-700"
           title="Excluir"
         >

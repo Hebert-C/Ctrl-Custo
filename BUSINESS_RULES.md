@@ -466,6 +466,36 @@ A resposta distingue entre `status: "upcoming"` e `status: "overdue"`. Contas j�
 
 ### RN-PAY-12 — Notificação local agendada antes do vencimento ❌
 
+---
+
+### RN-PAY-13 — Histórico de pagamentos por conta recorrente ✅
+
+`GET /recurring-bills/:id/payments` retorna todos os `recurringPayments` vinculados à conta recorrente, ordenados por `dueDate` ascendente. A conta deve pertencer ao usuário autenticado (aplica `RN-CROSS-02` — retorna 404 se não existe ou pertence a outro usuário).
+
+Cada item da resposta inclui: `id`, `dueDate` (YYYY-MM), `amountCents`, `transactionId`, `createdAt`.
+
+Retorna array vazio `[]` quando nenhum pagamento foi registrado ainda.
+
+**Onde aplicar:** backend (`GET /recurring-bills/:id/payments` em `recurring-bills.ts`). Deve ser registrado antes de `/:id/pay` para evitar conflito de rota.
+
+---
+
+### RN-PAY-14 — Timeline mensal gerada pelo cliente desde o cadastro ✅
+
+O frontend gera uma lista de meses de `bill.createdAt` até o mês atual e cruza com os dados de `GET /recurring-bills/:id/payments`:
+
+- **Mês pago:** exibe checkmark verde (✓), o mês por extenso e o valor efetivamente pago (`amountCents`).
+- **Mês não pago:** exibe traço cinza (—) e o mês. Sem valor de referência para contas variáveis (`amountCents = null`); para contas fixas, pode exibir o valor estimado em cinza.
+- Mês atual com status "não pago" exibe destaque visual (ex: borda azul ou badge "hoje").
+
+A lógica de geração de meses é inteiramente client-side — nenhum dado extra é necessário além do `createdAt` da conta e do array de pagamentos.
+
+**Onde aplicar:** web (modal/painel ao clicar na conta na aba "Todas") + mobile (bottom sheet ao pressionar a conta).
+
+---
+
+### RN-PAY-12 — Notificação local agendada antes do vencimento ❌
+
 O app agenda uma notificação local (via `expo-notifications`) ao criar ou editar uma conta recorrente ativa. A notificação dispara **3 dias antes** do `due_day` no mês corrente, com título `"Conta vence em 3 dias"` e corpo `"{name} — vence dia {due_day}"`.
 
 Ciclo de vida da notificação:

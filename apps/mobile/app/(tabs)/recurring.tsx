@@ -27,9 +27,11 @@ import {
 import { lightColors, darkColors } from "@ctrl-custo/ui";
 import type { Colors } from "@ctrl-custo/ui";
 import {
+  api,
   ApiError,
   type ApiRecurringBill,
   type ApiRecurringBillDue,
+  type ApiRecurringPayment,
   type NewRecurringBill,
 } from "../../src/lib/api";
 
@@ -63,6 +65,11 @@ export default function Recurring() {
   const [payError, setPayError] = useState("");
   const [paying, setPaying] = useState(false);
 
+  const [historyBill, setHistoryBill] = useState<ApiRecurringBill | null>(null);
+  const [historyPayments, setHistoryPayments] = useState<ApiRecurringPayment[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyModalVisible, setHistoryModalVisible] = useState(false);
+
   const loadAll = useCallback(async () => {
     await Promise.all([load(), loadDue(), loadAccounts(), loadCategories()]);
     setLoading(false);
@@ -71,6 +78,18 @@ export default function Recurring() {
   useEffect(() => {
     loadAll();
   }, [loadAll]);
+
+  async function openHistory(bill: ApiRecurringBill) {
+    setHistoryBill(bill);
+    setHistoryModalVisible(true);
+    setHistoryLoading(true);
+    try {
+      const payments = await api.recurringBills.payments(bill.id);
+      setHistoryPayments(payments);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }
 
   function openPay(bill: ApiRecurringBillDue) {
     setPayingBill(bill);
@@ -214,7 +233,11 @@ export default function Recurring() {
           const isOverdue = dueBill?.status === "overdue";
 
           return (
-            <View style={[s.card, isOverdue && { borderColor: colors.expense + "55" }]}>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => openHistory(item)}
+              style={[s.card, isOverdue && { borderColor: colors.expense + "55" }]}
+            >
               <View style={s.cardLeft}>
                 <Text
                   style={[
@@ -263,7 +286,7 @@ export default function Recurring() {
                   </View>
                 )}
               </View>
-            </View>
+            </TouchableOpacity>
           );
         }}
       />
@@ -330,6 +353,51 @@ export default function Recurring() {
         </KeyboardAvoidingView>
       </Modal>
 
+      {/* History modal */}
+      <Modal
+        visible={historyModalVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setHistoryModalVisible(false)}
+      >
+        <View style={s.overlay}>
+          <View style={[s.sheet, { paddingBottom: 32 }]}>
+            <View style={s.handle} />
+            <View style={s.sheetHeader}>
+              <View style={{ flex: 1 }}>
+                <Text style={s.sheetTitle} numberOfLines={1}>
+                  {historyBill?.name}
+                </Text>
+                {historyBill && (
+                  <Text style={s.payBillSub}>
+                    Vence dia {historyBill.dueDay} ·{" "}
+                    {historyBill.amountCents !== null
+                      ? formatCurrency(historyBill.amountCents)
+                      : "Valor variável"}
+                  </Text>
+                )}
+              </View>
+              <TouchableOpacity onPress={() => setHistoryModalVisible(false)}>
+                <Ionicons name="close" size={22} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            {historyLoading ? (
+              <ActivityIndicator color={colors.primary} style={{ marginTop: 24 }} />
+            ) : historyBill ? (
+              <ScrollView showsVerticalScrollIndicator={false}>
+                <PaymentTimeline
+                  createdAt={historyBill.createdAt}
+                  fixedAmount={historyBill.amountCents}
+                  payments={historyPayments}
+                  colors={colors}
+                />
+              </ScrollView>
+            ) : null}
+          </View>
+        </View>
+      </Modal>
+
       {/* Form modal */}
       <BillForm
         visible={formVisible}
@@ -342,6 +410,113 @@ export default function Recurring() {
           await Promise.all([load(), loadDue()]);
         }}
       />
+    </View>
+  );
+}
+
+// ─── PaymentTimeline ──────────────────────────────────────────────────────────
+
+function generateMonths(
+  createdAt: string,
+  payments: ApiRecurringPayment[]
+): { key: string; label: string; payment: ApiRecurringPayment | null; isCurrent: boolean }[] {
+  const start = new Date(createdAt);
+  start.setDate(1);
+  const now = new Date();
+  const currentKey = now.toISOString().slice(0, 7);
+  const months = [];
+
+  const cursor = new Date(start.getFullYear(), start.getMonth(), 1);
+  while (cursor <= now) {
+    const key = cursor.toISOString().slice(0, 7);
+    months.push({
+      key,
+      label: cursor.toLocaleDateString("pt-BR", { month: "long", year: "numeric" }),
+      payment: payments.find((p) => p.dueDate === key) ?? null,
+      isCurrent: key === currentKey,
+    });
+    cursor.setMonth(cursor.getMonth() + 1);
+  }
+
+  return months.reverse();
+}
+
+function PaymentTimeline({
+  createdAt,
+  fixedAmount,
+  payments,
+  colors,
+}: {
+  createdAt: string;
+  fixedAmount: number | null;
+  payments: ApiRecurringPayment[];
+  colors: Colors;
+}) {
+  const months = generateMonths(createdAt, payments);
+
+  if (months.length === 0) {
+    return (
+      <Text style={{ color: colors.textDisabled, textAlign: "center", marginTop: 16 }}>
+        Sem histórico.
+      </Text>
+    );
+  }
+
+  return (
+    <View style={{ gap: 6, marginTop: 4 }}>
+      {months.map(({ key, label, payment, isCurrent }) => (
+        <View
+          key={key}
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            paddingHorizontal: 12,
+            paddingVertical: 10,
+            borderRadius: 10,
+            backgroundColor: isCurrent ? colors.primary + "15" : colors.surfaceRaised,
+            borderWidth: isCurrent ? 1 : 0,
+            borderColor: colors.primary + "55",
+          }}
+        >
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1 }}>
+            <Text
+              style={{
+                fontSize: 16,
+                width: 20,
+                textAlign: "center",
+                color: payment ? "#22C55E" : colors.border,
+              }}
+            >
+              {payment ? "✓" : "—"}
+            </Text>
+            <View>
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontWeight: "500",
+                  color: payment ? colors.textPrimary : colors.textDisabled,
+                  textTransform: "capitalize",
+                }}
+              >
+                {label}
+              </Text>
+              {isCurrent && <Text style={{ fontSize: 11, color: colors.primary }}>mês atual</Text>}
+            </View>
+          </View>
+          <View style={{ alignItems: "flex-end" }}>
+            {payment ? (
+              <Text style={{ fontSize: 13, fontWeight: "600", color: "#22C55E" }}>
+                {formatCurrency(payment.amountCents)}
+              </Text>
+            ) : fixedAmount !== null ? (
+              <Text style={{ fontSize: 13, color: colors.border }}>
+                {formatCurrency(fixedAmount)}
+              </Text>
+            ) : null}
+          </View>
+        </View>
+      ))}
     </View>
   );
 }
