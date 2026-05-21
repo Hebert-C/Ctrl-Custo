@@ -3,7 +3,7 @@ import { Layout } from "../../components/Layout";
 import { DonutChart, type DonutSlice } from "../../components/DonutChart";
 import { useInvestmentStore } from "../../store/useInvestmentStore";
 import { useAccountStore } from "../../store/useAccountStore";
-import { formatCurrency } from "../../hooks/useCurrency";
+import { formatCurrency, formatCurrencyInput, parseCurrencyInput } from "../../hooks/useCurrency";
 import type { Investment, NewInvestment } from "@ctrl-custo/core";
 import tickers from "../../data/b3-tickers.json";
 
@@ -52,6 +52,8 @@ export function Investments() {
   const [tickerQuery, setTickerQuery] = useState("");
   const [tickerSuggestions, setTickerSuggestions] = useState<Ticker[]>([]);
   const [showChart, setShowChart] = useState(false);
+  const [purchasePriceRaw, setPurchasePriceRaw] = useState("");
+  const [currentPriceRaw, setCurrentPriceRaw] = useState("");
   const tickerRef = useRef<HTMLDivElement>(null);
 
   const { investments, load, add, update, remove } = useInvestmentStore();
@@ -122,6 +124,8 @@ export function Investments() {
     setEditing(null);
     setForm(EMPTY_FORM);
     setTickerQuery("");
+    setPurchasePriceRaw("");
+    setCurrentPriceRaw("");
     setShowForm(true);
   }
 
@@ -139,6 +143,8 @@ export function Investments() {
       notes: inv.notes,
     });
     setTickerQuery(inv.ticker ?? "");
+    setPurchasePriceRaw(formatCurrencyInput(inv.purchasePrice));
+    setCurrentPriceRaw(formatCurrencyInput(inv.currentPrice));
     setShowForm(true);
   }
 
@@ -148,6 +154,8 @@ export function Investments() {
     setForm(EMPTY_FORM);
     setTickerQuery("");
     setTickerSuggestions([]);
+    setPurchasePriceRaw("");
+    setCurrentPriceRaw("");
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -416,36 +424,32 @@ export function Investments() {
                 <label className="label">Preço Médio (R$) *</label>
                 <input
                   className="input-field"
-                  type="number"
-                  min="0.01"
-                  step="0.01"
-                  placeholder="25.50"
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="0,00"
                   required
-                  value={form.purchasePrice ? (form.purchasePrice / 100).toFixed(2) : ""}
-                  onChange={(e) =>
-                    setForm((f) => ({
-                      ...f,
-                      purchasePrice: Math.round(Number(e.target.value) * 100) || undefined,
-                    }))
-                  }
+                  value={purchasePriceRaw}
+                  onChange={(e) => {
+                    const cents = parseCurrencyInput(e.target.value);
+                    setPurchasePriceRaw(formatCurrencyInput(cents));
+                    setForm((f) => ({ ...f, purchasePrice: cents || undefined }));
+                  }}
                 />
               </div>
               <div>
                 <label className="label">Preço Atual (R$) *</label>
                 <input
                   className="input-field"
-                  type="number"
-                  min="0.01"
-                  step="0.01"
-                  placeholder="30.00"
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="0,00"
                   required
-                  value={form.currentPrice ? (form.currentPrice / 100).toFixed(2) : ""}
-                  onChange={(e) =>
-                    setForm((f) => ({
-                      ...f,
-                      currentPrice: Math.round(Number(e.target.value) * 100) || undefined,
-                    }))
-                  }
+                  value={currentPriceRaw}
+                  onChange={(e) => {
+                    const cents = parseCurrencyInput(e.target.value);
+                    setCurrentPriceRaw(formatCurrencyInput(cents));
+                    setForm((f) => ({ ...f, currentPrice: cents || undefined }));
+                  }}
                 />
               </div>
             </div>
