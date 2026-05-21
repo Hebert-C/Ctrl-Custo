@@ -21,7 +21,7 @@ echo "==> Building web frontend"
 pnpm --filter web build
 
 echo "==> Restarting API via PM2"
-pm2 restart ctrl-custo-api || pm2 start apps/api/ecosystem.config.cjs --env production
+pm2 startOrRestart apps/api/ecosystem.config.cjs --env production
 
 pm2 save
 
