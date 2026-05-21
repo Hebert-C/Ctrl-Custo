@@ -464,6 +464,26 @@ A resposta distingue entre `status: "upcoming"` e `status: "overdue"`. Contas j�
 
 ---
 
+### RN-PAY-12 — Notificação local agendada antes do vencimento ❌
+
+O app agenda uma notificação local (via `expo-notifications`) ao criar ou editar uma conta recorrente ativa. A notificação dispara **3 dias antes** do `due_day` no mês corrente, com título `"Conta vence em 3 dias"` e corpo `"{name} — vence dia {due_day}"`.
+
+Ciclo de vida da notificação:
+
+- **Criar conta recorrente ativa:** agendar notificação para o próximo vencimento.
+- **Editar `due_day` ou `name`:** cancelar notificação anterior e reagendar.
+- **Desativar (`is_active = false`) ou deletar:** cancelar notificação pendente.
+- **Após o pagamento confirmado:** reagendar automaticamente para o vencimento do mês seguinte.
+
+A notificação é **local** (agendada no dispositivo, sem servidor). Se o usuário reinstalar o app, as notificações são perdidas e só retornam quando o app for aberto novamente.
+
+Permissão de notificação deve ser solicitada na primeira criação de conta recorrente, não no startup do app.
+
+**Onde aplicar:** mobile (serviço de notificação em `apps/mobile/src/lib/notifications.ts`)
+**Dependência:** `expo-notifications` (não instalado — adicionar ao `apps/mobile/package.json`)
+
+---
+
 ## Template para nova feature
 
 Ao iniciar qualquer nova feature, adicionar uma seção neste arquivo com o seguinte formato:

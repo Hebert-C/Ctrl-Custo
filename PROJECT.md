@@ -843,6 +843,41 @@ ai_terms_accepted_at timestamptz
 
 ---
 
+### 6. Scanner de Boleto — Auto-preenchimento de valor
+
+**Prioridade:** Baixa — desacoplado dos Pagamentos Recorrentes
+**Ideia:** Ao confirmar um pagamento (recorrente ou avulso), o usuário pode escanear o código de barras ou QR Code (Pix) do boleto para auto-preencher o valor real do mês, evitando digitação manual.
+
+#### Por que é uma feature separada
+
+Pagamentos Recorrentes funcionam sem o scanner — o usuário digita o valor na tela de confirmação. O scanner é uma melhoria de UX para o fluxo de pagamento, aplicável tanto em `/recurring-bills/:id/pay` quanto na criação de qualquer transação de despesa avulsa.
+
+#### Formatos suportados
+
+| Formato                   | Descrição                                                     | Biblioteca                    |
+| ------------------------- | ------------------------------------------------------------- | ----------------------------- |
+| Código de barras FEBRABAN | Boleto bancário — 44 dígitos, contém valor e vencimento       | `expo-camera` + parser manual |
+| QR Code Pix (EMVCo)       | Pix estático e dinâmico — contém valor, chave e identificador | `expo-camera` + parser EMVCo  |
+
+#### Como implementar
+
+**Mobile (`apps/mobile`):**
+
+- Instalar `expo-camera` (inclui leitor de barcode/QR nativo)
+- Criar `src/lib/boletoParser.ts` — parse do código de barras FEBRABAN para extrair `valor`, `vencimento` e `banco`
+- Criar `src/lib/pixParser.ts` — parse do payload EMVCo para extrair `valor` e `chave`
+- Botão "Escanear" no modal de confirmação de pagamento recorrente e no `TransactionForm`
+- Ao escanear: preenche o campo de valor automaticamente; usuário ainda pode editar antes de confirmar
+
+**Permissão:**
+
+- Solicitar `CAMERA` na primeira vez que o usuário tocar em "Escanear"
+- Se negada: exibir mensagem explicando como habilitar nas configurações do dispositivo
+
+**Complexidade:** Alta — implementar os parsers FEBRABAN e EMVCo corretamente é trabalhoso. Recomendado após os Pagamentos Recorrentes estarem estáveis.
+
+---
+
 ## Bugs e Melhorias — 2026-05-07
 
 ### Bugs
