@@ -149,6 +149,8 @@ import { colors, typography, spacing } from "@ctrl-custo/ui";
 3. **Nunca especificar versão de pacote sem verificar** — sempre consultar o `package.json` do workspace alvo ou o `bundledNativeModules.json`.
 4. **Depois de `pnpm install`:** verificar se `Packages: +N -M` tem remoções grandes (>20). Se tiver, algo está errado — não commitar o lockfile antes de investigar.
 5. **CI usa `--frozen-lockfile`:** o `pnpm-lock.yaml` commitado é o que o CI usa. Nunca commitar um lockfile quebrado.
+6. **Novo pacote adicionado:** atualizar obrigatoriamente a tabela do workspace correspondente neste inventário com nome, versão e uso.
+7. **Versão de pacote alterada:** atualizar obrigatoriamente a versão na tabela do inventário no mesmo commit da alteração do `package.json`.
 
 ---
 
