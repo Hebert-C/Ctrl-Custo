@@ -939,6 +939,27 @@ pnpm --filter mobile test --verbose
 
 ## Log de Sessões
 
+### 2026-05-21 — Configuração e correção do backup PostgreSQL
+
+#### O que foi feito
+
+- **infra:** Identificado que o cron de backup nunca havia sido configurado na VM (`crontab` vazio, `/home/deploy/backups/` inexistente).
+- **infra:** Cron `0 3 * * *` configurado para o usuário `deploy` na Oracle Cloud VM — executa `deploy/backup.sh` diariamente às 03:00 UTC, log em `/home/deploy/logs/backup.log`.
+- **fix(backup):** `deploy/backup.sh` corrigido para funcionar com autenticação TCP do PostgreSQL:
+  - Adicionado `DB_HOST="localhost"` e flag `-h "${DB_HOST}"` no `pg_dump` — a autenticação peer falhava porque o OS user `deploy` difere do PG user `ctrl_custo_user`.
+  - `PGPASSWORD` preenchido automaticamente via `grep` no `apps/api/.env` da VM (evita senha hardcoded no script).
+- **test:** Backup testado manualmente com sucesso — gerou `ctrl_custo_20260521_015759.sql.gz` (16K) em `/home/deploy/backups/`.
+
+#### Arquivos criados/modificados
+
+- `deploy/backup.sh` — `DB_HOST`, `PGPASSWORD` via `.env`, `-h` no `pg_dump`
+
+#### Pendências para a próxima sessão
+
+Ver seção **"Backlog de Inconsistências Web ↔ Mobile"** no início deste arquivo.
+
+---
+
 ### 2026-05-20 — Fix profundo Maestro E2E (5 correções)
 
 #### O que foi feito
