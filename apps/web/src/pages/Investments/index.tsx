@@ -170,6 +170,7 @@ export function Investments() {
       !form.accountId
     )
       return;
+    if (form.purchaseDate > new Date().toISOString().slice(0, 10)) return;
 
     const payload = form as NewInvestment;
     if (editing) {
@@ -461,6 +462,7 @@ export function Investments() {
                   type="date"
                   className="input-field"
                   required
+                  max={new Date().toISOString().slice(0, 10)}
                   value={form.purchaseDate ?? ""}
                   onChange={(e) => setForm((f) => ({ ...f, purchaseDate: e.target.value }))}
                 />

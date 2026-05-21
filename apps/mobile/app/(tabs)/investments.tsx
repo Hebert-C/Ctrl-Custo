@@ -292,6 +292,7 @@ function InvestmentForm({ visible, onClose, accounts, editing, onSaved, add, upd
     if (quantity <= 0) newErrors.quantity = "Quantidade deve ser maior que zero.";
     if (purchasePrice <= 0) newErrors.purchasePrice = "Preço de compra obrigatório.";
     if (currentPrice <= 0) newErrors.currentPrice = "Preço atual obrigatório.";
+    if (purchaseDate > today()) newErrors.purchaseDate = "Data de compra não pode ser futura.";
     if (!accountId) newErrors.account = "Selecione uma conta.";
 
     if (Object.keys(newErrors).length > 0) {
@@ -440,6 +441,7 @@ function InvestmentForm({ visible, onClose, accounts, editing, onSaved, add, upd
               placeholder="AAAA-MM-DD"
               placeholderTextColor={colors.textDisabled}
             />
+            {!!errors.purchaseDate && <Text style={s.errorText}>{errors.purchaseDate}</Text>}
 
             {/* Conta */}
             <Text style={s.label}>Conta</Text>
