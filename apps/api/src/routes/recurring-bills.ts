@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
-import { eq, and, or, lt, gte, lte, isNull, sql } from "drizzle-orm";
+import { eq, and, isNull, sql } from "drizzle-orm";
 import { db } from "../db/index";
 import {
   recurringBills,
@@ -44,7 +44,6 @@ recurringBillsRouter.get("/due", async (c) => {
   const today = new Date();
   const todayDay = today.getDate();
   const currentMonth = today.toISOString().slice(0, 7);
-  const upperBound = Math.min(todayDay + 7, 28);
 
   const rows = await db
     .select({
@@ -76,11 +75,7 @@ recurringBillsRouter.get("/due", async (c) => {
       and(
         eq(recurringBills.userId, userId),
         eq(recurringBills.isActive, true),
-        isNull(recurringPayments.id),
-        or(
-          and(gte(recurringBills.dueDay, todayDay), lte(recurringBills.dueDay, upperBound)),
-          lt(recurringBills.dueDay, todayDay)
-        )
+        isNull(recurringPayments.id)
       )
     );
 
