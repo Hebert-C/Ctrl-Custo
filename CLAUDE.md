@@ -32,6 +32,126 @@ ssh oracle-ctrl-custos 'tail -20 ~/oci-create-a1.log'
 
 **Remova esta seção do CLAUDE.md quando a migração para A1.Flex estiver concluída.**
 
+## Dependências — consulta obrigatória antes de adicionar ou usar qualquer pacote
+
+**Regra:** Antes de escrever qualquer `import`, `require`, ou especificar uma versão de pacote, consulte esta seção. Nunca assuma versões de cabeça.
+
+### Fonte de verdade para versões compatíveis com Expo SDK 54
+
+```bash
+# Versão correta de qualquer expo-* ou pacote nativo para o SDK atual:
+cat node_modules/expo/bundledNativeModules.json | grep "nome-do-pacote"
+```
+
+**Isso é obrigatório para qualquer pacote nativo móvel.** O erro de usar a versão errada causa re-resolução massiva do lockfile e quebra o CI.
+
+### Inventário de dependências por workspace
+
+#### Root (pnpm.overrides — versões fixas para todo o monorepo)
+
+| Pacote             | Versão fixada |
+| ------------------ | ------------- |
+| `react`            | `19.2.6`      |
+| `react-dom`        | `19.2.6`      |
+| `react-native`     | `~0.81.0`     |
+| `react-native-svg` | `~15.12.0`    |
+| `@types/react`     | `~19.1.4`     |
+
+#### apps/api — Hono + Drizzle + PostgreSQL
+
+| Pacote                | Versão    | Uso                  |
+| --------------------- | --------- | -------------------- |
+| `hono`                | `^4.6.0`  | Framework HTTP       |
+| `@hono/node-server`   | `^1.13.0` | Adapter Node.js      |
+| `@hono/zod-validator` | `^0.4.1`  | Validação de body    |
+| `drizzle-orm`         | `^0.41.0` | ORM                  |
+| `drizzle-kit`         | `^0.30.0` | Migrations (dev)     |
+| `postgres`            | `^3.4.5`  | Driver PostgreSQL    |
+| `zod`                 | `^3.23.8` | Schemas de validação |
+| `argon2`              | `^0.41.1` | Hash de senhas       |
+| `nodemailer`          | `^8.0.7`  | Envio de e-mail      |
+| `tsx`                 | `^4.19.0` | Runtime TS (dev)     |
+| `vitest`              | `^3.2.4`  | Testes de integração |
+
+#### apps/web — React + Vite + TailwindCSS
+
+| Pacote                | Versão     | Uso             |
+| --------------------- | ---------- | --------------- |
+| `react` / `react-dom` | `19.2.6`   | UI              |
+| `react-router-dom`    | `^6.28.0`  | Roteamento      |
+| `zustand`             | `^5.0.0`   | Estado global   |
+| `react-native-web`    | `^0.19.13` | Compat RN → web |
+| `react-native-svg`    | `~15.12.1` | SVG             |
+| `xlsx`                | `^0.18.5`  | Export Excel    |
+| `vite`                | `^5.3.0`   | Build           |
+| `tailwindcss`         | `^3.4.4`   | Estilos         |
+| `@tauri-apps/cli`     | `^2.11.0`  | Desktop (dev)   |
+| `@playwright/test`    | `^1.59.1`  | E2E (dev)       |
+
+#### apps/mobile — Expo SDK 54
+
+| Pacote                                      | Versão     | Uso                     |
+| ------------------------------------------- | ---------- | ----------------------- |
+| `expo`                                      | `~54.0.0`  | SDK base                |
+| `expo-router`                               | `~6.0.23`  | Roteamento file-based   |
+| `expo-constants`                            | `~18.0.13` | Constantes nativas      |
+| `expo-font`                                 | `~14.0.11` | Fontes                  |
+| `expo-linking`                              | `~8.0.11`  | Deep links              |
+| `expo-file-system`                          | `~18.0.12` | Sistema de arquivos     |
+| `expo-secure-store`                         | `~15.0.8`  | Token JWT (SecureStore) |
+| `expo-sharing`                              | `~13.0.1`  | Compartilhamento nativo |
+| `expo-status-bar`                           | `~3.0.9`   | Status bar              |
+| `expo-system-ui`                            | `~6.0.9`   | Cor do sistema          |
+| `expo-local-authentication`                 | `~17.0.8`  | Biometria/PIN           |
+| `expo-notifications`                        | `~0.32.17` | Notificações locais     |
+| `@expo/metro-runtime`                       | `~6.1.2`   | Metro                   |
+| `@expo/vector-icons`                        | `^15.1.1`  | Ionicons etc.           |
+| `@react-native-async-storage/async-storage` | `~2.2.0`   | Persistência            |
+| `react-native`                              | `~0.81.5`  | Core RN                 |
+| `react-native-gesture-handler`              | `~2.28.0`  | Gestos                  |
+| `react-native-reanimated`                   | `~4.1.7`   | Animações               |
+| `react-native-safe-area-context`            | `~5.6.2`   | Safe area               |
+| `react-native-screens`                      | `~4.16.0`  | Screens nativas         |
+| `react-native-svg`                          | `~15.12.1` | SVG                     |
+| `zustand`                                   | `^5.0.0`   | Estado global           |
+| `xlsx`                                      | `^0.18.5`  | Export                  |
+| `jest-expo`                                 | `~54.0.0`  | Testes (dev)            |
+
+#### packages/core — Lógica de negócio compartilhada
+
+| Pacote        | Versão    | Uso               |
+| ------------- | --------- | ----------------- |
+| `drizzle-orm` | `^0.41.0` | Schema + queries  |
+| `sql.js`      | `^1.12.0` | SQLite WASM (web) |
+| `vitest`      | `^3.0.0`  | Testes unitários  |
+
+#### packages/ui — Design system
+
+| Pacote           | Versão    | Uso                                      |
+| ---------------- | --------- | ---------------------------------------- |
+| `victory-native` | `^36.9.2` | Gráficos (BarChart, LineChart, PieChart) |
+
+### Componentes do packages/ui disponíveis
+
+```ts
+import { Button, Input, Card, Badge, Modal, CurrencyInput } from "@ctrl-custo/ui";
+import { BarChart, LineChart, PieChart } from "@ctrl-custo/ui";
+import { lightColors, darkColors } from "@ctrl-custo/ui";
+import type { Colors } from "@ctrl-custo/ui";
+// Tokens:
+import { colors, typography, spacing } from "@ctrl-custo/ui";
+```
+
+### Regras obrigatórias ao adicionar dependências
+
+1. **Pacote nativo Expo:** SEMPRE verificar `node_modules/expo/bundledNativeModules.json` primeiro. Usar a versão exata listada ali.
+2. **Novo pacote qualquer:** verificar se já existe algo equivalente no inventário acima antes de adicionar.
+3. **Nunca especificar versão de pacote sem verificar** — sempre consultar o `package.json` do workspace alvo ou o `bundledNativeModules.json`.
+4. **Depois de `pnpm install`:** verificar se `Packages: +N -M` tem remoções grandes (>20). Se tiver, algo está errado — não commitar o lockfile antes de investigar.
+5. **CI usa `--frozen-lockfile`:** o `pnpm-lock.yaml` commitado é o que o CI usa. Nunca commitar um lockfile quebrado.
+
+---
+
 ## Regras de Negócio — obrigatório antes de implementar
 
 Antes de implementar qualquer feature nova ou corrigir lógica de negócio, leia `BUSINESS_RULES.md`. Ele contém:

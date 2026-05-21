@@ -25,7 +25,7 @@
     "expo-notifications": "~0.32.17",
     "expo-router": "~6.0.23",
     "expo-file-system": "~18.0.12",
-    "expo-secure-store": "~14.0.1",
+    "expo-secure-store": "~15.0.8",
     "expo-sharing": "~13.0.1",
     "expo-status-bar": "~3.0.9",
     "xlsx": "^0.18.5",
