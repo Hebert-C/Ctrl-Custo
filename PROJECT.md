@@ -1014,6 +1014,20 @@ pnpm --filter mobile test --verbose
 
 ## Log de Sessões
 
+### 2026-05-21 — Deploy domínio PAY + fix PM2 startOrRestart
+
+#### O que foi feito
+
+- **deploy:** Push para `main` disparou CI → Deploy API → aplicou migration `0005_recurring_bills` em produção. Tabelas `planning.recurring_bills` e `planning.recurring_payments` criadas no banco de produção. API reiniciada via PM2.
+- **fix(deploy):** `deploy/deploy.sh` — trocado `pm2 restart ctrl-custo-api || pm2 start ...` por `pm2 startOrRestart apps/api/ecosystem.config.cjs --env production`. Causa: `pm2 restart` crashava com TypeError antes de retornar exit code, impedindo o fallback `||` de disparar.
+- **status:** CI ✅ · Deploy API ✅ · Deploy Web ✅ · Maestro E2E em andamento
+
+#### Arquivos criados/modificados
+
+- `deploy/deploy.sh` — PM2 startOrRestart
+
+---
+
 ### 2026-05-21 — Implementação Recurring Payments (API completa, 36/36 testes)
 
 #### O que foi feito
