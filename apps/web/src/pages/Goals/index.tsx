@@ -36,6 +36,8 @@ export function Goals() {
   async function handleAdd(e: FormEvent) {
     e.preventDefault();
     if (!form.name || !form.targetAmount) return;
+    const today = new Date().toISOString().slice(0, 10);
+    if (form.deadline && form.deadline <= today) return;
     await add(form as NewGoal);
     setShowForm(false);
     setForm({ status: "active", color: "#22C55E", icon: "🎯", currentAmount: 0 });
@@ -247,6 +249,7 @@ export function Goals() {
                 <input
                   type="date"
                   className="input-field"
+                  min={new Date(Date.now() + 86400000).toISOString().slice(0, 10)}
                   onChange={(e) =>
                     setForm((f) => ({ ...f, deadline: e.target.value || undefined }))
                   }

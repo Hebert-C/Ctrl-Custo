@@ -57,6 +57,8 @@ export function CategoriesSection() {
   const [editing, setEditing] = useState<Category | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [transferToId, setTransferToId] = useState("");
 
   function startEdit(category: Category) {
     setEditing(category);
@@ -104,9 +106,12 @@ export function CategoriesSection() {
     }
   }
 
-  async function handleRemove(id: string) {
-    if (!confirm("Remover esta categoria?")) return;
-    await remove(id);
+  async function handleConfirmDelete() {
+    if (!deletingId) return;
+    if (transferToId && transferToId === deletingId) return;
+    await remove(deletingId, transferToId || undefined);
+    setDeletingId(null);
+    setTransferToId("");
   }
 
   const byType = (type: CategoryType) =>
@@ -245,38 +250,80 @@ export function CategoriesSection() {
             ) : (
               <div className="space-y-2">
                 {list.map((cat) => (
-                  <div
-                    key={cat.id}
-                    className="flex items-center gap-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 px-4 py-3"
-                  >
-                    <div
-                      className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center text-lg"
-                      style={{ backgroundColor: cat.color }}
-                    >
-                      {cat.icon}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                        {cat.name}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {CATEGORY_TYPES.find((t) => t.value === cat.type)?.label}
-                      </p>
-                    </div>
-                    <div className="flex gap-1 flex-shrink-0">
-                      <button
-                        onClick={() => startEdit(cat)}
-                        className="px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded"
+                  <div key={cat.id} className="space-y-2">
+                    <div className="flex items-center gap-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 px-4 py-3">
+                      <div
+                        className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center text-lg"
+                        style={{ backgroundColor: cat.color }}
                       >
-                        Editar
-                      </button>
-                      <button
-                        onClick={() => handleRemove(cat.id)}
-                        className="px-2 py-1 text-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
-                      >
-                        Excluir
-                      </button>
+                        {cat.icon}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                          {cat.name}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {CATEGORY_TYPES.find((t) => t.value === cat.type)?.label}
+                        </p>
+                      </div>
+                      <div className="flex gap-1 flex-shrink-0">
+                        <button
+                          onClick={() => startEdit(cat)}
+                          className="px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          onClick={() => {
+                            setDeletingId(cat.id);
+                            setTransferToId("");
+                          }}
+                          className="px-2 py-1 text-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                        >
+                          Excluir
+                        </button>
+                      </div>
                     </div>
+                    {deletingId === cat.id && (
+                      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl px-4 py-3 space-y-3">
+                        <p className="text-sm font-medium text-red-700 dark:text-red-400">
+                          Excluir &ldquo;{cat.name}&rdquo;?
+                        </p>
+                        <div>
+                          <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
+                            Transferir transações para (opcional):
+                          </label>
+                          <select
+                            value={transferToId}
+                            onChange={(e) => setTransferToId(e.target.value)}
+                            className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-1.5 text-sm text-gray-900 dark:text-gray-100"
+                          >
+                            <option value="">— Nenhuma (excluir transações) —</option>
+                            {categories
+                              .filter((c) => c.id !== cat.id)
+                              .map((c) => (
+                                <option key={c.id} value={c.id}>
+                                  {c.icon} {c.name}
+                                </option>
+                              ))}
+                          </select>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={handleConfirmDelete}
+                            className="px-3 py-1.5 text-xs font-medium bg-red-600 hover:bg-red-700 text-white rounded-lg"
+                          >
+                            Confirmar exclusão
+                          </button>
+                          <button
+                            onClick={() => setDeletingId(null)}
+                            className="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

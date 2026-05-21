@@ -72,6 +72,7 @@ export function TransactionForm({
       ...prev,
       cardId,
       accountId: card ? card.accountId : "",
+      installments: cardId ? prev.installments : 1,
     }));
   }
 
@@ -217,7 +218,7 @@ export function TransactionForm({
                   ))}
                 </select>
               </div>
-              {!isEditing && (
+              {!isEditing && cardSelected && (
                 <div>
                   <label className="label">Parcelas</label>
                   <select

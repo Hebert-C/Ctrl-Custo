@@ -107,6 +107,8 @@ export function TransactionForm({
     if (amount === 0) newErrors.amount = "Informe um valor maior que zero.";
     if (!description.trim()) newErrors.description = "Descrição é obrigatória.";
     if (!selectedAccountId) newErrors.account = "Selecione um banco.";
+    const total = parseInt(installments, 10) || 1;
+    if (total > 24) newErrors.installments = "Máximo 24 parcelas.";
     if (!selectedCategoryId) newErrors.category = "Selecione uma categoria.";
     if (type === "transfer" && !destinationAccountId)
       newErrors.destinationAccount = "Selecione o banco de destino.";
@@ -134,7 +136,6 @@ export function TransactionForm({
       if (editing) {
         await update(editing.id, data);
       } else {
-        const total = parseInt(installments, 10) || 1;
         if (total > 1) {
           await addInstallments(data, total);
         } else {
@@ -311,20 +312,7 @@ export function TransactionForm({
             </ScrollView>
             {!!errors.category && <Text style={s.errorText}>{errors.category}</Text>}
 
-            {/* Parcelas (só despesa, só na criação) */}
-            {type === "expense" && !isEditing && (
-              <>
-                <Text style={s.label}>Parcelas</Text>
-                <TextInput
-                  style={s.input}
-                  value={installments}
-                  onChangeText={setInstallments}
-                  keyboardType="number-pad"
-                  placeholder="1"
-                  placeholderTextColor={colors.textDisabled}
-                />
-              </>
-            )}
+            {/* Parcelas: oculto no mobile — sem seletor de cartão (RN-TX-13) */}
 
             {/* Status */}
             <Text style={s.label}>Status</Text>

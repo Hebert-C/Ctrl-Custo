@@ -7,7 +7,7 @@ interface CategoryStore {
   load: () => Promise<void>;
   add: (data: NewCategory) => Promise<Category>;
   update: (id: string, data: Partial<NewCategory>) => Promise<void>;
-  remove: (id: string) => Promise<void>;
+  remove: (id: string, transferTo?: string) => Promise<void>;
   byId: (id: string) => Category | undefined;
 }
 
@@ -32,8 +32,8 @@ export const useCategoryStore = create<CategoryStore>((set, get) => ({
     }));
   },
 
-  remove: async (id) => {
-    await api.categories.remove(id);
+  remove: async (id, transferTo) => {
+    await api.categories.remove(id, transferTo);
     set((s) => ({ categories: s.categories.filter((c) => c.id !== id) }));
   },
 
