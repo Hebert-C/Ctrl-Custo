@@ -381,7 +381,10 @@ export const api = {
         method: "PUT",
         body: JSON.stringify(data),
       }).then(mapCategory),
-    remove: (id: string) => req<{ ok: boolean }>(`/categories/${id}`, { method: "DELETE" }),
+    remove: (id: string, transferTo?: string) =>
+      req<{ ok: boolean }>(`/categories/${id}${transferTo ? `?transferTo=${transferTo}` : ""}`, {
+        method: "DELETE",
+      }),
   },
 
   cards: {
@@ -447,7 +450,11 @@ export const api = {
         method: "PUT",
         body: JSON.stringify(data),
       }).then(mapGoal),
-    remove: (id: string) => req<{ ok: boolean }>(`/goals/${id}`, { method: "DELETE" }),
+    remove: (id: string, refundAccountId?: string) =>
+      req<{ ok: boolean }>(
+        `/goals/${id}${refundAccountId ? `?refundAccountId=${refundAccountId}` : ""}`,
+        { method: "DELETE" }
+      ),
     deposit: (id: string, amount: number, accountId: string) =>
       req<ApiGoal>(`/goals/${id}/deposit`, {
         method: "POST",

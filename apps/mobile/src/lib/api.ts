@@ -330,6 +330,15 @@ export const api = {
           : Promise.reject(new Error("refresh failed"))
       ),
     logout: () => fetch(`${BASE}/auth/logout`, { method: "POST", credentials: "include" }),
+    verifyEmail: (token: string) =>
+      req<{ accessToken: string }>(`/auth/verify-email?token=${encodeURIComponent(token)}`, {
+        method: "GET",
+      }),
+    resendVerification: (email: string) =>
+      req<{ ok: boolean }>("/auth/resend-verification", {
+        method: "POST",
+        body: JSON.stringify({ email }),
+      }),
   },
 
   transactions: {
