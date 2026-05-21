@@ -42,6 +42,46 @@
 
 > Auditoria realizada em 2026-05-20. Prioridade sugerida de implementação na próxima sessão.
 
+### I1 — Entrada de valores monetários no formulário de Investimentos (web)
+
+**Severidade:** Moderado — não quebra, mas introduz risco de bug e UX inconsistente.
+
+**Problema no web (`apps/web/src/pages/Investments/index.tsx` linhas 416–450):**
+
+Os campos "Preço Médio (R$)" e "Preço Atual (R$)" usam `<input type="number" step="0.01">` com conversão float manual:
+
+```ts
+Math.round(Number(e.target.value) * 100);
+```
+
+Isso é problemático por três razões:
+
+1. **Risco de erro float:** `Math.round(0.015 * 100)` → `1` em vez de `2`. Todos os outros campos monetários do app passam por `parseCurrencyInput()` que opera apenas sobre dígitos inteiros, sem float.
+2. **UX inconsistente:** O restante do app (TransactionForm, GoalForm, AccountForm, CardForm) usa campo de texto com prefixo "R$" e separador brasileiro (vírgula). O form de Investimentos exibe ponto decimal (inglês) e sem "R$".
+3. **Aceita entradas inválidas:** `<input type="number">` aceita notação científica ("1e3") e valores negativos sem validação extra.
+
+**Problema no mobile (`apps/mobile/app/(tabs)/investments.tsx` linhas 404–431):**
+
+O mobile usa o padrão correto (`formatCurrencyInput(parseCurrencyInput(v))`) — consistente com todos os outros forms. Sem bug, mas há uma inconsistência de label: o campo exibe "Preço de Compra" e "Preço Atual" sem prefixo "R$" visível (ao contrário de `AccountForm` que tem o "R$" hardcoded no `amountRow`).
+
+**Como corrigir (web):**
+
+Substituir os dois `<input type="number">` por campos de texto usando o padrão já adotado no restante do app:
+
+```tsx
+// Estado: purchasePriceRaw: string (ex: "25,50")
+// No onChange:
+setPurchasePriceRaw(formatCurrencyInput(parseCurrencyInput(e.target.value)));
+// No submit:
+purchasePrice: parseCurrencyInput(purchasePriceRaw);
+```
+
+Adicionar prefixo "R$" no layout igual ao `TransactionForm` do web.
+
+**Arquivos a modificar:**
+
+- `apps/web/src/pages/Investments/index.tsx` — trocar `<input type="number">` por campo de texto com `parseCurrencyInput`/`formatCurrencyInput`
+
 ### Críticos — quebram funcionalidade
 
 | #   | Arquivo                      | Problema                                                                                                                                                   | Como corrigir                                                                                                                 |
@@ -939,6 +979,34 @@ pnpm --filter mobile test --verbose
 
 ## Log de Sessões
 
+### 2026-05-21 — Fix form Investimentos + Maestro E2E + Deploy API
+
+#### O que foi feito
+
+- **fix(web/I1):** Campos "Preço Médio" e "Preço Atual" no form de Investimentos trocados de `<input type="number">` para `<input type="text" inputMode="numeric">` com `parseCurrencyInput`/`formatCurrencyInput`. Bug: o primeiro dígito ia direto para a área de centavos, impossibilitando digitar dezenas/centenas. Dois estados raw (`purchasePriceRaw`, `currentPriceRaw`) gerenciam o valor exibido. Modo edição inicializa os raw com `formatCurrencyInput(inv.price)`.
+- **fix(e2e):** `maestro-cloud.yml` — adicionado `sleep 30` entre `adb install` e `maestro test`. Causa: Maestro falhava com `AndroidDriverTimeoutException` ao tentar conectar via DADB (tcp:7001) antes do UIAutomator2 estar pronto no emulador.
+- **fix(infra):** Deploy API estava falhando porque `deploy/backup.sh` havia sido editado diretamente na VM na sessão anterior, bloqueando o `git pull`. Resetado via `sudo -u deploy git checkout deploy/backup.sh`.
+
+#### Arquivos criados/modificados
+
+- `apps/web/src/pages/Investments/index.tsx` — campos de preço com `parseCurrencyInput`/`formatCurrencyInput`
+- `.github/workflows/maestro-cloud.yml` — `sleep 30` antes do `maestro test`
+
+#### Pendências para a próxima sessão
+
+Ver seção **"Backlog de Inconsistências Web ↔ Mobile"** no início deste arquivo.
+
+**Ordem de prioridade:**
+
+1. **C2** — `api.cards.statement()` mobile: adicionar campo `card` no retorno (TypeError em `CardStatement.tsx`)
+2. **C3** — `api.cards.pay()` mobile: mapear resposta com `mapTransaction`
+3. **C1** — `auth.register()` mobile: alinhar tipo com retorno real da API
+4. **M1** — web `categories.remove()` sem `?transferTo`
+5. **M2** — web `goals.remove()` sem `?refundAccountId`
+6. **M3** — mobile sem `auth.verifyEmail()` / `auth.resendVerification()`
+
+---
+
 ### 2026-05-21 — Configuração e correção do backup PostgreSQL
 
 #### O que foi feito
@@ -957,6 +1025,16 @@ pnpm --filter mobile test --verbose
 #### Pendências para a próxima sessão
 
 Ver seção **"Backlog de Inconsistências Web ↔ Mobile"** no início deste arquivo.
+
+**Ordem de prioridade:**
+
+1. **C2** — `api.cards.statement()` mobile: adicionar campo `card` no retorno (TypeError em `CardStatement.tsx`)
+2. **C3** — `api.cards.pay()` mobile: mapear resposta com `mapTransaction`
+3. **C1** — `auth.register()` mobile: alinhar tipo com retorno real da API
+4. **M1** — web `categories.remove()` sem `?transferTo`
+5. **M2** — web `goals.remove()` sem `?refundAccountId`
+6. **M3** — mobile sem `auth.verifyEmail()` / `auth.resendVerification()`
+7. **I1** — web `InvestmentForm`: trocar `<input type="number">` por campo de texto com `parseCurrencyInput`/`formatCurrencyInput` (risco de erro float + UX inconsistente)
 
 ---
 
