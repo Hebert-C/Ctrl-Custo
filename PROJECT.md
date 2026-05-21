@@ -1014,6 +1014,30 @@ pnpm --filter mobile test --verbose
 
 ## Log de Sessões
 
+### 2026-05-21 — Fix expo-secure-store + inventário de dependências no CLAUDE.md
+
+#### O que foi feito
+
+- **fix(deps):** `expo-secure-store` corrigido de `~14.0.1` (SDK 53) para `~15.0.8` (SDK 54, conforme `bundledNativeModules.json`). Lockfile atualizado de forma cirúrgica (apenas 10 linhas).
+- **docs(claude):** Seção "Dependências — consulta obrigatória" adicionada ao `CLAUDE.md`:
+  - Comando de consulta ao `bundledNativeModules.json`
+  - Tabelas de inventário completas por workspace (api, web, mobile, core, ui)
+  - API de componentes do `packages/ui`
+  - 5 regras obrigatórias para adicionar dependências
+  - Objetivo: evitar repetição do erro `expo-notifications ~0.29.14` que quebrou o CI.
+
+#### Arquivos criados/modificados
+
+- `CLAUDE.md` — seção de inventário de dependências adicionada
+- `apps/mobile/package.json` — expo-secure-store `~15.0.8`
+- `pnpm-lock.yaml` — expo-secure-store atualizado
+
+#### Commits
+
+- `025e79f` — fix(deps): corrigir expo-secure-store para versao SDK 54 (~15.0.8)
+
+---
+
 ### 2026-05-21 — UI Contas Recorrentes (Web + Mobile + PAY-12)
 
 #### O que foi feito
