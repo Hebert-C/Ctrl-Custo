@@ -12,6 +12,10 @@
     -webkit-font-smoothing: antialiased;
   }
 
+  body {
+    @apply text-gray-900 dark:text-gray-100;
+  }
+
   /* Scrollbar customizada */
   ::-webkit-scrollbar {
     width: 6px;
