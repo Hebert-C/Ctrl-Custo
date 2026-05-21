@@ -169,6 +169,22 @@ Antes de implementar qualquer feature nova ou corrigir lógica de negócio, leia
 3. Só então iniciar a implementação
 4. Ao concluir, marcar as RNs implementadas com ✅
 
+## Paridade Web ↔ Mobile — regra obrigatória
+
+Web e mobile são **espelhos**. Toda feature, rota ou comportamento ativo em um lado deve existir no outro.
+
+- Ao implementar algo novo no web → implementar o equivalente no mobile no mesmo PR/sessão.
+- Ao implementar algo novo no mobile → implementar o equivalente no web no mesmo PR/sessão.
+- Antes de marcar uma tarefa como concluída, verificar se a paridade foi mantida.
+
+**Exceções permitidas:** stores exclusivos do mobile (`useUiStore`, `useThemeStore` com AsyncStorage), funcionalidades nativas sem equivalente web (biometria, notificações push, compartilhamento de arquivo).
+
+## Deploy — regras de CI/CD
+
+- **Deploy da API e do Web disparam automaticamente** via GitHub Actions a cada push em `main`. Nunca usar `gh workflow run` neles — causaria double-deploy.
+- **EAS Build** (APK Android) deve ser disparado manualmente pelo usuário quando necessário — não há trigger automático de APK.
+- Migrations PostgreSQL são aplicadas automaticamente pelo CI (`deploy.sh → db:migrate`) — nunca rodar `db:migrate` manualmente em produção sem tunnel SSH ativo.
+
 ## Project Overview
 
 **Ctrl-Custo** is a personal finance app (Brazilian Portuguese) with a web version (React) and a mobile version (Expo). Business logic, the SQLite database, and TypeScript types live in a shared `packages/core` package.
@@ -185,14 +201,29 @@ pnpm dev:web
 # Run mobile dev server (Expo)
 pnpm dev:mobile
 
+# Run API dev server
+pnpm dev:api
+
 # Run all unit tests (packages/core only)
 pnpm test
 
-# Watch mode for tests
+# Run API integration tests (requer .env.test com DATABASE_URL apontando para banco de teste)
+pnpm --filter @ctrl-custo/api test
+
+# Watch mode para testes (core)
 pnpm --filter @ctrl-custo/core test:watch
 
-# Run a single test file
+# Watch mode para testes (api)
+pnpm --filter @ctrl-custo/api test:watch
+
+# Run a single test file (core)
 pnpm --filter @ctrl-custo/core vitest run src/__tests__/TransactionService.test.ts
+
+# Run a single test file (api)
+pnpm --filter @ctrl-custo/api vitest run src/__tests__/rn-pay-bills.test.ts
+
+# Aplicar migrations (requer tunnel SSH ativo se apontar para produção)
+pnpm --filter @ctrl-custo/api db:migrate
 
 # Type-check all packages
 pnpm typecheck
@@ -220,15 +251,12 @@ Build orchestration: **Turborepo** with `pnpm workspaces`. `turbo.json` defines 
 
 ### packages/core
 
-The entire data layer. All services are factory functions that receive a `CoreDatabase` instance:
+Schema Drizzle compartilhado e tipos TypeScript. Hoje web e mobile consomem a API REST (`apps/api`) — o `packages/core` não é mais o data layer principal, mas continua sendo a fonte de verdade para schema e tipos.
 
-- `createDatabase(config?)` — initialises sql.js WASM, runs inline SQL migrations, returns a Drizzle instance
-- Services: `createTransactionService`, `createCategoryService`, `createAccountService`, `createReportService`, `createExportService`
 - `CoreDatabase` type = `BaseSQLiteDatabase<'sync', any, typeof schema>`
+- Serviços de conveniência (usados nos testes): `createTransactionService`, `createCategoryService`, `createAccountService`, `createReportService`, `createExportService`
 
-**Schema tables:** `categories`, `accounts`, `cards`, `transactions`, `goals`, `investments`. All defined in `packages/core/src/db/schema.ts` via Drizzle.
-
-**Critical convention:** All monetary amounts are stored as **integers in centavos (BRL cents)** — never floats. Both `apps/web` and `apps/mobile` have a `src/hooks/useCurrency.ts` that exports `formatCurrency(cents)` and `parseCurrencyInput(raw)` with identical APIs.
+**Schema tables** (definidas em `packages/core/src/db/schema.ts` via Drizzle): `categories`, `accounts`, `cards`, `transactions`, `goals`, `investments`. As tabelas `recurringBills` e `recurringPayments` ficam em `apps/api/src/db/schema.ts` (schema PostgreSQL separado).
 
 **IDs** use `crypto.randomUUID()` (Web Crypto API). `packages/core/tsconfig.json` includes `"lib": ["ES2022", "DOM"]` to expose the global `crypto`.
 
@@ -242,11 +270,11 @@ The entire data layer. All services are factory functions that receive a `CoreDa
 
 ### apps/web — Zustand stores
 
-Every store (`useTransactionStore`, `useAccountStore`, `useCategoryStore`, `useCardStore`, `useGoalStore`) takes the `CoreDatabase` as a parameter on each action — there is no global DB reference inside the store itself. Pages call `getDatabase()` and pass the result to store actions. `useThemeStore` is the exception: it uses `zustand/middleware persist` and reads `localStorage`.
+Stores: `useTransactionStore`, `useAccountStore`, `useCategoryStore`, `useCardStore`, `useGoalStore`, `useRecurringBillStore`, `useInvestmentStore`. `useThemeStore` usa `zustand/middleware persist` com `localStorage`.
 
 ### apps/web — routing
 
-React Router v6, declared in `App.tsx`. Routes: `/dashboard`, `/transactions`, `/cards`, `/goals`, `/reports`, `/settings`. Default redirect `/` → `/dashboard`.
+React Router v6, declared in `App.tsx`. Routes: `/dashboard`, `/transactions`, `/cards`, `/goals`, `/recurring`, `/reports`, `/settings`. Default redirect `/` → `/dashboard`.
 
 ### apps/mobile — database
 
@@ -258,11 +286,12 @@ Expo Router v5 with **file-based routing** under `app/`:
 
 ```
 app/_layout.tsx         — Root layout (GestureHandlerRootView, StatusBar, Stack)
-app/(tabs)/_layout.tsx  — Tab bar with 5 screens
+app/(tabs)/_layout.tsx  — Tab bar com 6 telas
 app/(tabs)/index.tsx    — Dashboard (balance, monthly summary, recent transactions)
 app/(tabs)/transactions.tsx
 app/(tabs)/cards.tsx
 app/(tabs)/goals.tsx
+app/(tabs)/recurring.tsx — Contas recorrentes (PAY-12 + notificações)
 app/(tabs)/settings.tsx
 ```
 
@@ -295,7 +324,23 @@ Shared design system built on React Native primitives (works on web via `react-n
 
 ## Key constraints
 
+**Valores monetários — regra crítica:**
+
+- Todos os valores são **inteiros em centavos** (BRL). Nunca use float para dinheiro.
+- Inputs de dinheiro usam `<input type="text" inputMode="numeric">` + `parseCurrencyInput()` / `formatCurrency()` de `src/hooks/useCurrency.ts`. **Nunca `<input type="number">`** para campos monetários — causa erros de float e UX inconsistente.
+- Essa convenção existe em web e mobile com API idêntica.
+
+**Padrão de store (Zustand):**
+
+- Toda nova store que acessa dados via API deve usar `api.*` diretamente nas actions — não armazenar instância de db ou cliente como estado da store.
+- Stores que consomem a REST API (web e mobile) seguem o padrão: `set` para atualizar estado local após resposta, otimismo apenas onde explicitamente necessário.
+
+**Rotas Hono — ordenação obrigatória:**
+
+- Rotas específicas devem ser registradas **antes** das rotas parametrizadas. Ex: `GET /recurring-bills/due` deve vir antes de `GET /recurring-bills/:id`, senão `"due"` é capturado como parâmetro `:id`.
+
+**Outros:**
+
 - `react-hooks/exhaustive-deps` warnings in web pages are **intentional** — Zustand store references are stable so omitting them from deps is safe.
-- The web database is **in-memory only** (no persistence across page reloads). localStorage persistence is stubbed but not implemented.
 - ESLint 8 + Prettier 3 run via `lint-staged` on pre-commit (Husky 9). Do not bypass with `--no-verify`.
 - Prettier config: double quotes, 100-char line width, semi, LF line endings, ES5 trailing commas.
