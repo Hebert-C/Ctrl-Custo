@@ -7,6 +7,7 @@ const NAV_ITEMS = [
   { to: "/cards", label: "Cartões", icon: "▣" },
   { to: "/goals", label: "Metas", icon: "◎" },
   { to: "/investments", label: "Carteira", icon: "◈" },
+  { to: "/recurring", label: "Recorrentes", icon: "↻" },
   { to: "/reports", label: "Relatórios", icon: "≡" },
   { to: "/settings", label: "Config.", icon: "⚙" },
 ] as const;

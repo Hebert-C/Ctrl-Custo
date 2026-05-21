@@ -30,6 +30,14 @@
         {
           "faceIDPermission": "Allow Ctrl-Custo to use Face ID for authentication."
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#14532D",
+          "sounds": []
+        }
       ]
     ],
     "experiments": {

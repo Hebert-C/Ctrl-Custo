@@ -6,6 +6,7 @@ import { Cards } from "./pages/Cards";
 import { Goals } from "./pages/Goals";
 import { Investments } from "./pages/Investments";
 import { Reports } from "./pages/Reports";
+import { RecurringBills } from "./pages/RecurringBills";
 import { Settings } from "./pages/Settings";
 import { Login } from "./pages/Login";
 import { VerifyEmail } from "./pages/VerifyEmail";
@@ -85,6 +86,14 @@ export function App() {
           element={
             <RequireAuth>
               <Reports />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/recurring"
+          element={
+            <RequireAuth>
+              <RecurringBills />
             </RequireAuth>
           }
         />

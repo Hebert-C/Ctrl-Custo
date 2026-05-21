@@ -188,6 +188,40 @@ interface ApiInvestment extends ApiRow {
   notes: string | null;
 }
 
+export interface ApiRecurringBill {
+  id: string;
+  name: string;
+  dueDay: number;
+  amountCents: number | null;
+  accountId: string;
+  categoryId: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ApiRecurringBillDue extends ApiRecurringBill {
+  status: "overdue" | "upcoming";
+}
+
+export interface ApiRecurringPayment {
+  id: string;
+  recurringBillId: string;
+  transactionId: string | null;
+  dueDate: string;
+  paidAt: string;
+  amountCents: number;
+  createdAt: string;
+}
+
+export interface NewRecurringBill {
+  name: string;
+  dueDay: number;
+  amountCents?: number | null;
+  accountId: string;
+  categoryId: string;
+}
+
 // --- Mappers: null → undefined ---
 
 function mapTransaction(row: ApiTransaction): Transaction {
@@ -414,6 +448,24 @@ export const api = {
         method: "POST",
         body: JSON.stringify({ month, categoryId }),
       }).then((r) => ({ transaction: mapTransaction(r.transaction) })),
+  },
+
+  recurringBills: {
+    list: () => req<ApiRecurringBill[]>("/recurring-bills"),
+    due: () => req<ApiRecurringBillDue[]>("/recurring-bills/due"),
+    create: (data: NewRecurringBill) =>
+      req<ApiRecurringBill>("/recurring-bills", { method: "POST", body: JSON.stringify(data) }),
+    update: (id: string, data: Partial<NewRecurringBill> & { isActive?: boolean }) =>
+      req<ApiRecurringBill>(`/recurring-bills/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }),
+    remove: (id: string) => req<void>(`/recurring-bills/${id}`, { method: "DELETE" }),
+    pay: (id: string, month: string, amountCents?: number) =>
+      req<{ transactionId: string; payment: ApiRecurringPayment }>(`/recurring-bills/${id}/pay`, {
+        method: "POST",
+        body: JSON.stringify({ month, ...(amountCents !== undefined ? { amountCents } : {}) }),
+      }),
   },
 
   goals: {

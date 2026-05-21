@@ -93,6 +93,15 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="recurring"
+        options={{
+          title: "Recorrentes",
+          tabBarIcon: ({ focused, color }) => (
+            <TabIcon name="calendar" focused={focused} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="reports"
         options={{
           title: "Relatórios",
