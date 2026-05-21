@@ -1014,6 +1014,53 @@ pnpm --filter mobile test --verbose
 
 ## Log de Sessões
 
+### 2026-05-21 — UI Contas Recorrentes (Web + Mobile + PAY-12)
+
+#### O que foi feito
+
+- **feat(web/ui):** Página `/recurring` com abas "A Pagar" e "Todas":
+  - Aba "A Pagar": seções overdue (vermelho) e upcoming, botão Pagar → modal com valor editável.
+  - Aba "Todas": lista ativas e inativas com editar / ativar-desativar / excluir.
+  - Modal de criação/edição: nome, dia de vencimento, conta de débito, categoria, valor fixo ou variável.
+  - Tratamento de erros da API (BILL_INACTIVE, ALREADY_PAID, AMOUNT_REQUIRED, INSUFFICIENT_BALANCE).
+- **feat(web/nav):** Item "Recorrentes" (ícone ↻) adicionado à `Sidebar` e ao `BottomNav`.
+- **feat(mobile/ui):** Tela `recurring.tsx` (nova aba "Recorrentes" no tab bar com ícone `calendar`):
+  - `SectionList` com seções: "A Pagar", "Todas as ativas", "Inativas".
+  - Pay modal com input de valor pré-preenchido para contas fixas.
+  - Form modal (BillForm) seguindo padrão investments: chips horizontais para conta/categoria.
+  - Confirmação de desativar/excluir via `Alert.alert`.
+- **feat(PAY-12):** `apps/mobile/src/lib/notifications.ts`:
+  - `scheduleBillNotification()` — agenda notificação local (3 dias antes do `dueDay`) via `expo-notifications` com trigger `TIME_INTERVAL`.
+  - `cancelBillNotification()` — cancela notificação existente; ID persistido em `AsyncStorage`.
+  - Chamado automaticamente nos stores `add` / `update({ isActive: false })` / `remove` / `pay`.
+- **feat(api-client):** `ApiRecurringBill`, `ApiRecurringBillDue`, `ApiRecurringPayment`, `NewRecurringBill` + seção `api.recurringBills` adicionados a `apps/web/src/lib/api.ts` e `apps/mobile/src/lib/api.ts`.
+- **feat(store):** `useRecurringBillStore` criado em web e mobile (Zustand).
+- **deps:** `expo-notifications ~0.29.14` instalada; plugin adicionado ao `app.json`.
+- **push:** `c5cf7c4` enviado para `main`, CI + deploy disparados.
+
+#### Arquivos criados/modificados
+
+- `apps/web/src/lib/api.ts` — tipos e seção recurringBills
+- `apps/web/src/store/useRecurringBillStore.ts` — criado
+- `apps/web/src/pages/RecurringBills/index.tsx` — criado
+- `apps/web/src/App.tsx` — rota `/recurring` adicionada
+- `apps/web/src/components/Sidebar.tsx` — item Recorrentes
+- `apps/web/src/components/BottomNav.tsx` — item Recorrentes
+- `apps/mobile/src/lib/api.ts` — tipos e seção recurringBills
+- `apps/mobile/src/store/useRecurringBillStore.ts` — criado
+- `apps/mobile/src/lib/notifications.ts` — criado (PAY-12)
+- `apps/mobile/app/(tabs)/recurring.tsx` — criado
+- `apps/mobile/app/(tabs)/_layout.tsx` — aba Recorrentes adicionada
+- `apps/mobile/package.json` — expo-notifications
+- `apps/mobile/app.json` — plugin expo-notifications
+
+#### Pendências
+
+- PAY-12 (notificações) requer rebuild da APK via EAS para ativar o plugin nativo no Android.
+- Itens do backlog de paridade web ↔ mobile continuam abertos.
+
+---
+
 ### 2026-05-21 — Deploy domínio PAY + fix PM2 startOrRestart
 
 #### O que foi feito
