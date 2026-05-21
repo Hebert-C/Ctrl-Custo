@@ -107,6 +107,34 @@ export async function createTransaction(
   return tx;
 }
 
+/**
+ * Cria uma conta recorrente via API (POST /recurring-bills).
+ * Retorna o objeto JSON já parseado. Lança erro se a criação falhar.
+ */
+export async function createRecurringBill(
+  token: string,
+  accountId: string,
+  categoryId: string,
+  overrides: Record<string, unknown> = {}
+) {
+  const res = await api("/recurring-bills", {
+    method: "POST",
+    token,
+    body: {
+      name: "Conta de Luz",
+      dueDay: 10,
+      accountId,
+      categoryId,
+      ...overrides,
+    },
+  });
+  if (res.status !== 201) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(`createRecurringBill falhou: status ${res.status} — ${JSON.stringify(body)}`);
+  }
+  return res.json() as Promise<Record<string, unknown>>;
+}
+
 /** Lê o saldo atual de uma conta diretamente do banco. */
 export async function getBalance(accountId: string): Promise<number> {
   const [row] = await db

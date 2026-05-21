@@ -358,7 +358,7 @@ Usar `isArchived = true` em vez de deletar fisicamente — preserva o histórico
 >
 > **Tabelas:** `planning.recurring_bills`, `planning.recurring_payments`
 
-### RN-PAY-01 — Dia de vencimento limitado a 1–28 ❌
+### RN-PAY-01 — Dia de vencimento limitado a 1–28 ✅
 
 `due_day` aceita apenas valores de 1 a 28. Cap em 28 garante que o dia existe em qualquer mês, incluindo fevereiro — mesmo comportamento de `RN-CARD-04`.
 
@@ -367,7 +367,7 @@ Usar `isArchived = true` em vez de deletar fisicamente — preserva o histórico
 
 ---
 
-### RN-PAY-02 — Valor estimado é opcional ❌
+### RN-PAY-02 — Valor estimado é opcional ✅
 
 `amount_cents` pode ser nulo ao criar ou editar uma conta recorrente — comum para contas que variam todo mês (água, luz, internet). O valor real só é informado no momento do pagamento (`POST /recurring-bills/:id/pay`).
 
@@ -375,7 +375,7 @@ Usar `isArchived = true` em vez de deletar fisicamente — preserva o histórico
 
 ---
 
-### RN-PAY-03 — Conta recorrente pertence a um único usuário ❌
+### RN-PAY-03 — Conta recorrente pertence a um único usuário ✅
 
 `userId` é extraído do JWT em toda operação. Recurso de outro usuário retorna 404 (conforme `RN-CROSS-02`).
 
@@ -383,7 +383,7 @@ Usar `isArchived = true` em vez de deletar fisicamente — preserva o histórico
 
 ---
 
-### RN-PAY-04 — Conta de débito não pode estar arquivada ao criar ❌
+### RN-PAY-04 — Conta de débito não pode estar arquivada ao criar ✅
 
 Ao criar ou editar uma conta recorrente, verificar que a `account_id` informada não está arquivada (`isArchived = false`). Conta arquivada indica que a conta bancária não está mais em uso.
 
@@ -392,34 +392,34 @@ Ao criar ou editar uma conta recorrente, verificar que a `account_id` informada 
 
 ---
 
-### RN-PAY-05 — Conta recorrente inativa não aceita pagamento ❌
+### RN-PAY-05 — Conta recorrente inativa não aceita pagamento ✅
 
 `POST /recurring-bills/:id/pay` só funciona se `is_active = true`. Contas desativadas pelo usuário não podem gerar novos pagamentos.
 
 **Onde aplicar:** backend (`/recurring-bills/:id/pay`)
-**Erro esperado:** 422 `"Conta recorrente inativa."`
+**Erro esperado:** 422 com `code: "BILL_INACTIVE"`
 
 ---
 
-### RN-PAY-06 — O mesmo mês não pode ser pago duas vezes ❌
+### RN-PAY-06 — O mesmo mês não pode ser pago duas vezes ✅
 
 Se já existe um registro em `recurring_payments` para o mesmo `recurring_bill_id` e mesmo `due_date` (mês/ano), retornar 409. Cada ciclo mensal tem no máximo um pagamento confirmado.
 
 **Onde aplicar:** backend (`/recurring-bills/:id/pay` — verificar existência antes de inserir)
-**Erro esperado:** 409 `"Esta conta já foi paga neste mês."`
+**Erro esperado:** 409 com `code: "ALREADY_PAID"`
 
 ---
 
-### RN-PAY-07 — Valor real pago deve ser maior que zero ❌
+### RN-PAY-07 — Valor real pago deve ser maior que zero ✅
 
 `amount_cents` no payload de `/pay` deve ser `> 0`. Pagar zero não faz sentido financeiro e não deve criar transação.
 
 **Onde aplicar:** backend (validação Zod no body do `/pay`)
-**Erro esperado:** 400 `"Valor do pagamento deve ser maior que zero."`
+**Erro esperado:** 400 (valor ≤ 0). Para boleto variável sem `amountCents` no body nem na conta: 400 com `code: "AMOUNT_REQUIRED"`
 
 ---
 
-### RN-PAY-08 — Saldo suficiente na conta de débito ❌
+### RN-PAY-08 — Saldo suficiente na conta de débito ✅
 
 Antes de debitar, verificar se `account.balance >= amount_cents`. Delega à lógica de `RN-ACC-06`. Pendentes não são bloqueados (mas `/pay` só cria transações `confirmed`).
 
@@ -428,7 +428,7 @@ Antes de debitar, verificar se `account.balance >= amount_cents`. Delega à lóg
 
 ---
 
-### RN-PAY-09 — Pagamento cria transação `expense` e registro de histórico atomicamente ❌
+### RN-PAY-09 — Pagamento cria transação `expense` e registro de histórico atomicamente ✅
 
 `POST /recurring-bills/:id/pay` executa em `db.transaction()`:
 
@@ -442,7 +442,7 @@ Falha em qualquer etapa reverte tudo (conforme `RN-CROSS-03`).
 
 ---
 
-### RN-PAY-10 — Vencimentos próximos: janela de 7 dias, incluindo atrasados ❌
+### RN-PAY-10 — Vencimentos próximos: janela de 7 dias, incluindo atrasados ✅
 
 `GET /recurring-bills/due` retorna contas recorrentes ativas (`is_active = true`) que:
 
@@ -455,7 +455,7 @@ A resposta distingue entre `status: "upcoming"` e `status: "overdue"`. Contas j�
 
 ---
 
-### RN-PAY-11 — Desativar preserva histórico; deletar é permanente ❌
+### RN-PAY-11 — Desativar preserva histórico; deletar é permanente ✅
 
 - **Desativar** (`PUT /recurring-bills/:id` com `is_active: false`): a conta some das listagens ativas e do endpoint `/due`, mas o histórico de `recurring_payments` e as transações geradas são preservados.
 - **Deletar** (`DELETE /recurring-bills/:id`): remove o registro de `recurring_bills` e seus `recurring_payments` (cascade). As transações `ledger.transactions` geradas **são preservadas** — representam movimentações financeiras reais já realizadas.

@@ -8,6 +8,7 @@ import { transactionsRouter } from "./routes/transactions";
 import { goalsRouter } from "./routes/goals";
 import { reportsRouter } from "./routes/reports";
 import { investmentsRouter } from "./routes/investments";
+import { recurringBillsRouter } from "./routes/recurring-bills";
 
 const app = new Hono();
 
@@ -22,6 +23,7 @@ app.route("/cards", cardsRouter);
 app.route("/transactions", transactionsRouter);
 app.route("/goals", goalsRouter);
 app.route("/investments", investmentsRouter);
+app.route("/recurring-bills", recurringBillsRouter);
 app.route("/reports", reportsRouter);
 
 app.onError((err, c) => {

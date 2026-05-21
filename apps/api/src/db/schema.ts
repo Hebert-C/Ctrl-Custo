@@ -182,6 +182,39 @@ export const goals = planningSchema.table("goals", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const recurringBills = planningSchema.table("recurring_bills", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  dueDay: integer("due_day").notNull(),
+  amountCents: integer("amount_cents"),
+  accountId: uuid("account_id")
+    .notNull()
+    .references(() => accounts.id),
+  categoryId: uuid("category_id")
+    .notNull()
+    .references(() => categories.id),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const recurringPayments = planningSchema.table("recurring_payments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  recurringBillId: uuid("recurring_bill_id")
+    .notNull()
+    .references(() => recurringBills.id, { onDelete: "cascade" }),
+  transactionId: uuid("transaction_id").references(() => transactions.id, {
+    onDelete: "set null",
+  }),
+  dueDate: text("due_date").notNull(),
+  paidAt: timestamp("paid_at", { withTimezone: true }).notNull().defaultNow(),
+  amountCents: integer("amount_cents").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 // ─── portfolio ────────────────────────────────────────────────────────────────
 
 export const investments = portfolioSchema.table("investments", {

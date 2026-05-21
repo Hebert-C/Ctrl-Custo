@@ -1014,6 +1014,89 @@ pnpm --filter mobile test --verbose
 
 ## Log de Sessões
 
+### 2026-05-21 — Implementação Recurring Payments (API completa, 36/36 testes)
+
+#### O que foi feito
+
+- **feat(api/PAY):** Feature de pagamentos recorrentes completa na API:
+  - Migration `0005_recurring_bills.sql` — tabelas `planning.recurring_bills` e `planning.recurring_payments` com UNIQUE constraint `(recurring_bill_id, due_date)` (PAY-06) e CASCADE correto.
+  - Schema Drizzle — tabelas `recurringBills` e `recurringPayments` em `schema.ts`.
+  - Rota `src/routes/recurring-bills.ts` — 7 endpoints (GET list, GET /due, GET /:id, POST, PUT, DELETE, POST /:id/pay) implementando PAY-01 a PAY-11.
+  - Router registrado em `app.ts` em `/recurring-bills`.
+- **fix(api/tx):** Adicionado `GET /transactions/:id` ao `transactions.ts` — rota que faltava e foi descoberta pelos testes de PAY-09 e PAY-11.
+- **test:** 36/36 testes passando (todos os testes TDD do domínio PAY).
+- **docs:** PAY-01 a PAY-11 marcadas como ✅ no `BUSINESS_RULES.md`.
+
+#### Arquivos criados/modificados
+
+- `apps/api/drizzle/0005_recurring_bills.sql` — migration das duas tabelas
+- `apps/api/drizzle/meta/_journal.json` — entrada idx:5 adicionada
+- `apps/api/src/db/schema.ts` — `recurringBills` + `recurringPayments`
+- `apps/api/src/routes/recurring-bills.ts` — rota completa (criado)
+- `apps/api/src/routes/transactions.ts` — `GET /:id` adicionado
+- `apps/api/src/app.ts` — router `/recurring-bills` registrado
+- `BUSINESS_RULES.md` — PAY-01 a PAY-11 marcadas como ✅
+
+#### Pendências para a próxima sessão
+
+**Próximas etapas do domínio PAY:**
+
+1. **Deploy:** fazer push para `main` e aguardar o CI aplicar a migration no banco de produção.
+2. **Web UI:** nova página `/recurring` com:
+   - Lista de contas recorrentes (ativas e inativas)
+   - Filtro por status (upcoming/overdue via `/due`)
+   - Modal de criação/edição
+   - Modal de pagamento (com input de valor para boletos variáveis)
+   - Badge no menu com contagem de pending/overdue
+3. **Mobile UI:** nova aba ou tela de pagamentos recorrentes + `expo-notifications` (PAY-12)
+4. **`apps/mobile/src/lib/api.ts`** e **`apps/web/src/lib/api.ts`**: adicionar client para o domínio PAY (recurringBills)
+
+---
+
+### 2026-05-21 — TDD Recurring Payments (PAY-01 a PAY-11) + Fixes M1/M2/M3/I1
+
+#### O que foi feito
+
+- **fix(web/M1):** `api.categories.remove()` na web agora encaminha `?transferTo=<id>` na query string (antes o param era ignorado).
+- **fix(web/M2):** `api.goals.remove()` na web agora encaminha `?refundAccountId=<id>` na query string.
+- **fix(mobile/M3):** Adicionados `api.auth.verifyEmail()` e `api.auth.resendVerification()` no `apps/mobile/src/lib/api.ts`.
+- **fix(web/I1):** Campos "Preço Médio" e "Preço Atual" no form de Investimentos corrigidos — trocados de `<input type="number">` para `<input type="text" inputMode="numeric">` com `parseCurrencyInput`/`formatCurrencyInput`. Bug: dígito inicial ia para centavos.
+- **feat(rn/PAY):** Business rules PAY-01 a PAY-12 documentadas em `BUSINESS_RULES.md` (domínio Recurring Payments). Inclui análise de viabilidade de notificações locais (`expo-notifications`) e scanner de boleto (Feature 6 — baixa prioridade).
+- **test(TDD/PAY-01~04):** Criado `apps/api/src/__tests__/rn-pay-bills.test.ts` — 13 testes para CRUD de contas recorrentes (due_day, amountCents, isolamento por userId, conta arquivada).
+- **test(TDD/PAY-05~11):** Criado `apps/api/src/__tests__/rn-pay-payment.test.ts` — 20 testes para operações de pagamento (conta inativa, duplicidade mensal, valor > 0, saldo insuficiente, atomicidade, `/due` endpoint, desativar/deletar).
+- **fix(helpers):** Adicionado `createRecurringBill()` factory em `apps/api/src/__tests__/helpers.ts`.
+- **fix(BUSINESS_RULES):** Adicionados `code` fields nos erros PAY-05 (`BILL_INACTIVE`), PAY-06 (`ALREADY_PAID`), PAY-07 (`AMOUNT_REQUIRED`) para alinhar com os testes.
+
+#### Arquivos criados/modificados
+
+- `apps/web/src/lib/api.ts` — `categories.remove` + `goals.remove` com query params
+- `apps/mobile/src/lib/api.ts` — `auth.verifyEmail` + `auth.resendVerification`
+- `apps/web/src/pages/Investments/index.tsx` — campos de preço com `parseCurrencyInput`/`formatCurrencyInput`
+- `BUSINESS_RULES.md` — domínio PAY completo (PAY-01 a PAY-12), error codes
+- `apps/api/src/__tests__/helpers.ts` — factory `createRecurringBill`
+- `apps/api/src/__tests__/rn-pay-bills.test.ts` — criado (TDD, PAY-01~04)
+- `apps/api/src/__tests__/rn-pay-payment.test.ts` — criado (TDD, PAY-05~11)
+
+#### Pendências para a próxima sessão
+
+**Próxima etapa obrigatória — implementação do domínio PAY:**
+
+1. Migration para `planning.recurring_bills` e `planning.recurring_payments` em `apps/api/drizzle/`
+2. Schema Drizzle para as duas tabelas em `apps/api/src/db/schema.ts`
+3. Rotas API:
+   - `GET /recurring-bills` — lista do usuário autenticado
+   - `POST /recurring-bills` — cria (PAY-01, PAY-02, PAY-04)
+   - `GET /recurring-bills/due` — próximos/atrasados (PAY-10)
+   - `GET /recurring-bills/:id` — detalhe
+   - `PUT /recurring-bills/:id` — edita incl. isActive (PAY-04, PAY-11)
+   - `DELETE /recurring-bills/:id` — remove (PAY-11)
+   - `POST /recurring-bills/:id/pay` — paga (PAY-05~09)
+4. Todos os testes TDD devem passar (com SSH tunnel ativo para o banco de testes)
+5. Web: nova página `/recurring` com listagem + modal de pagamento
+6. Mobile: nova aba/tela + `expo-notifications` (PAY-12)
+
+---
+
 ### 2026-05-21 — Fix form Investimentos + Maestro E2E + Deploy API
 
 #### O que foi feito

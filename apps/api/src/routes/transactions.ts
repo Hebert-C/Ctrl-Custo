@@ -90,6 +90,18 @@ transactionsRouter.get("/", async (c) => {
   return c.json(rows);
 });
 
+transactionsRouter.get("/:id", async (c) => {
+  const userId = c.get("userId");
+  const id = c.req.param("id");
+  const [row] = await db
+    .select()
+    .from(transactions)
+    .where(and(eq(transactions.id, id), eq(transactions.userId, userId)))
+    .limit(1);
+  if (!row) return c.json({ error: "Transação não encontrada." }, 404);
+  return c.json(row);
+});
+
 transactionsRouter.post(
   "/",
   zValidator("json", transactionBody, (result, c) => {
