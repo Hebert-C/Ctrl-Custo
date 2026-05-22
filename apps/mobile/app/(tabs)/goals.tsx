@@ -237,6 +237,7 @@ function GoalItem({
             </TouchableOpacity>
           )}
           <TouchableOpacity
+            testID={`btn-delete-goal-${goal.name}`}
             onPress={onDelete}
             style={s.deleteBtn}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}

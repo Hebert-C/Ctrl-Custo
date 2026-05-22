@@ -31,3 +31,11 @@ appId: com.hebert.ctrlcusto
 # Verifica que a meta apareceu na lista
 - assertVisible:
     text: "Meta Maestro E2E"
+
+# Cleanup: exclui a meta criada para não acumular runs consecutivos
+- tapOn:
+    id: "btn-delete-goal-Meta Maestro E2E"
+- tapOn:
+    text: "Excluir"
+- assertNotVisible:
+    text: "Meta Maestro E2E"
