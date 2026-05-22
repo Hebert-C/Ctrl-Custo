@@ -970,6 +970,57 @@ pnpm --filter mobile test --verbose
 
 ## Log de Sessões
 
+### 2026-05-22 — Toast + Maestro ANR fix
+
+#### O que foi feito
+
+- **feat(ux/toast):** Sistema de toast próprio implementado em mobile e web — sem dependência nova.
+  - `apps/mobile/src/components/Toast.tsx`: `ToastProvider` + `useToast()` hook. Animação slide-up + fade via `Animated` com `useNativeDriver: true`. Posicionado acima da tab bar com `useSafeAreaInsets`. Máx 3 toasts simultâneos. Auto-dismiss em 3.8s (fade começa em 3.2s). Cores via `useThemeStore`.
+  - `apps/web/src/components/Toast.tsx`: mesma API (`useToast`, `ToastProvider`), implementado em HTML/Tailwind + CSS transitions (sem RN primitives).
+  - `ToastProvider` registrado em `_layout.tsx` (mobile) e `App.tsx` (web).
+  - Regra de substituição: `Alert.alert` de notificação simples (erro/sucesso 1 botão) → `toast.show()`. Confirmações destrutivas (2+ botões) → mantido `Alert.alert`.
+  - Substituições em: `TransactionForm`, `GoalForm`, `DepositForm`, `CardStatement`, `CategoryForm`, `AccountForm`, `goals.tsx`, `investments.tsx`, `recurring.tsx`, `reports.tsx` (mobile); `Cards/index.tsx` (web — toast de sucesso ao pagar fatura).
+
+- **fix(e2e/goals.yaml):** Cleanup adicionado ao final do flow — toca no botão de exclusão `btn-delete-goal-Meta Maestro E2E`, confirma e asserta que a meta sumiu. Acumulação de dados no banco a cada run corrigida. `testID` adicionado ao botão de excluir meta em `goals.tsx`.
+
+- **fix(ci/maestro-anr):** Diagnóstico: todos os 6 testes Maestro falhavam com "System UI isn't responding" (ANR do emulador). Causa: target `google_apis` inclui Play Services que sobrecarregam o emulador com GPU software (`swiftshader_indirect`). Correções em `maestro-cloud.yml`:
+  - `target: google_apis` → `target: default` (remove toda a pilha Google Services)
+  - `sleep 30` → `sleep 15` + warm-up via `adb monkey` + `sleep 20`
+  - `adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS` antes e depois do warm-up
+
+#### Commits
+
+- `04f80d7` — feat(ux): sistema de toast para notificações de erro e sucesso (mobile + web)
+- `fa0493d` — fix(e2e): cleanup de metas no goals.yaml + testID no botão de excluir
+- `7c57d59` — fix(ci): corrigir ANR System UI no emulador Android (Maestro E2E)
+
+#### Arquivos criados/modificados
+
+- `apps/mobile/src/components/Toast.tsx` — criado
+- `apps/web/src/components/Toast.tsx` — criado
+- `apps/mobile/app/_layout.tsx` — ToastProvider
+- `apps/web/src/App.tsx` — ToastProvider
+- `apps/mobile/src/components/TransactionForm.tsx` — toast
+- `apps/mobile/src/components/GoalForm.tsx` — toast
+- `apps/mobile/src/components/DepositForm.tsx` — toast
+- `apps/mobile/src/components/CardStatement.tsx` — toast
+- `apps/mobile/src/components/CategoryForm.tsx` — toast
+- `apps/mobile/src/components/AccountForm.tsx` — toast
+- `apps/mobile/app/(tabs)/goals.tsx` — toast + testID exclusão
+- `apps/mobile/app/(tabs)/investments.tsx` — toast
+- `apps/mobile/app/(tabs)/recurring.tsx` — toast
+- `apps/mobile/app/(tabs)/reports.tsx` — toast
+- `apps/web/src/pages/Cards/index.tsx` — toast sucesso pagamento
+- `.maestro/goals.yaml` — cleanup de meta após teste
+- `.github/workflows/maestro-cloud.yml` — target default + ANR fix
+
+#### Pendências para a próxima sessão
+
+1. **Resultado do Maestro E2E** — run disparado em 2026-05-22 (após fix do ANR). Verificar se os 6 flows passam com `target: default`.
+2. **PAY-12 — Notificações (AÇÃO DO USUÁRIO)** — código pronto, requer `eas build --platform android --profile preview` para ativar o plugin nativo.
+
+---
+
 ### 2026-05-22 — Auditoria do backlog: RN-TX-06/07 e demais RNs já implementadas
 
 #### O que foi feito
