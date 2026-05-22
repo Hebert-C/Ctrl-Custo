@@ -72,7 +72,7 @@ jobs:
         with:
           api-level: 34
           arch: x86_64
-          target: google_apis
+          target: default
           profile: pixel_6
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
@@ -81,7 +81,11 @@ jobs:
             adb shell 'until settings get global device_provisioned 2>/dev/null | grep -q 1; do sleep 2; done'
             adb shell 'until pm path android > /dev/null 2>&1; do sleep 2; done'
             adb install apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
-            sleep 30
+            sleep 15
+            adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS || true
+            adb shell monkey -p com.hebert.ctrlcusto --throttle 200 1 || true
+            sleep 20
+            adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS || true
             maestro test --output maestro-report.xml .maestro/
 
       - name: Upload Maestro results
