@@ -40,63 +40,19 @@
 
 ## 🔴 Backlog de Inconsistências Web ↔ Mobile
 
-> Auditoria realizada em 2026-05-20. Prioridade sugerida de implementação na próxima sessão.
+> Auditoria realizada em 2026-05-20. Todos os itens da auditoria inicial foram resolvidos até 2026-05-21.
 
-### I1 — Entrada de valores monetários no formulário de Investimentos (web)
+### ✅ Itens resolvidos (auditoria 2026-05-20)
 
-**Severidade:** Moderado — não quebra, mas introduz risco de bug e UX inconsistente.
-
-**Problema no web (`apps/web/src/pages/Investments/index.tsx` linhas 416–450):**
-
-Os campos "Preço Médio (R$)" e "Preço Atual (R$)" usam `<input type="number" step="0.01">` com conversão float manual:
-
-```ts
-Math.round(Number(e.target.value) * 100);
-```
-
-Isso é problemático por três razões:
-
-1. **Risco de erro float:** `Math.round(0.015 * 100)` → `1` em vez de `2`. Todos os outros campos monetários do app passam por `parseCurrencyInput()` que opera apenas sobre dígitos inteiros, sem float.
-2. **UX inconsistente:** O restante do app (TransactionForm, GoalForm, AccountForm, CardForm) usa campo de texto com prefixo "R$" e separador brasileiro (vírgula). O form de Investimentos exibe ponto decimal (inglês) e sem "R$".
-3. **Aceita entradas inválidas:** `<input type="number">` aceita notação científica ("1e3") e valores negativos sem validação extra.
-
-**Problema no mobile (`apps/mobile/app/(tabs)/investments.tsx` linhas 404–431):**
-
-O mobile usa o padrão correto (`formatCurrencyInput(parseCurrencyInput(v))`) — consistente com todos os outros forms. Sem bug, mas há uma inconsistência de label: o campo exibe "Preço de Compra" e "Preço Atual" sem prefixo "R$" visível (ao contrário de `AccountForm` que tem o "R$" hardcoded no `amountRow`).
-
-**Como corrigir (web):**
-
-Substituir os dois `<input type="number">` por campos de texto usando o padrão já adotado no restante do app:
-
-```tsx
-// Estado: purchasePriceRaw: string (ex: "25,50")
-// No onChange:
-setPurchasePriceRaw(formatCurrencyInput(parseCurrencyInput(e.target.value)));
-// No submit:
-purchasePrice: parseCurrencyInput(purchasePriceRaw);
-```
-
-Adicionar prefixo "R$" no layout igual ao `TransactionForm` do web.
-
-**Arquivos a modificar:**
-
-- `apps/web/src/pages/Investments/index.tsx` — trocar `<input type="number">` por campo de texto com `parseCurrencyInput`/`formatCurrencyInput`
-
-### Críticos — quebram funcionalidade
-
-| #   | Arquivo                      | Problema                                                                                                                                                   | Como corrigir                                                                                                                 |
-| --- | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| C1  | `apps/mobile/src/lib/api.ts` | `auth.register()` espera `{ accessToken }` mas API retorna `{ message }` após registro (precisa confirmar e-mail primeiro — sem token imediato)            | Verificar retorno real da API (`apps/api/src/routes/auth.ts`) e alinhar o tipo no mobile                                      |
-| C2  | `apps/mobile/src/lib/api.ts` | `cards.statement()` renomeia `totalSpent → totalAmount` e **omite o campo `card`** do retorno — `CardStatement.tsx` acessa `card.*` e vai lançar TypeError | Adicionar `card: mapCard(data.card)` ao objeto retornado; manter `totalAmount` OU renomear para `totalSpent` consistentemente |
-| C3  | `apps/mobile/src/lib/api.ts` | `cards.pay()` não mapeia a resposta — retorna `ApiTransaction` raw em vez de `{ transaction: Transaction }`                                                | Adicionar `.then((r) => ({ transaction: mapTransaction(r.transaction) }))` igual à web                                        |
-
-### Moderados — faltam no web
-
-| #   | Arquivo                      | Problema                                                                                                                | Como corrigir                                                           |
-| --- | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| M1  | `apps/web/src/lib/api.ts`    | `categories.remove()` não passa `?transferTo=<id>` — vai retornar 409 ao deletar categoria com transações               | Adicionar parâmetro opcional `transferTo?: string` igual ao mobile      |
-| M2  | `apps/web/src/lib/api.ts`    | `goals.remove()` não passa `?refundAccountId=<id>` — vai falhar ao deletar meta com saldo                               | Adicionar parâmetro opcional `refundAccountId?: string` igual ao mobile |
-| M3  | `apps/mobile/src/lib/api.ts` | Não implementa `auth.verifyEmail()` nem `auth.resendVerification()` — usuário não pode verificar e-mail pelo app mobile | Adicionar os dois métodos espelhando a web                              |
+| #   | Descrição                                                                           | Commit/Sessão     |
+| --- | ----------------------------------------------------------------------------------- | ----------------- |
+| C1  | `auth.register()` mobile — tipo alinhado com retorno real da API                    | `599b87a`         |
+| C2  | `cards.statement()` mobile — campo `card` adicionado ao retorno                     | `599b87a`         |
+| C3  | `cards.pay()` mobile — resposta mapeada com `mapTransaction`                        | `599b87a`         |
+| M1  | `categories.remove()` web — `?transferTo` encaminhado                               | sessão 2026-05-21 |
+| M2  | `goals.remove()` web — `?refundAccountId` encaminhado                               | sessão 2026-05-21 |
+| M3  | `auth.verifyEmail()` / `auth.resendVerification()` adicionados ao mobile            | sessão 2026-05-21 |
+| I1  | `InvestmentForm` web — `<input type="number">` substituído por `parseCurrencyInput` | sessão 2026-05-21 |
 
 ### Business Rules não implementadas
 
@@ -1013,6 +969,108 @@ pnpm --filter mobile test --verbose
 ---
 
 ## Log de Sessões
+
+### 2026-05-21 — Histórico de pagamentos recorrentes (PAY-13 + PAY-14) + fix CI
+
+#### O que foi feito
+
+- **feat(api/PAY-13):** Endpoint `GET /recurring-bills/:id/payments` implementado — retorna todos os pagamentos de uma conta recorrente ordenados por `dueDate asc`; 404 se não for do usuário autenticado. Rota registrada **antes** de `/:id` para evitar captura incorreta.
+- **test(TDD/PAY-13):** Criado `apps/api/src/__tests__/rn-pay-history.test.ts` — 7 testes cobrindo: array vazio, campos corretos, ordenação, valor variável, 404 para conta inexistente, isolamento entre usuários e autenticação obrigatória. Todos passando.
+- **feat(web/PAY-14):** Modal de histórico na página `/recurring`:
+  - Clicável em cards de **ambas** as abas ("A Pagar" e "Todas")
+  - `generateMonths(createdAt, payments)` gera linha do tempo do mês de criação até o mês atual (ordem reversa)
+  - `PaymentTimeline`: ✓ verde para meses pagos (valor real), — cinza para pendentes (valor fixo em cinza ou nada para variáveis), badge "mês atual" no mês corrente
+  - `e.stopPropagation()` nos botões de ação para não conflitar com o click do card
+- **feat(mobile/PAY-14):** Modal equivalente na tela `recurring.tsx`:
+  - Cards `TouchableOpacity` abre histórico; botão "Pagar" interno assume prioridade automaticamente (RN)
+  - Mesma lógica `generateMonths()` e componente `PaymentTimeline` com inline styles e tokens de cor do tema
+- **feat(api-client):** `api.recurringBills.payments(id)` adicionado a `apps/web/src/lib/api.ts` e `apps/mobile/src/lib/api.ts`
+- **fix(tests/CI):** `apps/mobile/src/__tests__/TransactionForm.test.tsx` atualizado — teste "exibe campo 'Parcelas'" trocado para assertar ausência do campo (RN-TX-13: parcelas só com cartão, sem seletor no mobile). CI estava falhando em 2 pushes consecutivos por esse teste obsoleto.
+- **docs(memory):** Criado `feedback_update_tests_on_behavior_change.md` — regra: ao alterar comportamento de UI (sempre web + mobile), verificar e atualizar testes de ambos os lados no mesmo commit.
+- **docs(BUSINESS_RULES):** RN-PAY-13 e RN-PAY-14 marcadas como ✅.
+
+#### Arquivos criados/modificados
+
+- `apps/api/src/routes/recurring-bills.ts` — `GET /:id/payments` adicionado antes de `/:id`
+- `apps/api/src/__tests__/rn-pay-history.test.ts` — criado (7 testes TDD)
+- `apps/web/src/lib/api.ts` — `recurringBills.payments`
+- `apps/mobile/src/lib/api.ts` — `recurringBills.payments`
+- `apps/web/src/pages/RecurringBills/index.tsx` — modal de histórico + PaymentTimeline + abertura nos dois tabs
+- `apps/mobile/app/(tabs)/recurring.tsx` — modal de histórico + PaymentTimeline
+- `apps/mobile/src/__tests__/TransactionForm.test.tsx` — corrigido (19/19 passando)
+- `C:\Users\Hebert-PC\.claude\projects\...\memory\feedback_update_tests_on_behavior_change.md` — criado
+
+#### Commits
+
+- `29b5e97` — feat(recurring): histórico de pagamentos por conta (PAY-13 + PAY-14)
+- `f324274` — fix(tests): atualizar TransactionForm.test para RN-TX-13
+
+#### Pendências para a próxima sessão
+
+##### 1. RN-TX-06 e RN-TX-07 — Mudança de status de transação deve afetar saldo (ALTA PRIORIDADE)
+
+**Arquivo:** `apps/api/src/routes/transactions.ts` — handler do `PUT /:id`
+
+**Lógica a implementar:**
+
+- Buscar a transação existente antes de atualizar
+- Se `status` mudou de `confirmed` → `cancelled`: reverter o efeito no saldo da conta (RN-TX-06)
+  - expense confirmada cancelada → **credita** o valor de volta na conta
+  - income confirmada cancelada → **debita** o valor da conta
+  - transfer confirmada cancelada → reverte débito na origem e crédito no destino
+- Se `status` mudou de `pending` → `confirmed`: aplicar o efeito no saldo (RN-TX-07)
+  - expense pendente confirmada → **debita** da conta
+  - income pendente confirmada → **credita** na conta
+  - transfer pendente confirmada → debita origem e credita destino
+- Usar transação atômica Drizzle (`db.transaction(async (tx) => { ... })`) igual ao `POST /pay` das contas recorrentes
+
+**Testes a criar (TDD):** `apps/api/src/__tests__/rn-tx-status.test.ts`
+
+- cancelar expense confirmada → saldo da conta aumenta
+- confirmar expense pendente → saldo da conta diminui
+- cancelar income confirmada → saldo da conta diminui
+- confirmar income pendente → saldo da conta aumenta
+- cancelar transfer confirmada → reverte origem e destino
+- mudança `confirmed → confirmed` (sem mudança de status) → saldo não muda
+- mudança apenas de descrição/valor → não afeta saldo (ou re-aplica se valor mudou)
+
+##### 2. RN-GOAL-07 e RN-GOAL-09 — Validações de metas (MÉDIA PRIORIDADE)
+
+**Arquivo:** `apps/api/src/routes/goals.ts`
+
+**RN-GOAL-07:** No `DELETE /:id?refundAccountId=<id>`, antes de criar a transação de reembolso, verificar se a conta de destino tem `isArchived = false`. Retornar `400` com `{ error: "Conta de reembolso está arquivada.", code: "ACCOUNT_ARCHIVED" }` se não.
+
+**RN-GOAL-09:** No `POST /:id/deposit`, verificar se `goal.status === 'cancelled'`. Retornar `400` com `{ error: "Meta cancelada não aceita depósitos.", code: "GOAL_CANCELLED" }` se sim.
+
+##### 3. RN-TX-12 e RN-TX-13 — Parcelas (MÉDIA PRIORIDADE, FRONTEND)
+
+**RN-TX-12 — Máximo 24 parcelas:**
+
+- Web: `apps/web/src/pages/Transactions/index.tsx` (ou `TransactionForm`) — adicionar validação `installments > 24 → erro`
+- Mobile: `apps/mobile/src/components/TransactionForm.tsx` — idem (campo Parcelas só existe no web por ora)
+
+**RN-TX-13 — Parcelas só em despesas com cartão:**
+
+- Web: ocultar/desabilitar campo Parcelas quando `type !== 'expense'` OU `!cardId`
+- Mobile: não há campo Parcelas no momento — OK por RN-TX-13 (sem seletor de cartão no mobile)
+
+##### 4. Maestro E2E — goals.yaml sem cleanup
+
+**Arquivo:** `.github/workflows/maestro/goals.yaml` (ou equivalente)
+
+Adicionar step de cleanup ao final do flow para excluir as metas criadas no teste. Alternativa: usar nome único com timestamp para evitar conflito em runs consecutivas.
+
+##### 5. PAY-12 — Notificações (AÇÃO DO USUÁRIO)
+
+O código já está pronto (`apps/mobile/src/lib/notifications.ts`). Para ativar no Android, o usuário precisa rodar manualmente:
+
+```
+eas build --platform android --profile preview
+```
+
+Isso gera uma nova APK com o plugin `expo-notifications` ativado nativamente.
+
+---
 
 ### 2026-05-21 — Fix expo-secure-store + inventário de dependências no CLAUDE.md
 
