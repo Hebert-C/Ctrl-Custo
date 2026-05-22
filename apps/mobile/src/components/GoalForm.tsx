@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import {
-  Alert,
   View,
   Text,
   TextInput,
@@ -17,6 +16,7 @@ import type { Colors } from "@ctrl-custo/ui";
 import type { NewGoal } from "@ctrl-custo/core";
 import { formatCurrencyInput, parseCurrencyInput } from "../hooks/useCurrency";
 import { useGoalStore } from "../store/useGoalStore";
+import { useToast } from "./Toast";
 
 function toIsoDate(input: string): string {
   const match = input.match(/^(\d{2})-(\d{2})-(\d{4})$/);
@@ -48,6 +48,7 @@ interface Props {
 
 export function GoalForm({ visible, onClose, isDark }: Props) {
   const colors = isDark ? darkColors : lightColors;
+  const toast = useToast();
   const add = useGoalStore((s) => s.add);
 
   const [name, setName] = useState("");
@@ -77,7 +78,7 @@ export function GoalForm({ visible, onClose, isDark }: Props) {
       handleClose();
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Erro ao criar meta. Tente novamente.";
-      Alert.alert("Erro", msg);
+      toast.show(msg, "error");
     } finally {
       setSaving(false);
     }

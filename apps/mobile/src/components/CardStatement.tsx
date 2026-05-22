@@ -7,7 +7,6 @@ import {
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { lightColors, darkColors } from "@ctrl-custo/ui";
@@ -15,6 +14,7 @@ import type { Colors } from "@ctrl-custo/ui";
 import type { Card, Transaction } from "@ctrl-custo/core";
 import { formatCurrency } from "../hooks/useCurrency";
 import { api, ApiError } from "../lib/api";
+import { useToast } from "./Toast";
 import { useCategoryStore } from "../store/useCategoryStore";
 import { useAccountStore } from "../store/useAccountStore";
 
@@ -51,6 +51,7 @@ const MONTHS = [
 
 export function CardStatement({ visible, onClose, card, isDark, onPaymentDone }: Props) {
   const colors = isDark ? darkColors : lightColors;
+  const toast = useToast();
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
@@ -95,7 +96,7 @@ export function CardStatement({ visible, onClose, card, isDark, onPaymentDone }:
   function handlePayPress() {
     const expenseCategories = categories.filter((c) => c.type === "expense" || c.type === "both");
     if (expenseCategories.length === 0) {
-      Alert.alert("Erro", "Nenhuma categoria de despesa encontrada.");
+      toast.show("Nenhuma categoria de despesa encontrada.", "error");
       return;
     }
     setShowCatPicker(true);
@@ -108,10 +109,10 @@ export function CardStatement({ visible, onClose, card, isDark, onPaymentDone }:
       await api.cards.pay(card.id, selectedMonthStr(), categoryId);
       await Promise.all([load(), loadAccounts()]);
       onPaymentDone?.();
-      Alert.alert("Sucesso", "Fatura paga com sucesso!");
+      toast.show("Fatura paga com sucesso!", "success");
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : "Erro ao pagar fatura.";
-      Alert.alert("Erro", msg);
+      toast.show(msg, "error");
     } finally {
       setPayLoading(false);
     }

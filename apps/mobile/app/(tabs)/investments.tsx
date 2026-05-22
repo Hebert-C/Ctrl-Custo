@@ -16,6 +16,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useInvestmentStore } from "../../src/store/useInvestmentStore";
+import { useToast } from "../../src/components/Toast";
 import { useAccountStore } from "../../src/store/useAccountStore";
 import { useThemeStore } from "../../src/store/useThemeStore";
 import { useUiStore } from "../../src/store/useUiStore";
@@ -64,6 +65,7 @@ export default function Investments() {
   const isDark = useThemeStore((s) => s.isDark);
   const colors = isDark ? darkColors : lightColors;
   const isHidden = useUiStore((s) => s.isHidden);
+  const toast = useToast();
 
   const { investments, load, add, update, remove } = useInvestmentStore();
   const { accounts, load: loadAccounts } = useAccountStore();
@@ -91,7 +93,7 @@ export default function Investments() {
           try {
             await remove(inv.id);
           } catch {
-            Alert.alert("Erro", "Não foi possível excluir.");
+            toast.show("Não foi possível excluir.", "error");
           }
         },
       },
@@ -321,7 +323,7 @@ function InvestmentForm({ visible, onClose, accounts, editing, onSaved, add, upd
       }
       onSaved();
     } catch {
-      Alert.alert("Erro", "Não foi possível salvar. Tente novamente.");
+      toast.show("Não foi possível salvar. Tente novamente.", "error");
     } finally {
       setSaving(false);
     }

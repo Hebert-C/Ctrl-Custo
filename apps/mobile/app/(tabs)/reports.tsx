@@ -16,6 +16,7 @@ import { useAccountStore } from "../../src/store/useAccountStore";
 import { lightColors, darkColors, BarChart, LineChart } from "@ctrl-custo/ui";
 import type { Colors, BarChartData, LineChartData } from "@ctrl-custo/ui";
 import { api } from "../../src/lib/api";
+import { useToast } from "../../src/components/Toast";
 import { exportCSV, exportXLSX } from "../../src/lib/exportUtils";
 import {
   lastNMonths,
@@ -33,6 +34,7 @@ export default function Reports() {
   const insets = useSafeAreaInsets();
   const isDark = useThemeStore((s) => s.isDark);
   const colors = isDark ? darkColors : lightColors;
+  const toast = useToast();
   const categories = useCategoryStore((s) => s.categories);
   const accounts = useAccountStore((s) => s.accounts);
 
@@ -96,7 +98,7 @@ export default function Reports() {
         await exportXLSX(periodTxs, categories, accounts, monthData);
       }
     } catch {
-      Alert.alert("Erro", "Não foi possível exportar.");
+      toast.show("Não foi possível exportar.", "error");
     } finally {
       setExporting(false);
     }

@@ -15,6 +15,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useGoalStore } from "../../src/store/useGoalStore";
+import { useToast } from "../../src/components/Toast";
 import { useAccountStore } from "../../src/store/useAccountStore";
 import { useCategoryStore } from "../../src/store/useCategoryStore";
 import { useThemeStore } from "../../src/store/useThemeStore";
@@ -32,6 +33,7 @@ export default function Goals() {
   const colors = isDark ? darkColors : lightColors;
   const isHidden = useUiStore((s) => s.isHidden);
 
+  const toast = useToast();
   const { goals, load: loadGoals, remove } = useGoalStore();
   const { accounts, load: loadAccounts } = useAccountStore();
   const { categories, load: loadCategories } = useCategoryStore();
@@ -72,7 +74,7 @@ export default function Goals() {
       await loadAccounts();
       setRefundingGoal(null);
     } catch {
-      Alert.alert("Erro", "Não foi possível excluir a meta.");
+      toast.show("Não foi possível excluir a meta.", "error");
     } finally {
       setDeleting(false);
     }

@@ -11,6 +11,7 @@ import { Settings } from "./pages/Settings";
 import { Login } from "./pages/Login";
 import { VerifyEmail } from "./pages/VerifyEmail";
 import { useAuthStore } from "./hooks/useAuth";
+import { ToastProvider } from "./components/Toast";
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -33,80 +34,82 @@ export function App() {
   }
 
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route
-          path="/login"
-          element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />}
-        />
-        <Route path="/verify-email" element={<VerifyEmail />} />
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route
-          path="/dashboard"
-          element={
-            <RequireAuth>
-              <Dashboard />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/transactions"
-          element={
-            <RequireAuth>
-              <Transactions />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/cards"
-          element={
-            <RequireAuth>
-              <Cards />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/goals"
-          element={
-            <RequireAuth>
-              <Goals />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/investments"
-          element={
-            <RequireAuth>
-              <Investments />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/reports"
-          element={
-            <RequireAuth>
-              <Reports />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/recurring"
-          element={
-            <RequireAuth>
-              <RecurringBills />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/settings"
-          element={
-            <RequireAuth>
-              <Settings />
-            </RequireAuth>
-          }
-        />
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
-    </BrowserRouter>
+    <ToastProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route
+            path="/login"
+            element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />}
+          />
+          <Route path="/verify-email" element={<VerifyEmail />} />
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route
+            path="/dashboard"
+            element={
+              <RequireAuth>
+                <Dashboard />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/transactions"
+            element={
+              <RequireAuth>
+                <Transactions />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/cards"
+            element={
+              <RequireAuth>
+                <Cards />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/goals"
+            element={
+              <RequireAuth>
+                <Goals />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/investments"
+            element={
+              <RequireAuth>
+                <Investments />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/reports"
+            element={
+              <RequireAuth>
+                <Reports />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/recurring"
+            element={
+              <RequireAuth>
+                <RecurringBills />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <RequireAuth>
+                <Settings />
+              </RequireAuth>
+            }
+          />
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </ToastProvider>
   );
 }

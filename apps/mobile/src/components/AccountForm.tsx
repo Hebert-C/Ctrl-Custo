@@ -17,6 +17,7 @@ import type { Colors } from "@ctrl-custo/ui";
 import type { Account, AccountType, NewAccount } from "@ctrl-custo/core";
 import { formatCurrencyInput, parseCurrencyInput } from "../hooks/useCurrency";
 import { useAccountStore } from "../store/useAccountStore";
+import { useToast } from "./Toast";
 
 const ACCOUNT_TYPES: { value: AccountType; label: string }[] = [
   { value: "checking", label: "Corrente" },
@@ -50,6 +51,7 @@ interface Props {
 
 export function AccountForm({ visible, onClose, isDark, account }: Props) {
   const colors = isDark ? darkColors : lightColors;
+  const toast = useToast();
   const add = useAccountStore((s) => s.add);
   const update = useAccountStore((s) => s.update);
   const remove = useAccountStore((s) => s.remove);
@@ -143,7 +145,7 @@ export function AccountForm({ visible, onClose, isDark, account }: Props) {
                 ]
               );
             } else {
-              Alert.alert("Erro", "Não foi possível excluir a conta.");
+              toast.show("Não foi possível excluir a conta.", "error");
             }
           }
         },

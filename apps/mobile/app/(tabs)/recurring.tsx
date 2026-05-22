@@ -16,6 +16,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRecurringBillStore } from "../../src/store/useRecurringBillStore";
+import { useToast } from "../../src/components/Toast";
 import { useAccountStore } from "../../src/store/useAccountStore";
 import { useCategoryStore } from "../../src/store/useCategoryStore";
 import { useThemeStore } from "../../src/store/useThemeStore";
@@ -52,6 +53,7 @@ export default function Recurring() {
   const isDark = useThemeStore((s) => s.isDark);
   const colors = isDark ? darkColors : lightColors;
 
+  const toast = useToast();
   const { bills, dueBills, load, loadDue, update, remove, pay } = useRecurringBillStore();
   const { accounts, load: loadAccounts } = useAccountStore();
   const { categories, load: loadCategories } = useCategoryStore();
@@ -131,7 +133,7 @@ export default function Recurring() {
           try {
             await update(bill.id, { isActive: !bill.isActive });
           } catch {
-            Alert.alert("Erro", "Não foi possível alterar.");
+            toast.show("Não foi possível alterar.", "error");
           }
         },
       },
@@ -148,7 +150,7 @@ export default function Recurring() {
           try {
             await remove(bill.id);
           } catch {
-            Alert.alert("Erro", "Não foi possível excluir.");
+            toast.show("Não foi possível excluir.", "error");
           }
         },
       },

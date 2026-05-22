@@ -9,7 +9,6 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
-  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { lightColors, darkColors } from "@ctrl-custo/ui";
@@ -18,6 +17,7 @@ import type { Account, Category, NewTransaction, Transaction } from "@ctrl-custo
 import { formatCurrencyInput, parseCurrencyInput } from "../hooks/useCurrency";
 import { useTransactionStore } from "../store/useTransactionStore";
 import { ApiError } from "../lib/api";
+import { useToast } from "./Toast";
 
 const API_ERROR_MESSAGES: Record<string, string> = {
   INSUFFICIENT_BALANCE: "Saldo insuficiente para esta operação.",
@@ -52,6 +52,7 @@ export function TransactionForm({
   const update = useTransactionStore((s) => s.update);
 
   const [type, setType] = useState<TxType>("expense");
+  const toast = useToast();
   const [description, setDescription] = useState("");
   const [amountRaw, setAmountRaw] = useState("");
   const [selectedAccountId, setSelectedAccountId] = useState(accounts[0]?.id ?? "");
@@ -149,7 +150,7 @@ export function TransactionForm({
         err instanceof ApiError && err.code && API_ERROR_MESSAGES[err.code]
           ? API_ERROR_MESSAGES[err.code]
           : "Erro ao salvar. Tente novamente.";
-      Alert.alert("Erro", msg);
+      toast.show(msg, "error");
     } finally {
       setSaving(false);
     }

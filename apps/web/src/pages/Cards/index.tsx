@@ -7,6 +7,7 @@ import { formatCurrency } from "../../hooks/useCurrency";
 import { api, ApiError } from "../../lib/api";
 import type { CardStatement } from "../../lib/api";
 import type { Card, NewCard } from "@ctrl-custo/core";
+import { useToast } from "../../components/Toast";
 
 const BRAND_LABELS: Record<string, string> = {
   visa: "Visa",
@@ -49,6 +50,7 @@ function formatBillingPeriod(start: string, end: string) {
 }
 
 export function Cards() {
+  const toast = useToast();
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const { cards, load, add, remove } = useCardStore();
@@ -123,6 +125,7 @@ export function Cards() {
       await api.cards.pay(selectedCard.id, stmtMonth, payCategoryId);
       setShowPayModal(false);
       setPayCategoryId("");
+      toast.show("Fatura paga com sucesso!", "success");
       // Reload statement and accounts to reflect new balance
       const [newStmt] = await Promise.all([
         api.cards.statement(selectedCard.id, stmtMonth),

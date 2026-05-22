@@ -9,7 +9,6 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
-  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { lightColors, darkColors } from "@ctrl-custo/ui";
@@ -19,6 +18,7 @@ import { formatCurrencyInput, parseCurrencyInput } from "../hooks/useCurrency";
 import { useGoalStore } from "../store/useGoalStore";
 import { useAccountStore } from "../store/useAccountStore";
 import { ApiError } from "../lib/api";
+import { useToast } from "./Toast";
 
 const DEPOSIT_ERROR_MESSAGES: Record<string, string> = {
   DEPOSIT_EXCEEDS_TARGET: "O valor excede o montante restante da meta.",
@@ -37,6 +37,7 @@ interface Props {
 
 export function DepositForm({ visible, onClose, isDark, goal, accounts, categories }: Props) {
   const colors = isDark ? darkColors : lightColors;
+  const toast = useToast();
   const deposit = useGoalStore((s) => s.deposit);
   const loadAccounts = useAccountStore((s) => s.load);
 
@@ -71,7 +72,7 @@ export function DepositForm({ visible, onClose, isDark, goal, accounts, categori
         err instanceof ApiError && err.code && DEPOSIT_ERROR_MESSAGES[err.code]
           ? DEPOSIT_ERROR_MESSAGES[err.code]
           : "Erro ao realizar depósito. Tente novamente.";
-      Alert.alert("Erro", msg);
+      toast.show(msg, "error");
     } finally {
       setSaving(false);
     }

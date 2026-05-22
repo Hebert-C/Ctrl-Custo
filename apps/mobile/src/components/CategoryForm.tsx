@@ -16,6 +16,7 @@ import { lightColors, darkColors } from "@ctrl-custo/ui";
 import type { Colors } from "@ctrl-custo/ui";
 import type { Category, CategoryType, NewCategory } from "@ctrl-custo/core";
 import { useCategoryStore } from "../store/useCategoryStore";
+import { useToast } from "./Toast";
 
 const CATEGORY_TYPES: { value: CategoryType; label: string }[] = [
   { value: "expense", label: "Despesa" },
@@ -69,6 +70,7 @@ interface Props {
 
 export function CategoryForm({ visible, onClose, isDark, category }: Props) {
   const colors = isDark ? darkColors : lightColors;
+  const toast = useToast();
   const allCategories = useCategoryStore((s) => s.categories);
   const add = useCategoryStore((s) => s.add);
   const update = useCategoryStore((s) => s.update);
@@ -145,7 +147,7 @@ export function CategoryForm({ visible, onClose, isDark, category }: Props) {
             if (msg.includes("vinculadas")) {
               setShowTransfer(true);
             } else {
-              Alert.alert("Erro", "Não foi possível excluir a categoria.");
+              toast.show("Não foi possível excluir a categoria.", "error");
             }
           }
         },
@@ -160,7 +162,7 @@ export function CategoryForm({ visible, onClose, isDark, category }: Props) {
       await remove(category.id, transferTargetId);
       handleClose();
     } catch {
-      Alert.alert("Erro", "Não foi possível transferir as transações.");
+      toast.show("Não foi possível transferir as transações.", "error");
     } finally {
       setSaving(false);
     }

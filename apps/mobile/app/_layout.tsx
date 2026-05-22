@@ -8,6 +8,7 @@ import { useThemeStore } from "../src/store/useThemeStore";
 import { useAuthStore } from "../src/hooks/useAuth";
 import { setUnauthorizedHandler } from "../src/lib/api";
 import { lightColors, darkColors } from "@ctrl-custo/ui";
+import { ToastProvider } from "../src/components/Toast";
 
 export default function RootLayout() {
   const isDark = useThemeStore((s) => s.isDark);
@@ -38,8 +39,10 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
-      <StatusBar style={isDark ? "light" : "dark"} />
-      <Stack screenOptions={{ headerShown: false }} />
+      <ToastProvider>
+        <StatusBar style={isDark ? "light" : "dark"} />
+        <Stack screenOptions={{ headerShown: false }} />
+      </ToastProvider>
     </GestureHandlerRootView>
   );
 }
