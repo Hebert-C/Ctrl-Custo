@@ -104,9 +104,9 @@ describe("TransactionForm — modo criação", () => {
     expect(screen.getByText("Banco de destino")).toBeTruthy();
   });
 
-  it("exibe campo 'Parcelas' na criação de despesa", () => {
+  it("não exibe campo 'Parcelas' (RN-TX-13: só disponível com cartão, sem seletor no mobile)", () => {
     render(<TransactionForm {...defaultProps} />);
-    expect(screen.getByText("Parcelas")).toBeTruthy();
+    expect(screen.queryByText("Parcelas")).toBeNull();
   });
 
   it("não exibe 'Parcelas' ao selecionar tipo Receita", () => {
