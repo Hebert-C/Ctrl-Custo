@@ -52,7 +52,7 @@ function ToastContainer({ toasts }: { toasts: ToastEntry[] }) {
 
 function ToastBubble({ toast }: { toast: ToastEntry }) {
   const [visible, setVisible] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
     // força reflow para a transição de entrada funcionar
