@@ -245,6 +245,7 @@ interface FormProps {
 function InvestmentForm({ visible, onClose, accounts, editing, onSaved, add, update }: FormProps) {
   const isDark = useThemeStore((s) => s.isDark);
   const colors = isDark ? darkColors : lightColors;
+  const toast = useToast();
 
   const [name, setName] = useState("");
   const [type, setType] = useState<Investment["type"]>("stock");
