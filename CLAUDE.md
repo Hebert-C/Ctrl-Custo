@@ -118,6 +118,7 @@ cat node_modules/expo/bundledNativeModules.json | grep "nome-do-pacote"
 | `jest-expo`                                 | `~54.0.0`  | Testes unitários (dev)     |
 | `detox`                                     | `^20.50.4` | Testes E2E (dev)           |
 | `@config-plugins/detox`                     | `^9.0.0`   | Plugin Expo p/ Detox (dev) |
+| `expo-build-properties`                     | `~1.0.10`  | packagingOptions Android   |
 
 #### packages/core — Lógica de negócio compartilhada
 

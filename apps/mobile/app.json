@@ -27,6 +27,16 @@
       "expo-router",
       "@config-plugins/detox",
       [
+        "expo-build-properties",
+        {
+          "android": {
+            "packagingOptions": {
+              "pickFirst": ["**/libfbjni.so"]
+            }
+          }
+        }
+      ],
+      [
         "expo-local-authentication",
         {
           "faceIDPermission": "Allow Ctrl-Custo to use Face ID for authentication."
