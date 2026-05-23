@@ -194,6 +194,79 @@ packages/config/ — tsconfig bases
 
 ---
 
+## E2E Mobile — Análise Maestro vs Detox
+
+> Seção criada em 2026-05-23 para subsidiar a decisão de manter Detox ou reverter para Maestro.
+> Atualizar conforme o CI Detox estabilizar ou não.
+
+### Histórico
+
+| Data       | Evento                                                                                 |
+| ---------- | -------------------------------------------------------------------------------------- |
+| 2026-05-19 | Maestro migrado de Maestro Cloud (pago) para emulador local no GH Actions              |
+| 2026-05-22 | Fix ANR: `target: google_apis` → `target: default` — Maestro passa no CI               |
+| 2026-05-23 | Maestro → Detox: ANR com `launchApp clearState: true` considerado irresolvível sem KVM |
+| 2026-05-23 | Detox: 6 rodadas de CI, nenhuma passando ainda — problemas em cascata                  |
+
+### Comparativo
+
+| Critério                          | Maestro (YAML)                               | Detox (TypeScript)                                       |
+| --------------------------------- | -------------------------------------------- | -------------------------------------------------------- |
+| **CI funcionando**                | ✅ Sim (após fix ANR de 2026-05-22)          | ❌ Não ainda (2026-05-23)                                |
+| **Problema principal no CI**      | ANR "System UI isn't responding" → corrigido | Cold start do app: ~280s no emulador sem KVM             |
+| **Tempo de setup E2E no CI**      | ~15 min por run                              | ~50–90 min estimado (9 suites × ~5–10 min cada)          |
+| **Complexidade do workflow**      | Simples (baixar Maestro + rodar flows)       | Alta (build 2 APKs, pré-instalar, aguardar PM, timeouts) |
+| **Linguagem dos testes**          | YAML (simples, mas sem tipagem)              | TypeScript (tipado, mais manutenível)                    |
+| **Seletores**                     | Texto / imagem / posição (frágil)            | `testID` + `by.text` (mais estável)                      |
+| **Controle de estado do app**     | `launchApp clearState: true` (causava ANR)   | `launchApp({ delete: true })` (funciona, porém lento)    |
+| **Necessidade de APK de teste**   | ❌ Não                                       | ✅ Sim (`assembleAndroidTest` + tempo de build extra)    |
+| **Dependência de KVM/aceleração** | Baixa — usa UI automation de fora do app     | Alta — o app precisa iniciar o bridge RN em <X min       |
+| **Integração com RN bridge**      | Nenhuma — trata o app como caixa preta       | Total — sincroniza com animações e estado interno        |
+| **Debugging de falhas**           | Screenshots automáticos por step             | Artifacts configuráveis (logs + screenshots nos fails)   |
+| **Comunidade / docs**             | Menor, menos exemplos com Expo               | Grande, bem documentado para RN/Expo                     |
+
+### Problemas enfrentados com Detox no CI (2026-05-23)
+
+1. **Jest picking up e2e files** → `testPathIgnorePatterns` no `jest.config.js` — ✅ corrigido
+2. **`libfbjni.so` duplicate** no test APK → `:app:` prefix no Gradle — ✅ corrigido
+3. **`adb install` timeout 60s** → pré-instalar APKs + `--no-streaming` — ✅ corrigido
+4. **`Broken pipe (32)`** no install → aguardar PM pronto antes de instalar — ✅ corrigido
+5. **`beforeAll` timeout** (120s → 300s → 600s) — cada `launchApp` demora ~280s no emulador sem KVM — ⏳ aguardando resultado com 600s
+6. **Potencial**: mesmo com 600s, 9 suites × ~5–10 min = 50–90 min de CI por run
+
+### Critério de decisão
+
+**Manter Detox se:**
+
+- CI passar de forma consistente com `testTimeout: 600000`
+- Tempo total do job E2E ficar abaixo de ~60 min
+- Os 9 testes renderem informação útil (catches regressões reais)
+
+**Reverter para Maestro se:**
+
+- CI continuar falhando após o fix de 600s
+- Tempo total do job for maior que 60 min (inviável por run)
+- O custo de manutenção do Detox superar o benefício
+
+### Plano de rollback para Maestro
+
+Se decidir reverter, os passos são:
+
+1. **Restaurar os 6 flows YAML** do Maestro (estavam em `.maestro/` — ver commit `50adcbf~1` antes da migração):
+   - `login.yaml`, `dashboard.yaml`, `goals.yaml`, `reports.yaml`, `settings.yaml`, `transactions.yaml`
+2. **Substituir o workflow** `maestro-cloud.yml` pela versão Maestro:
+   - Usar `reactivecircus/android-emulator-runner` com `target: default` (NÃO `google_apis`)
+   - Usar `maestro test .maestro/` após o emulador bootar
+   - Sem necessidade de APK de teste — só o APK normal
+3. **Remover** `apps/mobile/e2e/`, `apps/mobile/.detoxrc.js`, `e2e/jest.config.js`
+4. **Remover** as devDependencies `detox` e `@config-plugins/detox` do `apps/mobile/package.json`
+5. **Remover** `@config-plugins/detox` e `expo-build-properties` do `apps/mobile/app.json` plugins
+6. **Manter** os `testID` adicionados nas telas — são inócuos e só melhoram a acessibilidade
+
+> Os `testID` adicionados (`reports-scroll`, `settings-scroll`, `btn-delete-goal-*`, etc.) **não precisam ser removidos** — não afetam o app em produção e são boas práticas de acessibilidade.
+
+---
+
 ## Pendências Prioritárias
 
 1. ~~**Reabrir cadastro**~~ ✅ — `REGISTRATION_ENABLED = true` em 2026-05-15
@@ -970,62 +1043,47 @@ pnpm --filter mobile test --verbose
 
 ## Log de Sessões
 
-### 2026-05-23 — Migração Maestro → Detox + testIDs ScrollView
+### 2026-05-23 — Migração Maestro → Detox + debug extensivo de CI
 
 #### O que foi feito
 
 - **fix(e2e/maestro-anr):** Diagnóstico final: ANR "System UI isn't responding" em todos os 6 flows Maestro é intrínseco ao `launchApp clearState: true` + emulador sem Play Services. O broadcast `CLOSE_SYSTEM_DIALOGS` não descarta dialogs ANR nativos — requer instrumentação nativa.
 
-- **migration(e2e):** Substituição completa do Maestro pelo **Detox** (MIT, by Wix). Detox sincroniza com o bridge do React Native e trata ANR via instrumentação, eliminando a raiz do problema.
-  - **Removido:** diretório `.maestro/` com os 6 YAML flows (dashboard, goals, login, reports, settings, transactions).
-  - **Criado:** `apps/mobile/.detoxrc.js` — configuração Detox com dois app configs (`android.debug`) e dois device configs (`attached` para CI, `emulator` para local).
-  - **Criado:** `apps/mobile/e2e/jest.config.js` — config Jest separado para e2e (maxWorkers 1, timeout 120s, testEnvironment detox).
-  - **Criado:** `apps/mobile/e2e/helpers/auth.ts` — helper `launchAndLogin()` compartilhado por todos os tests.
-  - **Criados:** 9 test files cobrindo **todas** as telas do app: `login.test.ts`, `dashboard.test.ts`, `transactions.test.ts`, `cards.test.ts`, `goals.test.ts`, `investments.test.ts`, `recurring.test.ts`, `reports.test.ts`, `settings.test.ts`.
-  - **Adicionados:** `accessibilityLabel` em 3 botões que estavam sem — FAB de cards, botão de nova conta recorrente, botão de novo investimento.
-  - **Atualizado:** `apps/mobile/package.json` — scripts `e2e` e `e2e:ci`; devDependencies `detox@^20.28.0` e `@config-plugins/detox@^9.0.0` (instalados como `detox@20.50.4`, `@config-plugins/detox@9.0.0`).
-  - **Atualizado:** `apps/mobile/app.json` — `@config-plugins/detox` adicionado ao array `plugins`.
-  - **Substituído:** `.github/workflows/maestro-cloud.yml` → workflow Detox completo: build dos dois APKs (`assembleDebug` + `assembleAndroidTest -DtestBuildType=debug`), emulador API 34 (4096M RAM), `anr_show_background 0`, `pnpm e2e:ci`.
-  - **Atualizado:** `CLAUDE.md` — tabela de inventário mobile com `detox ^20.50.4` e `@config-plugins/detox ^9.0.0`.
+- **migration(e2e):** Substituição completa do Maestro pelo **Detox** (MIT, by Wix). Detox sincroniza com o bridge do React Native e trata ANR via instrumentação.
+  - 9 test files criados cobrindo todas as telas; helper `launchAndLogin()` compartilhado.
+  - Workflow `maestro-cloud.yml` reescrito para Detox: build dos 2 APKs + emulador + pré-install.
 
-- **fix(e2e/testids):** Adicionados `testID` que os testes precisam mas não existiam:
-  - `app/(tabs)/reports.tsx` linha 146 — `testID="reports-scroll"` no ScrollView (usado em `reports.test.ts` para `whileElement().scroll()`).
-  - `app/(tabs)/settings.tsx` linha 83 — `testID="settings-scroll"` no ScrollView (usado em `settings.test.ts` para `whileElement().scroll()`).
+- **fix(e2e/testids):** `testID="reports-scroll"` e `testID="settings-scroll"` nos ScrollViews.
 
-#### Commits
+- **fix(e2e/ci) — 6 correções em cascata no CI Detox:**
+  1. Jest do CI unitário picking up arquivos e2e → `testPathIgnorePatterns: ["/e2e/"]`
+  2. `libfbjni.so` duplicate no test APK → `:app:` prefix no Gradle (`:app:assembleDebug :app:assembleAndroidTest`)
+  3. `adb install` timeout 60s do Detox → pré-instalar APKs via `adb install --no-streaming` antes de rodar Detox + `--reuse` no `e2e:ci`
+  4. `Broken pipe (32)` no install → aguardar `pm list packages` antes de instalar
+  5. `beforeAll` hook timeout → `testTimeout` aumentado progressivamente (120s → 300s → **600s**)
+  6. `waitFor(input-email)` timeout muito curto → aumentado de 15s para **90s** (cold start lento)
 
-- `50adcbf` — feat(e2e): migrar Maestro → Detox; cobrir todas as 9 telas com testes E2E
-- (pendente) — fix(e2e): adicionar testID reports-scroll e settings-scroll nos ScrollViews
+- **docs:** Seção "E2E Mobile — Análise Maestro vs Detox" adicionada ao PROJECT.md para subsidiar decisão de reverter ou não.
 
-#### Arquivos criados/modificados
+#### Estado do CI em 2026-05-23 (final de sessão)
 
-- `.maestro/` — removido (6 YAML flows)
-- `apps/mobile/.detoxrc.js` — criado
-- `apps/mobile/e2e/jest.config.js` — criado
-- `apps/mobile/e2e/helpers/auth.ts` — criado
-- `apps/mobile/e2e/tests/login.test.ts` — criado
-- `apps/mobile/e2e/tests/dashboard.test.ts` — criado
-- `apps/mobile/e2e/tests/transactions.test.ts` — criado
-- `apps/mobile/e2e/tests/cards.test.ts` — criado
-- `apps/mobile/e2e/tests/goals.test.ts` — criado
-- `apps/mobile/e2e/tests/investments.test.ts` — criado
-- `apps/mobile/e2e/tests/recurring.test.ts` — criado
-- `apps/mobile/e2e/tests/reports.test.ts` — criado
-- `apps/mobile/e2e/tests/settings.test.ts` — criado
-- `apps/mobile/app/(tabs)/cards.tsx` — accessibilityLabel no FAB
-- `apps/mobile/app/(tabs)/investments.tsx` — accessibilityLabel + testID (fix escopo toast)
-- `apps/mobile/app/(tabs)/recurring.tsx` — accessibilityLabel no add button
-- `apps/mobile/app/(tabs)/reports.tsx` — testID="reports-scroll"
-- `apps/mobile/app/(tabs)/settings.tsx` — testID="settings-scroll"
-- `apps/mobile/package.json` — scripts e2e/e2e:ci + devDependencies detox
-- `apps/mobile/app.json` — plugin @config-plugins/detox
-- `.github/workflows/maestro-cloud.yml` — substituído por workflow Detox
-- `CLAUDE.md` — inventário atualizado com detox + @config-plugins/detox
+O CI Detox ainda não passou. O problema raiz identificado é que o cold start do app React Native (debug build) no emulador software-rendered do GitHub Actions leva ~280 segundos. Cada um dos 9 arquivos de teste chama `device.launchApp()` no `beforeAll`, consumindo ~5 min por suite.
+
+Com `testTimeout: 600000` (último commit da sessão), há budget suficiente para o launch + login + navegação. **Resultado pendente** — CI disparado mas não concluído ao encerrar sessão.
+
+#### Commits relevantes
+
+- `50adcbf` — feat(e2e): migrar Maestro → Detox; cobrir todas as 9 telas
+- `f2fe6ee` — fix(e2e): testID reports-scroll e settings-scroll + jest ignore /e2e/
+- `f896d4d` — fix(e2e): pré-instalar APKs via adb antes do Detox (timeout 60s)
+- `52a0c54` — fix(e2e): aguardar PM pronto + --no-streaming (Broken pipe)
+- `db6fb74` — fix(e2e): testTimeout 5min + waitFor 90s (cold start emulador)
+- `54f59e5` — fix(e2e): testTimeout e setupTimeout para 10min (cold start ~280s)
 
 #### Pendências para a próxima sessão
 
-1. **Detox CI — verificar resultado do primeiro run** — commit `50adcbf` disparou o workflow. Conferir se o build Gradle (`assembleDebug` + `assembleAndroidTest`) e os 9 testes passam. Possíveis pontos de falha: expo prebuild necessário antes do Gradle, babel-jest sem config para TypeScript nos e2e tests.
-2. **PAY-12 — Notificações (AÇÃO DO USUÁRIO)** — código pronto em `apps/mobile/src/lib/notifications.ts`. Requer `eas build --platform android --profile preview` para ativar o plugin nativo.
+1. **Detox CI** — verificar resultado do run com `testTimeout: 600000`. Se ainda falhar, avaliar rollback para Maestro (ver seção "E2E Mobile — Análise Maestro vs Detox" neste arquivo).
+2. **PAY-12 — Notificações (AÇÃO DO USUÁRIO)** — código pronto em `apps/mobile/src/lib/notifications.ts`. Requer `eas build --platform android --profile preview`.
 
 ---
 
