@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint app src --ext .ts,.tsx",
     "e2e": "detox test --configuration android.local",
-    "e2e:ci": "detox test --configuration android.ci --record-logs failing --take-screenshots failing"
+    "e2e:ci": "detox test --configuration android.ci --reuse --record-logs failing --take-screenshots failing"
   },
   "dependencies": {
     "@ctrl-custo/core": "workspace:*",

@@ -76,6 +76,8 @@ jobs:
           script: |
             adb shell 'until settings get global device_provisioned 2>/dev/null | grep -q 1; do sleep 2; done'
             adb shell settings put global anr_show_background 0
+            adb install -r -g -t apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
+            adb install -r -g -t apps/mobile/android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
             cd apps/mobile && pnpm e2e:ci
 
       - name: Upload Detox results
