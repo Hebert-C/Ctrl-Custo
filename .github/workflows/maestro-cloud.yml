@@ -1,4 +1,4 @@
-name: Maestro E2E (Android Emulator)
+name: Detox E2E (Android)
 
 on:
   workflow_dispatch:
@@ -8,12 +8,12 @@ on:
     branches: [main]
 
 concurrency:
-  group: maestro-e2e
+  group: detox-e2e
   cancel-in-progress: true
 
 jobs:
   e2e:
-    name: E2E Tests — Android Emulator
+    name: E2E Tests — Android
     runs-on: ubuntu-22.04
     if: >
       github.event_name == 'workflow_dispatch' ||
@@ -54,18 +54,13 @@ jobs:
           EXPO_PUBLIC_API_URL: https://ctrlcusto.duckdns.org/api
         run: npx expo prebuild --platform android --clean
 
-      - name: Build debug APK
+      - name: Build debug APK + test APK
         working-directory: apps/mobile/android
         env:
           EXPO_PUBLIC_API_URL: https://ctrlcusto.duckdns.org/api
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon --no-build-cache
-
-      - name: Install Maestro CLI
-        run: |
-          curl -Ls "https://get.maestro.mobile.dev" | bash
-          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+          ./gradlew assembleDebug assembleAndroidTest -DtestBuildType=debug --no-daemon --no-build-cache
 
       - name: Run E2E tests on Android emulator
         uses: reactivecircus/android-emulator-runner@v2
@@ -74,22 +69,18 @@ jobs:
           arch: x86_64
           target: default
           profile: pixel_6
+          ram-size: 4096M
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
           emulator-boot-timeout: 900
           script: |
             adb shell 'until settings get global device_provisioned 2>/dev/null | grep -q 1; do sleep 2; done'
-            adb shell 'until pm path android > /dev/null 2>&1; do sleep 2; done'
-            adb install apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
-            sleep 30
-            adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS || true
-            maestro test --output maestro-report.xml .maestro/
+            adb shell settings put global anr_show_background 0
+            cd apps/mobile && pnpm e2e:ci
 
-      - name: Upload Maestro results
+      - name: Upload Detox results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: maestro-results
-          path: |
-            maestro-report.xml
-            ~/.maestro/tests/**
+          name: detox-results
+          path: apps/mobile/artifacts/

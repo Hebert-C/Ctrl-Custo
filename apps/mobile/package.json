@@ -9,7 +9,9 @@
     "ios": "expo run:ios",
     "test": "jest --passWithNoTests",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint app src --ext .ts,.tsx"
+    "lint": "eslint app src --ext .ts,.tsx",
+    "e2e": "detox test --configuration android.local",
+    "e2e:ci": "detox test --configuration android.ci --record-logs failing --take-screenshots failing"
   },
   "dependencies": {
     "@ctrl-custo/core": "workspace:*",
@@ -48,11 +50,13 @@
   },
   "devDependencies": {
     "@babel/core": "^7.25.0",
+    "@config-plugins/detox": "^9.0.0",
     "@ctrl-custo/config": "workspace:*",
     "@testing-library/jest-native": "^5.4.3",
     "@testing-library/react-native": "^12.9.0",
     "@types/jest": "^29.5.12",
     "@types/react": "~19.1.17",
+    "detox": "^20.28.0",
     "jest-expo": "~54.0.0",
     "react-test-renderer": "19.1.4",
     "typescript": "^5.4.0"

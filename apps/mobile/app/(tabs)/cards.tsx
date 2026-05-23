@@ -99,6 +99,7 @@ export default function Cards() {
       <TouchableOpacity
         style={[s.fab, { bottom: insets.bottom + 24 }]}
         onPress={() => setFormVisible(true)}
+        accessibilityLabel="Adicionar cartão"
       >
         <Ionicons name="add" size={28} color="#fff" />
       </TouchableOpacity>

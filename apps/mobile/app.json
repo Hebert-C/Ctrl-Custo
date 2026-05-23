@@ -25,6 +25,7 @@
     },
     "plugins": [
       "expo-router",
+      "@config-plugins/detox",
       [
         "expo-local-authentication",
         {

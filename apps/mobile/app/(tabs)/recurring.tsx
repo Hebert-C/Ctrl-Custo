@@ -211,6 +211,7 @@ export default function Recurring() {
             setEditingBill(null);
             setFormVisible(true);
           }}
+          accessibilityLabel="Adicionar conta recorrente"
         >
           <Ionicons name="add" size={22} color="#fff" />
         </TouchableOpacity>

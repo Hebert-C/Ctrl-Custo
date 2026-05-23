@@ -126,6 +126,7 @@ export default function Investments() {
             setEditing(null);
             setFormVisible(true);
           }}
+          accessibilityLabel="Adicionar investimento"
         >
           <Ionicons name="add" size={22} color="#fff" />
         </TouchableOpacity>
