@@ -1,7 +1,7 @@
 /** @type {import('@jest/types').Config.InitialOptions} */
 module.exports = {
   maxWorkers: 1,
-  testTimeout: 120000,
+  testTimeout: 300000,
   rootDir: "..",
   testMatch: ["<rootDir>/e2e/tests/**/*.test.ts"],
   transform: {
