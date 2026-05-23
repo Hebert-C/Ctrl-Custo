@@ -970,6 +970,65 @@ pnpm --filter mobile test --verbose
 
 ## Log de Sessões
 
+### 2026-05-23 — Migração Maestro → Detox + testIDs ScrollView
+
+#### O que foi feito
+
+- **fix(e2e/maestro-anr):** Diagnóstico final: ANR "System UI isn't responding" em todos os 6 flows Maestro é intrínseco ao `launchApp clearState: true` + emulador sem Play Services. O broadcast `CLOSE_SYSTEM_DIALOGS` não descarta dialogs ANR nativos — requer instrumentação nativa.
+
+- **migration(e2e):** Substituição completa do Maestro pelo **Detox** (MIT, by Wix). Detox sincroniza com o bridge do React Native e trata ANR via instrumentação, eliminando a raiz do problema.
+  - **Removido:** diretório `.maestro/` com os 6 YAML flows (dashboard, goals, login, reports, settings, transactions).
+  - **Criado:** `apps/mobile/.detoxrc.js` — configuração Detox com dois app configs (`android.debug`) e dois device configs (`attached` para CI, `emulator` para local).
+  - **Criado:** `apps/mobile/e2e/jest.config.js` — config Jest separado para e2e (maxWorkers 1, timeout 120s, testEnvironment detox).
+  - **Criado:** `apps/mobile/e2e/helpers/auth.ts` — helper `launchAndLogin()` compartilhado por todos os tests.
+  - **Criados:** 9 test files cobrindo **todas** as telas do app: `login.test.ts`, `dashboard.test.ts`, `transactions.test.ts`, `cards.test.ts`, `goals.test.ts`, `investments.test.ts`, `recurring.test.ts`, `reports.test.ts`, `settings.test.ts`.
+  - **Adicionados:** `accessibilityLabel` em 3 botões que estavam sem — FAB de cards, botão de nova conta recorrente, botão de novo investimento.
+  - **Atualizado:** `apps/mobile/package.json` — scripts `e2e` e `e2e:ci`; devDependencies `detox@^20.28.0` e `@config-plugins/detox@^9.0.0` (instalados como `detox@20.50.4`, `@config-plugins/detox@9.0.0`).
+  - **Atualizado:** `apps/mobile/app.json` — `@config-plugins/detox` adicionado ao array `plugins`.
+  - **Substituído:** `.github/workflows/maestro-cloud.yml` → workflow Detox completo: build dos dois APKs (`assembleDebug` + `assembleAndroidTest -DtestBuildType=debug`), emulador API 34 (4096M RAM), `anr_show_background 0`, `pnpm e2e:ci`.
+  - **Atualizado:** `CLAUDE.md` — tabela de inventário mobile com `detox ^20.50.4` e `@config-plugins/detox ^9.0.0`.
+
+- **fix(e2e/testids):** Adicionados `testID` que os testes precisam mas não existiam:
+  - `app/(tabs)/reports.tsx` linha 146 — `testID="reports-scroll"` no ScrollView (usado em `reports.test.ts` para `whileElement().scroll()`).
+  - `app/(tabs)/settings.tsx` linha 83 — `testID="settings-scroll"` no ScrollView (usado em `settings.test.ts` para `whileElement().scroll()`).
+
+#### Commits
+
+- `50adcbf` — feat(e2e): migrar Maestro → Detox; cobrir todas as 9 telas com testes E2E
+- (pendente) — fix(e2e): adicionar testID reports-scroll e settings-scroll nos ScrollViews
+
+#### Arquivos criados/modificados
+
+- `.maestro/` — removido (6 YAML flows)
+- `apps/mobile/.detoxrc.js` — criado
+- `apps/mobile/e2e/jest.config.js` — criado
+- `apps/mobile/e2e/helpers/auth.ts` — criado
+- `apps/mobile/e2e/tests/login.test.ts` — criado
+- `apps/mobile/e2e/tests/dashboard.test.ts` — criado
+- `apps/mobile/e2e/tests/transactions.test.ts` — criado
+- `apps/mobile/e2e/tests/cards.test.ts` — criado
+- `apps/mobile/e2e/tests/goals.test.ts` — criado
+- `apps/mobile/e2e/tests/investments.test.ts` — criado
+- `apps/mobile/e2e/tests/recurring.test.ts` — criado
+- `apps/mobile/e2e/tests/reports.test.ts` — criado
+- `apps/mobile/e2e/tests/settings.test.ts` — criado
+- `apps/mobile/app/(tabs)/cards.tsx` — accessibilityLabel no FAB
+- `apps/mobile/app/(tabs)/investments.tsx` — accessibilityLabel + testID (fix escopo toast)
+- `apps/mobile/app/(tabs)/recurring.tsx` — accessibilityLabel no add button
+- `apps/mobile/app/(tabs)/reports.tsx` — testID="reports-scroll"
+- `apps/mobile/app/(tabs)/settings.tsx` — testID="settings-scroll"
+- `apps/mobile/package.json` — scripts e2e/e2e:ci + devDependencies detox
+- `apps/mobile/app.json` — plugin @config-plugins/detox
+- `.github/workflows/maestro-cloud.yml` — substituído por workflow Detox
+- `CLAUDE.md` — inventário atualizado com detox + @config-plugins/detox
+
+#### Pendências para a próxima sessão
+
+1. **Detox CI — verificar resultado do primeiro run** — commit `50adcbf` disparou o workflow. Conferir se o build Gradle (`assembleDebug` + `assembleAndroidTest`) e os 9 testes passam. Possíveis pontos de falha: expo prebuild necessário antes do Gradle, babel-jest sem config para TypeScript nos e2e tests.
+2. **PAY-12 — Notificações (AÇÃO DO USUÁRIO)** — código pronto em `apps/mobile/src/lib/notifications.ts`. Requer `eas build --platform android --profile preview` para ativar o plugin nativo.
+
+---
+
 ### 2026-05-22 — Toast + Maestro ANR fix
 
 #### O que foi feito

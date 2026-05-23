@@ -81,6 +81,7 @@ export default function Settings() {
 
   return (
     <ScrollView
+      testID="settings-scroll"
       style={s.container}
       contentContainerStyle={{ paddingTop: insets.top + 8, paddingBottom: insets.bottom + 24 }}
     >

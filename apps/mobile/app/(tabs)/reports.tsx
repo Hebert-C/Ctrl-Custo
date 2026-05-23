@@ -144,6 +144,7 @@ export default function Reports() {
         </View>
       ) : (
         <ScrollView
+          testID="reports-scroll"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: insets.bottom + 24, paddingHorizontal: 16 }}
         >
