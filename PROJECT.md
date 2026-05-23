@@ -983,21 +983,37 @@ pnpm --filter mobile test --verbose
 
 - **fix(e2e/goals.yaml):** Cleanup adicionado ao final do flow — toca no botão de exclusão `btn-delete-goal-Meta Maestro E2E`, confirma e asserta que a meta sumiu. Acumulação de dados no banco a cada run corrigida. `testID` adicionado ao botão de excluir meta em `goals.tsx`.
 
-- **fix(ci/maestro-anr):** Diagnóstico: todos os 6 testes Maestro falhavam com "System UI isn't responding" (ANR do emulador). Causa: target `google_apis` inclui Play Services que sobrecarregam o emulador com GPU software (`swiftshader_indirect`). Correções em `maestro-cloud.yml`:
-  - `target: google_apis` → `target: default` (remove toda a pilha Google Services)
-  - `sleep 30` → `sleep 15` + warm-up via `adb monkey` + `sleep 20`
-  - `adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS` antes e depois do warm-up
+- **fix(ci/maestro-anr):** Diagnóstico: todos os 6 testes Maestro falhavam com "System UI isn't responding" (ANR do emulador). Causa: target `google_apis` inclui Play Services que sobrecarregam o emulador com GPU software (`swiftshader_indirect`). Correção principal em `maestro-cloud.yml`: `target: google_apis` → `target: default`.
+
+- **fix(ci/ts):** Dois erros de TypeScript introduzidos pelo commit do toast e só detectados no primeiro push da sessão:
+  1. `apps/web/src/components/Toast.tsx` linha 55 — `useRef<T>()` sem argumento: React 19 exige `useRef<T>(undefined)` explicitamente.
+  2. `apps/mobile/app/(tabs)/investments.tsx` linha 326 — `toast.show()` chamado dentro de `InvestmentForm` (componente filho), mas `const toast = useToast()` estava declarado apenas no componente pai `Investments`. Cada componente precisa do seu próprio `useToast()`.
+
+- **fix(ci/maestro-dadb):** Após o fix do ANR, o Maestro falhou com `AndroidDriverTimeoutException` (DADB tcp:40057). Causa: o `adb monkey` incluído no warm-up lançava o app → Expo bundle + chamadas de API consumiam CPU/RAM → segundo `CLOSE_SYSTEM_DIALOGS` ficou bloqueado por 1m42s → emulador sobrecarregado quando Maestro tentou conectar. Fix: removido o `adb monkey`, voltando ao `sleep 30` simples + único `CLOSE_SYSTEM_DIALOGS`.
+
+  **Estado final do script do emulador:**
+
+  ```bash
+  adb install ...app-debug.apk
+  sleep 30
+  adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS || true
+  maestro test --output maestro-report.xml .maestro/
+  ```
 
 #### Commits
 
 - `04f80d7` — feat(ux): sistema de toast para notificações de erro e sucesso (mobile + web)
 - `fa0493d` — fix(e2e): cleanup de metas no goals.yaml + testID no botão de excluir
 - `7c57d59` — fix(ci): corrigir ANR System UI no emulador Android (Maestro E2E)
+- `0017e0b` — docs(project): log sessão 2026-05-22
+- `96632a5` — fix(web/toast): useRef requer valor inicial explícito no React 19
+- `9bd25ef` — fix(mobile/toast): declarar toast dentro de InvestmentForm (escopo correto)
+- `faf184f` — fix(ci): remover adb monkey — AndroidDriverTimeoutException
 
 #### Arquivos criados/modificados
 
 - `apps/mobile/src/components/Toast.tsx` — criado
-- `apps/web/src/components/Toast.tsx` — criado
+- `apps/web/src/components/Toast.tsx` — criado (+ fix useRef)
 - `apps/mobile/app/_layout.tsx` — ToastProvider
 - `apps/web/src/App.tsx` — ToastProvider
 - `apps/mobile/src/components/TransactionForm.tsx` — toast
@@ -1007,16 +1023,16 @@ pnpm --filter mobile test --verbose
 - `apps/mobile/src/components/CategoryForm.tsx` — toast
 - `apps/mobile/src/components/AccountForm.tsx` — toast
 - `apps/mobile/app/(tabs)/goals.tsx` — toast + testID exclusão
-- `apps/mobile/app/(tabs)/investments.tsx` — toast
+- `apps/mobile/app/(tabs)/investments.tsx` — toast (+ fix escopo InvestmentForm)
 - `apps/mobile/app/(tabs)/recurring.tsx` — toast
 - `apps/mobile/app/(tabs)/reports.tsx` — toast
 - `apps/web/src/pages/Cards/index.tsx` — toast sucesso pagamento
 - `.maestro/goals.yaml` — cleanup de meta após teste
-- `.github/workflows/maestro-cloud.yml` — target default + ANR fix
+- `.github/workflows/maestro-cloud.yml` — target default + sleep 30 + CLOSE_SYSTEM_DIALOGS
 
 #### Pendências para a próxima sessão
 
-1. **Resultado do Maestro E2E** — run disparado em 2026-05-22 (após fix do ANR). Verificar se os 6 flows passam com `target: default`.
+1. **Maestro E2E — verificar resultado** — commit `faf184f` (fix adb monkey) está no CI. Quando o CI verde disparar o `workflow_run`, conferir se os 6 flows passam. Estado esperado do emulador: `target: default`, `sleep 30`, sem monkey.
 2. **PAY-12 — Notificações (AÇÃO DO USUÁRIO)** — código pronto, requer `eas build --platform android --profile preview` para ativar o plugin nativo.
 
 ---
