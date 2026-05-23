@@ -4,6 +4,9 @@ module.exports = {
   testTimeout: 120000,
   rootDir: "..",
   testMatch: ["<rootDir>/e2e/tests/**/*.test.ts"],
+  transform: {
+    "\\.[jt]sx?$": "babel-jest",
+  },
   reporters: ["detox/runners/jest/reporter"],
   globalSetup: "detox/runners/jest/globalSetup",
   globalTeardown: "detox/runners/jest/globalTeardown",
