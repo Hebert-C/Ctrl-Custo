@@ -1061,10 +1061,101 @@ pnpm --filter mobile test --verbose
 
 - **Commit:** `0ad546c` — revert(e2e): reverter Detox → Maestro após 6 tentativas sem sucesso no CI
 
+#### O que foi feito (continuação 2)
+
+- **Diagnóstico do último Maestro CI (run `26321329667`):** `6/6 Flows Failed`. Causa raiz: cold start do debug build leva ~2 min no emulador software-rendered; `assertVisible` do Maestro tem timeout padrão de ~5s — insuficiente.
+
+- **fix(e2e/maestro):** `login.yaml` — trocou `assertVisible` por `extendedWaitUntil` com 90s para "Entrar" e 30s para "Saldo". Workflow: `adb install -r -g` para conceder permissões automaticamente.
+
+- **Commit:** `45c23f4`
+
 #### Pendências
 
-1. **Maestro CI** — aguardando resultado do próximo run após o push (workflow dispara após CI de build completar).
-2. **PAY-12 — Notificações (AÇÃO DO USUÁRIO)** — código pronto, requer `eas build --platform android --profile preview`.
+1. **Maestro CI** — aguardando resultado do run após `45c23f4`. Verificar na próxima sessão.
+2. **Otimização de CI** — KVM + cache de AVD (ver seção abaixo).
+3. **PAY-12 — Notificações (AÇÃO DO USUÁRIO)** — código pronto, requer `eas build --platform android --profile preview`.
+
+---
+
+## Próxima sessão — Otimização do CI Maestro (emulador)
+
+> Prioridade: implementar **antes** de qualquer outra feature mobile.
+
+### Problema atual
+
+O emulador roda com `swiftshader_indirect` (GPU software) sem KVM habilitado. Cold start do app React Native debug no CI: **~280–306s**. Isso faz cada flow Maestro demorar 3-5 min só para iniciar.
+
+### Solução em 2 partes
+
+#### Parte 1 — Habilitar KVM (impacto imediato, 5 min de implementação)
+
+KVM está disponível no GitHub Actions (`ubuntu-22.04` e `ubuntu-latest`) mas precisa ser ativado manualmente. Adicionar **antes** do step de emulador:
+
+```yaml
+- name: Enable KVM
+  run: |
+    echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+    sudo udevadm control --reload-rules
+    sudo udevadm trigger --name-match=kvm
+```
+
+Impacto estimado: cold start **~60–90s** (vs 280–306s atual).
+
+#### Parte 2 — Cache do AVD (elimina cold start em runs subsequentes)
+
+```yaml
+- name: Cache AVD
+  id: avd-cache
+  uses: actions/cache@v4
+  with:
+    path: |
+      ~/.android/avd/*
+      ~/.android/adb*
+    key: avd-34-${{ runner.os }}
+    restore-keys: avd-34-${{ runner.os }}
+
+- name: Create AVD snapshot (somente se sem cache)
+  if: steps.avd-cache.outputs.cache-hit != 'true'
+  uses: reactivecircus/android-emulator-runner@v2
+  with:
+    api-level: 34
+    arch: x86_64
+    target: default
+    profile: pixel_6
+    force-avd-creation: false
+    emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+    disable-animations: false
+    script: echo "AVD criado"
+
+- name: Run E2E tests on Android emulator
+  uses: reactivecircus/android-emulator-runner@v2
+  with:
+    api-level: 34
+    arch: x86_64
+    target: default
+    profile: pixel_6
+    force-avd-creation: false
+    emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+    disable-animations: true
+    emulator-boot-timeout: 900
+    script: |
+      ...mesmo script atual...
+```
+
+Impacto estimado: boot do emulador **~20–30s** nos runs subsequentes (carrega de snapshot).
+
+### Estimativa de ganho total
+
+| Config                     | Cold start app | Tempo total CI (6 flows) |
+| -------------------------- | -------------- | ------------------------ |
+| Atual (sem KVM, sem cache) | ~300s          | ~35–40 min               |
+| Com KVM                    | ~75s           | ~12–15 min               |
+| Com KVM + cache AVD        | ~25s (2º run+) | ~5–8 min                 |
+
+### Referências
+
+- [GitHub Blog: Hardware accelerated Android virtualization (2024)](https://github.blog/changelog/2024-04-02-github-actions-hardware-accelerated-android-virtualization-now-available/)
+- [ReactiveCircus android-emulator-runner — AVD cache example](https://github.com/ReactiveCircus/android-emulator-runner#usage)
 
 ---
 
