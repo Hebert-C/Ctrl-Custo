@@ -1,0 +1,24 @@
+appId: com.hebert.ctrlcusto
+---
+- launchApp:
+    clearState: true
+
+- assertVisible:
+    text: "Ctrl+Custo"
+    optional: true
+- assertVisible:
+    text: "Entrar"
+
+- tapOn:
+    id: "input-email"
+- inputText: "nome@teste.com"
+
+- tapOn:
+    id: "input-password"
+- inputText: "Teste@1234"
+
+- tapOn:
+    id: "login-submit"
+
+- assertVisible:
+    text: "Saldo"

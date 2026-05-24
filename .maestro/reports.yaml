@@ -1,0 +1,49 @@
+appId: com.hebert.ctrlcusto
+---
+- runFlow: login.yaml
+
+# Navega para aba Relatórios
+- tapOn:
+    text: "Relatórios"
+- assertVisible:
+    text: "Relatórios"
+
+# Verifica seletor de período
+- assertVisible:
+    text: "3m"
+- assertVisible:
+    text: "6m"
+- assertVisible:
+    text: "12m"
+
+# Troca para 3 meses
+- tapOn:
+    text: "3m"
+- assertVisible:
+    text: "Receitas por mês"
+- assertVisible:
+    text: "Despesas por mês"
+
+# Troca para 12 meses
+- tapOn:
+    text: "12m"
+- assertVisible:
+    text: "Evolução do saldo acumulado"
+
+# Verifica tabela de detalhamento
+- scrollUntilVisible:
+    element:
+      text: "Detalhamento mensal"
+    direction: DOWN
+- assertVisible:
+    text: "Detalhamento mensal"
+
+# Verifica badge do mês atual na tabela
+- assertVisible:
+    text: "atual"
+
+# Volta para 6 meses (padrão)
+- tapOn:
+    text: "6m"
+- assertVisible:
+    text: "Receitas por mês"

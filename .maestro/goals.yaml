@@ -1,0 +1,41 @@
+appId: com.hebert.ctrlcusto
+---
+- runFlow: login.yaml
+
+# Navega para Metas
+- tapOn:
+    text: "Metas"
+- assertVisible:
+    text: "Metas"
+
+# Abre formulário de nova meta via FAB
+- tapOn:
+    label: "Nova Meta"
+- assertVisible:
+    text: "Nova Meta"
+
+# Preenche nome
+- tapOn:
+    id: "input-goal-name"
+- inputText: "Meta Maestro E2E"
+
+# Preenche valor
+- tapOn:
+    id: "input-goal-amount"
+- inputText: "100000"
+
+# Salva
+- tapOn:
+    text: "Salvar"
+
+# Verifica que a meta apareceu na lista
+- assertVisible:
+    text: "Meta Maestro E2E"
+
+# Cleanup: exclui a meta criada para não acumular runs consecutivos
+- tapOn:
+    id: "btn-delete-goal-Meta Maestro E2E"
+- tapOn:
+    text: "Excluir"
+- assertNotVisible:
+    text: "Meta Maestro E2E"

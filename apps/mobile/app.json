@@ -25,17 +25,6 @@
     },
     "plugins": [
       "expo-router",
-      "@config-plugins/detox",
-      [
-        "expo-build-properties",
-        {
-          "android": {
-            "packagingOptions": {
-              "pickFirst": ["**/libfbjni.so"]
-            }
-          }
-        }
-      ],
       [
         "expo-local-authentication",
         {

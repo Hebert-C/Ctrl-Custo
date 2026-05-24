@@ -1,0 +1,23 @@
+appId: com.hebert.ctrlcusto
+---
+- runFlow: login.yaml
+
+# Navega para Configurações
+- tapOn:
+    text: "Config"
+    optional: true
+- tapOn:
+    text: "Configurações"
+    optional: true
+- assertVisible:
+    text: "Configurações"
+
+# Aba Bancos deve estar disponível
+- assertVisible:
+    text: "Bancos"
+    optional: true
+
+# Aba Categorias
+- assertVisible:
+    text: "Categorias"
+    optional: true

@@ -90,35 +90,33 @@ cat node_modules/expo/bundledNativeModules.json | grep "nome-do-pacote"
 
 #### apps/mobile — Expo SDK 54
 
-| Pacote                                      | Versão     | Uso                        |
-| ------------------------------------------- | ---------- | -------------------------- |
-| `expo`                                      | `~54.0.0`  | SDK base                   |
-| `expo-router`                               | `~6.0.23`  | Roteamento file-based      |
-| `expo-constants`                            | `~18.0.13` | Constantes nativas         |
-| `expo-font`                                 | `~14.0.11` | Fontes                     |
-| `expo-linking`                              | `~8.0.11`  | Deep links                 |
-| `expo-file-system`                          | `~18.0.12` | Sistema de arquivos        |
-| `expo-secure-store`                         | `~15.0.8`  | Token JWT (SecureStore)    |
-| `expo-sharing`                              | `~13.0.1`  | Compartilhamento nativo    |
-| `expo-status-bar`                           | `~3.0.9`   | Status bar                 |
-| `expo-system-ui`                            | `~6.0.9`   | Cor do sistema             |
-| `expo-local-authentication`                 | `~17.0.8`  | Biometria/PIN              |
-| `expo-notifications`                        | `~0.32.17` | Notificações locais        |
-| `@expo/metro-runtime`                       | `~6.1.2`   | Metro                      |
-| `@expo/vector-icons`                        | `^15.1.1`  | Ionicons etc.              |
-| `@react-native-async-storage/async-storage` | `~2.2.0`   | Persistência               |
-| `react-native`                              | `~0.81.5`  | Core RN                    |
-| `react-native-gesture-handler`              | `~2.28.0`  | Gestos                     |
-| `react-native-reanimated`                   | `~4.1.7`   | Animações                  |
-| `react-native-safe-area-context`            | `~5.6.2`   | Safe area                  |
-| `react-native-screens`                      | `~4.16.0`  | Screens nativas            |
-| `react-native-svg`                          | `~15.12.1` | SVG                        |
-| `zustand`                                   | `^5.0.0`   | Estado global              |
-| `xlsx`                                      | `^0.18.5`  | Export                     |
-| `jest-expo`                                 | `~54.0.0`  | Testes unitários (dev)     |
-| `detox`                                     | `^20.50.4` | Testes E2E (dev)           |
-| `@config-plugins/detox`                     | `^9.0.0`   | Plugin Expo p/ Detox (dev) |
-| `expo-build-properties`                     | `~1.0.10`  | packagingOptions Android   |
+| Pacote                                      | Versão     | Uso                     |
+| ------------------------------------------- | ---------- | ----------------------- |
+| `expo`                                      | `~54.0.0`  | SDK base                |
+| `expo-router`                               | `~6.0.23`  | Roteamento file-based   |
+| `expo-constants`                            | `~18.0.13` | Constantes nativas      |
+| `expo-font`                                 | `~14.0.11` | Fontes                  |
+| `expo-linking`                              | `~8.0.11`  | Deep links              |
+| `expo-file-system`                          | `~18.0.12` | Sistema de arquivos     |
+| `expo-secure-store`                         | `~15.0.8`  | Token JWT (SecureStore) |
+| `expo-sharing`                              | `~13.0.1`  | Compartilhamento nativo |
+| `expo-status-bar`                           | `~3.0.9`   | Status bar              |
+| `expo-system-ui`                            | `~6.0.9`   | Cor do sistema          |
+| `expo-local-authentication`                 | `~17.0.8`  | Biometria/PIN           |
+| `expo-notifications`                        | `~0.32.17` | Notificações locais     |
+| `@expo/metro-runtime`                       | `~6.1.2`   | Metro                   |
+| `@expo/vector-icons`                        | `^15.1.1`  | Ionicons etc.           |
+| `@react-native-async-storage/async-storage` | `~2.2.0`   | Persistência            |
+| `react-native`                              | `~0.81.5`  | Core RN                 |
+| `react-native-gesture-handler`              | `~2.28.0`  | Gestos                  |
+| `react-native-reanimated`                   | `~4.1.7`   | Animações               |
+| `react-native-safe-area-context`            | `~5.6.2`   | Safe area               |
+| `react-native-screens`                      | `~4.16.0`  | Screens nativas         |
+| `react-native-svg`                          | `~15.12.1` | SVG                     |
+| `zustand`                                   | `^5.0.0`   | Estado global           |
+| `xlsx`                                      | `^0.18.5`  | Export                  |
+| `jest-expo`                                 | `~54.0.0`  | Testes unitários (dev)  |
+| `maestro`                                   | CLI        | Testes E2E (via CI)     |
 
 #### packages/core — Lógica de negócio compartilhada
 
