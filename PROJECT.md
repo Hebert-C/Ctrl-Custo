@@ -1043,6 +1043,31 @@ pnpm --filter mobile test --verbose
 
 ## Log de Sessões
 
+### 2026-05-23 (continuação) — Rollback Detox → Maestro
+
+#### O que foi feito
+
+- **Decisão:** Com 6 tentativas de CI falhando (incluindo o run `26342541552` com SIGTERM aos 306s e crash do emulador ADB), aplicados os critérios documentados na seção "E2E Mobile — Análise Maestro vs Detox": reverter para Maestro.
+
+- **revert(e2e):** Rollback cirúrgico — apenas arquivos E2E tocados:
+  - Restaurados os 6 flows `.maestro/` (login, dashboard, transactions, goals, reports, settings) do commit `4766351`
+  - `maestro-cloud.yml` reescrito para Maestro CLI com `target: default` (configuração que funcionou após fix ANR de 2026-05-22)
+  - Removidos: `apps/mobile/e2e/`, `apps/mobile/.detoxrc.js`
+  - Removidos de `package.json`: `detox ^20.28.0`, `@config-plugins/detox ^9.0.0`, `expo-build-properties ~1.0.10`
+  - Removidos de `app.json` plugins: `@config-plugins/detox`, `expo-build-properties`
+  - `testID`s e `accessibilityLabel`s nos componentes mantidos (inofensivos)
+  - `pnpm install` rodado: -259 pacotes (Detox deps removidos), +23 reorganizados
+  - Inventário CLAUDE.md atualizado (3 deps removidas, maestro CLI anotado)
+
+- **Commit:** `0ad546c` — revert(e2e): reverter Detox → Maestro após 6 tentativas sem sucesso no CI
+
+#### Pendências
+
+1. **Maestro CI** — aguardando resultado do próximo run após o push (workflow dispara após CI de build completar).
+2. **PAY-12 — Notificações (AÇÃO DO USUÁRIO)** — código pronto, requer `eas build --platform android --profile preview`.
+
+---
+
 ### 2026-05-23 — Migração Maestro → Detox + debug extensivo de CI
 
 #### O que foi feito
