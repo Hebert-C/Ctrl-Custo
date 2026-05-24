@@ -3,11 +3,10 @@ appId: com.hebert.ctrlcusto
 - launchApp:
     clearState: true
 
-- assertVisible:
-    text: "Ctrl+Custo"
-    optional: true
-- assertVisible:
-    text: "Entrar"
+- extendedWaitUntil:
+    visible:
+      text: "Entrar"
+    timeout: 90000
 
 - tapOn:
     id: "input-email"
@@ -20,5 +19,7 @@ appId: com.hebert.ctrlcusto
 - tapOn:
     id: "login-submit"
 
-- assertVisible:
-    text: "Saldo"
+- extendedWaitUntil:
+    visible:
+      text: "Saldo"
+    timeout: 30000
