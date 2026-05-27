@@ -650,6 +650,42 @@ Coletado após primeira sessão de uso real.
 
 ---
 
+### 7. Estimativa de Gastos + Alerta de Saldo
+
+**Prioridade:** Média
+**Ideia:** Card no Dashboard mostrando a previsão de gastos do próximo mês com base nas contas recorrentes e no histórico do mês anterior. Gera alerta quando o saldo disponível se aproxima do estimado.
+
+#### Lógica de cálculo
+
+- **Recorrentes fixas:** soma direta de `amount_cents` das contas recorrentes ativas com valor definido
+- **Recorrentes variáveis:** média dos últimos 3 pagamentos daquela conta (histórico de `recurring_payments`)
+- **Gastos variáveis:** soma das despesas confirmadas do mês anterior excluindo as que vieram de contas recorrentes → representa tendência de gastos livres
+- **Estimativa total:** recorrentes + gastos variáveis do mês passado
+
+#### Alerta
+
+- Compara `saldo total das contas` − `estimativa` com um limiar
+- Limiar sugerido: alerta quando sobrar menos de 20% do estimado, ou quando o saldo ficaria negativo após os gastos previstos
+
+#### O que já existe (sem mudança de API ou banco)
+
+- `GET /recurring-bills` + histórico de pagamentos via `GET /recurring-bills/:id/payments` — já implementado
+- Saldo das contas — já no store
+- Transações do mês anterior — já carregadas no store
+
+#### UI proposta (Dashboard)
+
+Card "Previsão do Mês" com:
+
+- Mês passado: R$ X gastos
+- Recorrentes previstas: R$ Y
+- Estimativa total: R$ Z
+- `⚠️ Atenção: saldo atual cobre apenas X% da previsão` (quando crítico)
+
+**Complexidade:** Baixa — cálculo 100% no frontend com dados já disponíveis. Nenhum endpoint novo necessário.
+
+---
+
 ### 1. Contas Família — acesso compartilhado entre múltiplos usuários
 
 **Prioridade:** Média
