@@ -53,7 +53,6 @@ export function TransactionForm({
 
   const [type, setType] = useState<TxType>("expense");
   const toast = useToast();
-  const [description, setDescription] = useState("");
   const [amountRaw, setAmountRaw] = useState("");
   const [selectedAccountId, setSelectedAccountId] = useState(accounts[0]?.id ?? "");
   const [destinationAccountId, setDestinationAccountId] = useState("");
@@ -69,7 +68,6 @@ export function TransactionForm({
     if (!visible) return;
     if (editing) {
       setType(editing.type as TxType);
-      setDescription(editing.description);
       setAmountRaw(formatCurrencyInput(editing.amount));
       setSelectedAccountId(editing.accountId);
       setSelectedCategoryId(editing.categoryId ?? "");
@@ -87,7 +85,6 @@ export function TransactionForm({
 
   function resetFields() {
     setType("expense");
-    setDescription("");
     setAmountRaw("");
     setSelectedAccountId(accounts[0]?.id ?? "");
     setDestinationAccountId("");
@@ -106,7 +103,6 @@ export function TransactionForm({
     const newErrors: Record<string, string> = {};
 
     if (amount === 0) newErrors.amount = "Informe um valor maior que zero.";
-    if (!description.trim()) newErrors.description = "Descrição é obrigatória.";
     if (!selectedAccountId) newErrors.account = "Selecione um banco.";
     const total = parseInt(installments, 10) || 1;
     if (total > 24) newErrors.installments = "Máximo 24 parcelas.";
@@ -122,8 +118,11 @@ export function TransactionForm({
     setErrors({});
     setSaving(true);
     try {
+      const categoryName =
+        categories.find((c) => c.id === selectedCategoryId)?.name ??
+        (type === "income" ? "Receita" : type === "transfer" ? "Transferência" : "Despesa");
       const data: Omit<NewTransaction, "installment"> = {
-        description: description.trim(),
+        description: categoryName,
         amount,
         type,
         status,
@@ -221,17 +220,6 @@ export function TransactionForm({
               />
             </View>
             {!!errors.amount && <Text style={s.errorText}>{errors.amount}</Text>}
-
-            {/* Descrição */}
-            <Text style={s.label}>Descrição</Text>
-            <TextInput
-              style={[s.input, !!errors.description && s.inputError]}
-              value={description}
-              onChangeText={setDescription}
-              placeholder="Ex: Supermercado"
-              placeholderTextColor={colors.textDisabled}
-            />
-            {!!errors.description && <Text style={s.errorText}>{errors.description}</Text>}
 
             {/* Data */}
             <Text style={s.label}>Data</Text>

@@ -19,7 +19,6 @@ interface TransactionFormProps {
 }
 
 const EMPTY_FORM = {
-  description: "",
   amountRaw: "",
   type: "expense" as NewTransaction["type"],
   status: "confirmed" as NewTransaction["status"],
@@ -34,7 +33,6 @@ const EMPTY_FORM = {
 
 function txToForm(tx: Transaction) {
   return {
-    description: tx.description,
     amountRaw: formatCurrencyInput(tx.amount),
     type: tx.type,
     status: tx.status,
@@ -91,9 +89,16 @@ export function TransactionForm({
 
     setLoading(true);
     try {
+      const categoryName =
+        categories.find((c) => c.id === form.categoryId)?.name ??
+        (form.type === "income"
+          ? "Receita"
+          : form.type === "transfer"
+            ? "Transferência"
+            : "Despesa");
       await onSubmit(
         {
-          description: form.description,
+          description: categoryName,
           amount,
           type: form.type,
           status: form.status,
@@ -155,18 +160,6 @@ export function TransactionForm({
                 {t === "income" ? "Receita" : t === "expense" ? "Despesa" : "Transferência"}
               </button>
             ))}
-          </div>
-
-          {/* Descrição */}
-          <div>
-            <label className="label">Descrição</label>
-            <input
-              className="input-field"
-              placeholder="Ex: Supermercado"
-              value={form.description}
-              onChange={(e) => set("description", e.target.value)}
-              required
-            />
           </div>
 
           {/* Valor + Data */}

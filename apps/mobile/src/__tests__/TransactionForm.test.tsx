@@ -153,18 +153,8 @@ describe("TransactionForm — validação de campos obrigatórios", () => {
     expect(screen.getByText("Informe um valor maior que zero.")).toBeTruthy();
   });
 
-  it("exibe erro de descrição ao salvar sem preencher a descrição", async () => {
-    render(<TransactionForm {...defaultProps} />);
-    await act(async () => {
-      fireEvent.press(screen.getByText("Salvar"));
-    });
-    expect(screen.getByText("Descrição é obrigatória.")).toBeTruthy();
-  });
-
   it("exibe erro de categoria ao salvar sem selecionar categoria", async () => {
     render(<TransactionForm {...defaultProps} categories={[mockCategory]} />);
-    // preenche valor e descrição mas não seleciona categoria
-    fireEvent.changeText(screen.getByPlaceholderText("Ex: Supermercado"), "Teste");
     fireEvent.changeText(screen.getByPlaceholderText("0,00"), "50");
     await act(async () => {
       fireEvent.press(screen.getByText("Salvar"));
@@ -175,7 +165,6 @@ describe("TransactionForm — validação de campos obrigatórios", () => {
   it("exibe erro de banco de destino ao salvar transferência sem banco destino", async () => {
     render(<TransactionForm {...defaultProps} />);
     fireEvent.press(screen.getByText("Transf."));
-    fireEvent.changeText(screen.getByPlaceholderText("Ex: Supermercado"), "Transferência");
     fireEvent.changeText(screen.getByPlaceholderText("0,00"), "100");
     await act(async () => {
       fireEvent.press(screen.getByText("Salvar"));
@@ -211,7 +200,6 @@ describe("TransactionForm — validação de campos obrigatórios", () => {
 
     // preenche todos os campos obrigatórios
     fireEvent.changeText(screen.getByPlaceholderText("0,00"), "100");
-    fireEvent.changeText(screen.getByPlaceholderText("Ex: Supermercado"), "Almoço");
     fireEvent.press(screen.getByText("Alimentação")); // chip sem emoji
 
     // salva com sucesso
