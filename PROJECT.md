@@ -1043,6 +1043,31 @@ pnpm --filter mobile test --verbose
 
 ## Log de Sessões
 
+### 2026-05-27 — Remove campo Descrição + fix CI Maestro (KVM + cache AVD)
+
+#### O que foi feito
+
+- **feat(ux):** Campo "Descrição" removido do formulário de transação em web e mobile. A descrição é agora auto-preenchida com o nome da categoria selecionada (fallback: "Despesa"/"Receita"/"Transferência"). A API não mudou — campo `description` continua obrigatório no schema Zod.
+- **test:** `TransactionForm.test.tsx` atualizado — removido teste de erro de descrição; removidas interações com `getByPlaceholderText("Ex: Supermercado")`. 76/76 testes passando.
+- **fix(ci/maestro):** Workflow `maestro-cloud.yml` atualizado:
+  - KVM habilitado via `udevadm` — reduz cold start do emulador de ~300s para ~75s.
+  - Cache AVD com `actions/cache@v4` (key `avd-34-${{ runner.os }}`) — boot ~25s nos runs subsequentes.
+  - Step "Create AVD snapshot" só roda quando não há cache.
+  - `sleep 30` → `sleep 60` no script do emulador (margem extra para KVM sem cache).
+- **infra:** VM Oracle Cloud verificada — tentativa 5277, `active`, API `{"ok":true}`. A1.Flex ainda aguardando capacidade.
+
+#### Commit
+
+- `fffb240` — feat(ux): remover campo descrição do formulário de transação (web + mobile) + fix(ci): KVM + cache AVD
+
+#### Pendências
+
+1. **Maestro CI** — aguardar resultado do run após `fffb240` (primeiro run sem cache AVD, com KVM).
+2. **PAY-12 — Notificações (AÇÃO DO USUÁRIO)** — `eas build --platform android --profile preview`.
+3. **Oracle A1.Flex** — aguardando capacidade (serviço ativo).
+
+---
+
 ### 2026-05-23 (continuação) — Rollback Detox → Maestro
 
 #### O que foi feito
