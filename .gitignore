@@ -66,6 +66,10 @@ vite.config.ts.timestamp-*
 # OS
 .DS_Store
 Thumbs.db
+
+# Maestro — artefatos de runs locais/CI
+maestro-artifacts/
+maestro-last/
 Desktop.ini
 
 # IDE
