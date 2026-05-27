@@ -206,6 +206,26 @@ export function TransactionForm({
               </TouchableOpacity>
             </View>
 
+            {/* Categoria */}
+            <Text style={s.label}>Categoria</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.chipScroll}>
+              {filteredCategories.map((c) => (
+                <TouchableOpacity
+                  key={c.id}
+                  style={[
+                    s.chip,
+                    selectedCategoryId === c.id && { backgroundColor: colors.primary },
+                  ]}
+                  onPress={() => setSelectedCategoryId(c.id)}
+                >
+                  <Text style={[s.chipText, selectedCategoryId === c.id && { color: "#fff" }]}>
+                    {c.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            {!!errors.category && <Text style={s.errorText}>{errors.category}</Text>}
+
             {/* Valor */}
             <Text style={s.label}>Valor</Text>
             <View style={[s.amountRow, !!errors.amount && s.inputError]}>
@@ -280,26 +300,6 @@ export function TransactionForm({
                 )}
               </>
             )}
-
-            {/* Categoria */}
-            <Text style={s.label}>Categoria</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.chipScroll}>
-              {filteredCategories.map((c) => (
-                <TouchableOpacity
-                  key={c.id}
-                  style={[
-                    s.chip,
-                    selectedCategoryId === c.id && { backgroundColor: colors.primary },
-                  ]}
-                  onPress={() => setSelectedCategoryId(c.id)}
-                >
-                  <Text style={[s.chipText, selectedCategoryId === c.id && { color: "#fff" }]}>
-                    {c.name}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-            {!!errors.category && <Text style={s.errorText}>{errors.category}</Text>}
 
             {/* Parcelas: oculto no mobile — sem seletor de cartão (RN-TX-13) */}
 

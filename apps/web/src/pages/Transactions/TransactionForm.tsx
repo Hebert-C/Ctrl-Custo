@@ -162,6 +162,23 @@ export function TransactionForm({
             ))}
           </div>
 
+          {/* Categoria */}
+          <div>
+            <label className="label">Categoria</label>
+            <select
+              className="input-field"
+              value={form.categoryId}
+              onChange={(e) => set("categoryId", e.target.value)}
+            >
+              <option value="">Selecionar…</option>
+              {filteredCategories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
           {/* Valor + Data */}
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -193,23 +210,41 @@ export function TransactionForm({
             </div>
           </div>
 
-          {/* Cartão + Parcelas (apenas despesas) */}
+          {/* Despesa: Cartão + Banco lado a lado */}
           {form.type === "expense" && (
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="label">Cartão (opcional)</label>
-                <select
-                  className="input-field"
-                  value={form.cardId}
-                  onChange={(e) => handleCardChange(e.target.value)}
-                >
-                  <option value="">Nenhum</option>
-                  {cards.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="label">Cartão (opcional)</label>
+                  <select
+                    className="input-field"
+                    value={form.cardId}
+                    onChange={(e) => handleCardChange(e.target.value)}
+                  >
+                    <option value="">Nenhum</option>
+                    {cards.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="label">Banco</label>
+                  <select
+                    className="input-field"
+                    value={form.accountId}
+                    onChange={(e) => set("accountId", e.target.value)}
+                    disabled={cardSelected}
+                  >
+                    <option value="">Selecionar…</option>
+                    {accounts.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
               {!isEditing && cardSelected && (
                 <div>
@@ -227,31 +262,33 @@ export function TransactionForm({
                   </select>
                 </div>
               )}
-            </div>
+            </>
           )}
 
-          {/* Categoria + Conta */}
-          <div className={`grid gap-3 ${cardSelected ? "grid-cols-1" : "grid-cols-2"}`}>
+          {/* Receita: só Banco */}
+          {form.type === "income" && (
             <div>
-              <label className="label">Categoria</label>
+              <label className="label">Banco</label>
               <select
                 className="input-field"
-                value={form.categoryId}
-                onChange={(e) => set("categoryId", e.target.value)}
+                value={form.accountId}
+                onChange={(e) => set("accountId", e.target.value)}
               >
                 <option value="">Selecionar…</option>
-                {filteredCategories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
+                {accounts.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name}
                   </option>
                 ))}
               </select>
             </div>
-            {!cardSelected && (
+          )}
+
+          {/* Transferência: Banco de origem + Banco de destino lado a lado */}
+          {form.type === "transfer" && (
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="label">
-                  {form.type === "transfer" ? "Banco de origem" : "Banco"}
-                </label>
+                <label className="label">Banco de origem</label>
                 <select
                   className="input-field"
                   value={form.accountId}
@@ -265,27 +302,23 @@ export function TransactionForm({
                   ))}
                 </select>
               </div>
-            )}
-          </div>
-
-          {/* Banco de destino (apenas transferências) */}
-          {form.type === "transfer" && (
-            <div>
-              <label className="label">Banco de destino</label>
-              <select
-                className="input-field"
-                value={form.destinationAccountId}
-                onChange={(e) => set("destinationAccountId", e.target.value)}
-              >
-                <option value="">Selecionar…</option>
-                {accounts
-                  .filter((a) => a.id !== form.accountId)
-                  .map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.name}
-                    </option>
-                  ))}
-              </select>
+              <div>
+                <label className="label">Banco de destino</label>
+                <select
+                  className="input-field"
+                  value={form.destinationAccountId}
+                  onChange={(e) => set("destinationAccountId", e.target.value)}
+                >
+                  <option value="">Selecionar…</option>
+                  {accounts
+                    .filter((a) => a.id !== form.accountId)
+                    .map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.name}
+                      </option>
+                    ))}
+                </select>
+              </div>
             </div>
           )}
 
