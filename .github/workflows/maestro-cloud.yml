@@ -2,6 +2,11 @@ name: Maestro E2E (Android Emulator)
 
 on:
   workflow_dispatch:
+  push:
+    branches: [feature/fix-maestro-ci]
+    paths:
+      - ".github/workflows/maestro-cloud.yml"
+      - ".maestro/**"
   workflow_run:
     workflows: ["CI"]
     types: [completed]
