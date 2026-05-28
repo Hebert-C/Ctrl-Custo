@@ -88,7 +88,7 @@ jobs:
           target: default
           profile: pixel_6
           force-avd-creation: false
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: false
           script: echo "AVD snapshot criado"
 
@@ -112,7 +112,9 @@ jobs:
             adb shell 'until settings get global device_provisioned 2>/dev/null | grep -q 1; do sleep 2; done'
             adb shell 'until pm path android > /dev/null 2>&1; do sleep 2; done'
             adb install -r -g apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
-            sleep 60
+            adb shell pm clear com.hebert.ctrlcusto || true
+            adb shell am start -n com.hebert.ctrlcusto/.MainActivity
+            sleep 90
             adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS || true
             maestro test --output maestro-report.xml .maestro/
 

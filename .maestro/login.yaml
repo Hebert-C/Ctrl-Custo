@@ -6,11 +6,11 @@ appId: com.hebert.ctrlcusto
 - extendedWaitUntil:
     visible:
       text: "Entrar"
-    timeout: 90000
+    timeout: 180000
 
 - tapOn:
     id: "input-email"
-- inputText: "nome@teste.com"
+- inputText: "maestro@teste.com"
 
 - tapOn:
     id: "input-password"
