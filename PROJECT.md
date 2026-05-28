@@ -1079,6 +1079,44 @@ pnpm --filter mobile test --verbose
 
 ## Log de Sessões
 
+### 2026-05-28 — Debug Maestro CI + agente autônomo de bugfix
+
+#### O que foi feito
+
+- **infra:** VM Oracle Cloud verificada — tentativa 5601, `active`, API `{"ok":true}`. A1.Flex ainda aguardando capacidade. API rodando via `tsx` direto (sem PM2 — sem restart automático se o processo cair).
+
+- **fix(ci/maestro) — causa raiz identificada:** O debug APK gerado por `expo prebuild` + `assembleDebug` tenta carregar o bundle JS do Metro (`localhost:8081`), que não existe no CI. O app mostrava tela de erro de conexão em vez da tela de login — por isso `extendedWaitUntil "Entrar"` nunca passava independente do timeout.
+
+- **fix(ci/maestro) — `bundleInDebug=true`:** Step adicionado ao workflow após `expo prebuild`, antes de `assembleDebug`. O APK agora embute o bundle JS e não depende do Metro. App inicia standalone no emulador.
+
+- **fix(ci/maestro) — conta dedicada:** Conta `maestro@teste.com` / `Teste@1234` criada via SQL direto no banco da VM (`id: 91989ac1`, `email_verified: true`). `login.yaml` atualizado de `nome@teste.com` (inexistente) para `maestro@teste.com`.
+
+- **fix(ci/maestro) — snapshot AVD:** `-camera-back none` adicionado ao step "Create AVD snapshot" — elimina erro `"different AVD configuration"` que impedia o carregamento do snapshot do cache.
+
+- **fix(ci/maestro) — pré-lançamento + timeout:** `pm clear + am start` antes do `maestro test`; `sleep 60 → 90`; `extendedWaitUntil` 90s → 180s.
+
+- **fix(ci/maestro) — push trigger:** Trigger `push` para `feature/fix-maestro-ci` restaurado (havia sido removido). Condição `if` do job atualizada para aceitar `github.event_name == 'push'` (antes ficava `skipped`).
+
+- **agente autônomo `maestro-ci-debugger`:** Rotina CCR (`trig_01PvmYqbn9kQ9JHdew63ri93`) identificada e diagnosticada. Limite de 5 execuções/dia inviabiliza o ciclo horário necessário. Rotina **desabilitada** — exclusão pendente pelo usuário em https://claude.ai/code/routines.
+
+- **sync de branch:** `feature/fix-maestro-ci` sincronizada com `main` via force push após os fixes terem ido para `main` diretamente.
+
+#### Commits
+
+- `1cf968b` — fix(ci/maestro): conta dedicada + pré-lançamento + alinhamento de snapshot
+- `fe28990` — fix(ci/maestro): embutir bundle JS no APK de debug (bundleInDebug=true)
+- `869e296` — fix(ci/maestro): restaurar push trigger para feature/fix-maestro-ci
+- `5aebb00` — fix(ci/maestro): incluir push na condição do job E2E
+
+#### Pendências
+
+1. **Maestro CI** — aguardar resultado do run com `bundleInDebug=true` — fix mais provável para os 6/6 flows falhando.
+2. **Rotina `maestro-ci-debugger`** — deletar em https://claude.ai/code/routines (já desabilitada).
+3. **PAY-12 — Notificações (AÇÃO DO USUÁRIO)** — `eas build --platform android --profile preview`.
+4. **Oracle A1.Flex** — aguardando capacidade (serviço ativo, tentativa ~5601).
+
+---
+
 ### 2026-05-27 — Remove campo Descrição + fix CI Maestro (KVM + cache AVD)
 
 #### O que foi feito
@@ -2457,3 +2495,60 @@ Para rodar o app no celular com Expo Go 54 apontando para a API local:
 ### Security fixes (pós Fase 11)
 
 - IDOR fix, timing side-channel fix, JWT validation, verificação de e-mail completa (API + Web)
+
+---
+
+### 2026-05-28 — Maestro CI Debug Loop + UX Transações
+
+#### O que foi feito
+
+1. **Maestro E2E CI Debugger (agente remoto autônomo 24/7)**
+   - Criado agente `maestro-ci-debugger` que roda a cada hora na infraestrutura Anthropic
+   - Branch dedicada: `feature/fix-maestro-ci` (nunca toca `main` ou código-fonte)
+   - Trigger: `push` a `feature/fix-maestro-ci` + workflow dispatch + `workflow_run` do CI
+   - Fluxo: CI falha → agente lê logs → diagnostica → aplica 1 fix/invocação → push → CI roda novamente
+   - Max 8 tentativas antes de pedir intervenção manual
+   - Discord: alertas time-gated (8h–19h59 BRT) + GitHub issues para horário silencioso (trigger email)
+
+2. **Workflow `maestro-cloud.yml` otimizado**
+   - KVM habilitado: `udevadm rules` para `/dev/kvm` (reduz cold start de ~300s para ~75s)
+   - AVD cache com `actions/cache@v4`: cold start vai de 75s para ~25s na 2ª+ execução
+   - Trigger push adicionado à branch `feature/fix-maestro-ci`
+   - `sleep 60` antes de `maestro test` (foi 30s, insuficiente para UIAutomator2 pronto)
+
+3. **UX de Transações — remoção de "Descrição"**
+   - Campo `description` removido do formulário mobile + web
+   - Auto-preenchimento: `description = categoryName` (ou fallback por tipo: "Receita"/"Despesa"/"Transferência")
+   - API não foi modificada (ainda requer `description: z.string().trim().min(1)`)
+   - Testes atualizados: `TransactionForm.test.tsx` — 76/76 passando
+
+4. **Reordenação de campos no formulário de transação**
+   - **Mobile:** Tipo → Categoria (chips) → Valor → Data → Conta (chips) → Banco destino (transfer) → Status → Observações
+   - **Web:** Tipo → Categoria (select) → Valor + Data (2-col) → Cartão + Banco (2-col, expense) → Parcelas (se cartão + !editing) → Status → Observações
+   - Categoria agora primeiro campo após tipo, substituindo posição de descrição
+   - Banco ao lado de Cartão (expense) ou Banco destino (transfer)
+
+5. **Limpeza de artefatos Maestro**
+   - Deletados `maestro-artifacts/` e `maestro-last/` (26 arquivos locais)
+   - Adicionados ao `.gitignore`
+
+#### Erros diagnosticados
+
+- **6/6 flows falharam em 00:03 UTC (2026-05-28)** com `[Failed] login (Assertion is false: "Entrar" is visible)`
+- Problema: botão de login não tem texto "Entrar" ou usa `testID` diferente no `.maestro/login.yaml`
+- Agente vai diagnosticar e corrigir `.maestro/*.yaml` na próxima execução (~01:04 UTC / 22:04 BRT)
+
+#### Arquivos criados/modificados
+
+- `.github/workflows/maestro-cloud.yml` — KVM, AVD cache, push trigger, `sleep 60`
+- `apps/mobile/src/components/TransactionForm.tsx` — descrição removida, auto-fill, reordenação
+- `apps/web/src/pages/Transactions/TransactionForm.tsx` — idem
+- `apps/mobile/src/__tests__/TransactionForm.test.tsx` — testes atualizados (76 passing)
+- `.gitignore` — `maestro-artifacts/`, `maestro-last/`
+
+#### Pendências para próxima sessão
+
+1. **Maestro CI:** esperar resultado da branch `feature/fix-maestro-ci` — agente vai corrigir/abrir PR quando passar
+2. **Feature documentada:** "Estimativa de Gastos + Alerta de Saldo" (Feature 7) — anotar ideia, baixa prioridade
+3. **PAY-12:** implementar `expo-notifications` para contas recorrentes (requer `eas build --platform android --profile preview`)
+4. **Oracle A1.Flex:** serviço de retry automático rodando — checar status via SSH `tail -20 ~/oci-create-a1.log`
