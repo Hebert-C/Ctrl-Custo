@@ -23,9 +23,10 @@ function currentMonth() {
 }
 
 function prevMonth() {
-  const d = new Date();
-  d.setMonth(d.getMonth() - 1);
-  return d.toISOString().slice(0, 7);
+  const now = new Date();
+  const year = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+  const month = now.getMonth() === 0 ? 12 : now.getMonth();
+  return `${year}-${String(month).padStart(2, "0")}`;
 }
 
 // ─── PAY-13 — histórico de pagamentos ────────────────────────────────────────

@@ -93,9 +93,10 @@ describe("RN-PAY-06 — mesmo mês não pode ser pago duas vezes", () => {
     const category = await createCategory(user.id);
     const bill = await createRecurringBill(token, account.id, category.id, { amountCents: 5_000 });
 
-    const prevDate = new Date();
-    prevDate.setMonth(prevDate.getMonth() - 1);
-    const prevMonth = prevDate.toISOString().slice(0, 7);
+    const now = new Date();
+    const prevYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+    const prevMonthNum = now.getMonth() === 0 ? 12 : now.getMonth();
+    const prevMonth = `${prevYear}-${String(prevMonthNum).padStart(2, "0")}`;
 
     const first = await api(`/recurring-bills/${bill.id}/pay`, {
       method: "POST",
@@ -310,7 +311,10 @@ describe("RN-PAY-10 — /due retorna próximos e atrasados", () => {
     const category = await createCategory(user.id);
 
     const today = new Date();
-    const upcomingDay = Math.min(today.getDate() + 3, 28);
+    const upcomingDay = today.getDate() + 3;
+
+    // Fim de mês: não é possível ter dueDay futuro dentro do limite de 28 — pular
+    if (upcomingDay > 28) return;
 
     await createRecurringBill(token, account.id, category.id, {
       name: "Conta Futura",
