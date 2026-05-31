@@ -2,16 +2,40 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Leitura obrigatória no início de cada sessão
+## ⚠️ CHECKLIST OBRIGATÓRIO — executar na ordem antes de qualquer outra coisa
 
-Leia `PROJECT.md` antes de qualquer tarefa. Ele contém:
+Estas etapas são obrigatórias em toda sessão, sem exceção:
 
-- Status atual de cada fase do projeto
-- Estado da VM Oracle Cloud e pendências de infra
-- Log de todas as sessões anteriores (o que foi feito, o que ficou em aberto)
-- Próximos passos priorizados
+**1. Ler PROJECT.md completo**
 
-Ao final de cada sessão, atualize a seção **Log de Sessões** do `PROJECT.md` com o que foi feito e o que ficou pendente.
+```
+Leia PROJECT.md inteiro antes de qualquer tarefa.
+Não resuma, não pule seções. Leia tudo.
+```
+
+**2. Verificar VM Oracle Cloud** (via SSH)
+
+```bash
+ssh oracle-ctrl-custos 'tail -20 ~/oci-create-a1.log'
+```
+
+- Só linhas `"Sem capacidade..."` → nada a fazer, continuar.
+- Linha `"=== SUCESSO! Instância criada: ocid1..."` → informar o usuário imediatamente com IP e próximos passos.
+
+**3. Verificar branch antes de implementar qualquer coisa**
+
+- Toda feature nova → criar branch `feature/nome-da-feature` a partir da branch atual.
+- Nunca implementar diretamente na `main`.
+- Se a tarefa for correção de bug → branch `fix/nome-do-bug`.
+- Se já existe uma branch adequada → mudar para ela antes de começar.
+
+**4. Atualizar PROJECT.md ao final da sessão**
+Ao encerrar, adicionar entrada na seção **Log de Sessões** com:
+
+- Data da sessão
+- O que foi feito
+- O que ficou pendente
+- Próxima ação recomendada
 
 ## Oracle Cloud A1.Flex — verificação obrigatória a cada sessão
 

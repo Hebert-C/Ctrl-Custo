@@ -193,8 +193,8 @@ cardsRouter.post(
 
       await trx
         .update(accounts)
-        .set({ balance: account.balance - totalSpent, updatedAt: new Date() })
-        .where(eq(accounts.id, card.accountId));
+        .set({ balance: sql`${accounts.balance} - ${totalSpent}`, updatedAt: new Date() })
+        .where(and(eq(accounts.id, card.accountId), eq(accounts.userId, userId)));
 
       return newTx;
     });

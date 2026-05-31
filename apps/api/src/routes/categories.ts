@@ -62,6 +62,13 @@ categoriesRouter.delete("/:id", async (c) => {
 
   try {
     if (transferTo) {
+      const [destCat] = await db
+        .select({ id: categories.id })
+        .from(categories)
+        .where(and(eq(categories.id, transferTo), eq(categories.userId, userId)))
+        .limit(1);
+      if (!destCat) return c.json({ error: "Categoria de destino não encontrada." }, 404);
+
       await db
         .update(transactions)
         .set({ categoryId: transferTo })
