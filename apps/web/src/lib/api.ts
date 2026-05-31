@@ -44,11 +44,10 @@ async function refreshTokenOnce(): Promise<boolean> {
     .catch(() => {
       clearToken();
       return false;
-    })
-    .finally(() => {
-      _refreshing = null;
     });
-  return _refreshing;
+  const result = await _refreshing;
+  _refreshing = null;
+  return result;
 }
 
 async function req<T>(path: string, init: RequestInit = {}): Promise<T> {

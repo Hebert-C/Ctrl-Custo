@@ -1079,6 +1079,35 @@ pnpm --filter mobile test --verbose
 
 ## Log de Sessões
 
+### 2026-05-31 — Code review completo + correção das 4 vulnerabilidades críticas
+
+#### O que foi feito
+
+- **code review:** Varredura completa do código (API, web, mobile, packages) com 2 agentes paralelos. Identificados 25 problemas documentados em `docs/code-review-backlog.md` (4 críticos, 6 altos, 10 médios, 5 baixos).
+
+- **fix(security) C-01:** `PUT /transactions/:id` — adicionado ownership check de `destinationAccountId`. Usuário não pode mais redirecionar transferência para conta de outro usuário. `apps/api/src/routes/transactions.ts`
+
+- **fix(security) C-02:** `POST /cards/:id/pay` — débito de saldo agora usa SQL atômico (`sql\`${accounts.balance} - ${totalSpent}\``). Elimina race condition que permitia saldo negativo com dois pagamentos simultâneos. `apps/api/src/routes/cards.ts`
+
+- **fix(security) C-03:** `DELETE /categories?transferTo` — adicionado ownership check da categoria destino. Usuário não pode mais transferir transações para categoria de outro usuário. `apps/api/src/routes/categories.ts`
+
+- **fix(security) C-04:** `refreshTokenOnce()` — removido `.finally(() => { _refreshing = null; })`, substituído por `await` explícito + reset após resolução. Elimina janela onde múltiplos refreshes simultâneos invalidavam o token. `apps/web/src/lib/api.ts` + `apps/mobile/src/lib/api.ts`
+
+- **testes:** Criado `apps/api/src/__tests__/rn-security-critical.test.ts` com 7 casos de regressão cobrindo C-01, C-02 e C-03. Todos passando.
+
+- **infra/config:** Hook `Stop` configurado em `.claude/settings.local.json` — lembra automaticamente de atualizar o PROJECT.md ao final de cada sessão. `CLAUDE.md` reforçado com checklist obrigatório numerado (VM, branch, log).
+
+- **Branch:** `fix/security-critical-c01-c02-c03-c04` — commit `74ec114`.
+
+#### O que ficou pendente
+
+- `rn-pay-payment.test.ts` e `rn-pay-history.test.ts` continuam falhando no CI (TDD sem implementação das rotas `/recurring-bills`). Não relacionado a esta sessão.
+- 21 problemas restantes do backlog (6 altos, 10 médios, 5 baixos) — ver `docs/code-review-backlog.md`.
+
+#### Próxima ação recomendada
+
+Abrir PR da branch `fix/security-critical-c01-c02-c03-c04` → `main` e fazer merge. Depois atacar os `rn-pay-*` TDD (skip ou implementar) para limpar o CI, seguido dos altos A-01 (paginação) e A-05 (Promise.all sem catch).
+
 ### 2026-05-28 — Debug Maestro CI + agente autônomo de bugfix
 
 #### O que foi feito

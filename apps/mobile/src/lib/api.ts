@@ -61,11 +61,10 @@ async function refreshTokenOnce(): Promise<boolean> {
     .catch(() => {
       clearToken();
       return false;
-    })
-    .finally(() => {
-      _refreshing = null;
     });
-  return _refreshing;
+  const result = await _refreshing;
+  _refreshing = null;
+  return result;
 }
 
 export class ApiError extends Error {

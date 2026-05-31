@@ -249,6 +249,15 @@ transactionsRouter.put("/:id", zValidator("json", transactionBodyBase.partial())
     if (!card) return c.json({ error: "Cartão não encontrado." }, 404);
   }
 
+  if (body.destinationAccountId && body.destinationAccountId !== existing.destinationAccountId) {
+    const [destAcct] = await db
+      .select({ id: accounts.id })
+      .from(accounts)
+      .where(and(eq(accounts.id, body.destinationAccountId), eq(accounts.userId, userId)))
+      .limit(1);
+    if (!destAcct) return c.json({ error: "Conta de destino não encontrada." }, 404);
+  }
+
   const [row] = await db.transaction(async (trx) => {
     if (existing.status === "confirmed") {
       await applyTransferBalances(
