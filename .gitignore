@@ -85,3 +85,8 @@ apps/web/src-tauri/target/
 
 # Claude Code (configuração local do assistente)
 .claude/
+
+# Variáveis de ambiente locais de teste (nunca commitar — contém credenciais)
+.env.test
+.env.local
+.env.*.local
